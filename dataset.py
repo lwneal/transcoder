@@ -45,6 +45,14 @@ class Dataset(object):
         else:
             return to_categorical(right_pad(indices, **params), len(self.vocab))
 
+    def batch(self, **params):
+        batch_size = params['batch_size']
+        max_words = params['max_words']
+        if self.encoder:
+            return np.zeros((batch_size, max_words), dtype=int)
+        else:
+            return np.zeros((batch_size, max_words, len(self.vocab)))
+
     def indices(self, words):
         # TODO: Properly tokenize?
         unk = self.word_to_idx[PAD_TOKEN]

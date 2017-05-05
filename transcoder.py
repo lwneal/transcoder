@@ -8,27 +8,25 @@ from keras import layers, models
 from dataset import Dataset, left_pad, right_pad
 
 
+def get_batch(encoder_dataset, decoder_dataset, **params):
+    X = encoder_dataset.batch(**params)
+    Y = decoder_dataset.batch(**params)
+    for i in range(len(X)):
+        idx = encoder_dataset.random_idx()
+        X[i] = encoder_dataset.get_example(idx, **params)
+        Y[i] = decoder_dataset.get_example(idx, **params)
+    return X, Y
+
+
+def generate(encoder_dataset, decoder_dataset, **params):
+    while True:
+        yield get_batch(encoder_dataset, decoder_dataset, **params)
+
+
 def train(model, encoder_dataset, decoder_dataset, **params):
-    def get_batch():
-        batch_size = params['batch_size']
-        max_words = params['max_words']
-        decoder_vocab_len = len(decoder_dataset.vocab)
-        X = np.zeros((batch_size, max_words), dtype=int)
-        Y = np.zeros((batch_size, max_words, decoder_vocab_len))
-        for i in range(batch_size):
-            idx = encoder_dataset.random_idx()
-            X[i] = encoder_dataset.get_example(idx, **params)
-            Y[i] = decoder_dataset.get_example(idx, **params)
-        return X, Y
-
-    def gen():
-        while True:
-            yield get_batch()
     batches_per_epoch = params['batches_per_epoch']
-    X, Y = get_batch()
-    model.train_on_batch(X, Y)
-    model.fit_generator(gen(), steps_per_epoch=batches_per_epoch)
-
+    training_gen = generate(encoder_dataset, decoder_dataset, **params)
+    model.fit_generator(training_gen, steps_per_epoch=batches_per_epoch)
 
 
 def demonstrate(model, encoder_dataset, decoder_dataset, input_text=None, **params):

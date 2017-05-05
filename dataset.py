@@ -10,7 +10,7 @@ UNK_TOKEN = '<unk>'
 START_TOKEN = '<bos>'
 END_TOKEN = '<eos>'
 
-class Dataset(object):
+class WordDataset(object):
     def __init__(self, input_filename=None, encoder=False, **params):
         if not input_filename:
             raise ValueError("No input filename supplied. See options with --help")
@@ -37,21 +37,30 @@ class Dataset(object):
     def random_idx(self):
         return np.random.randint(0, len(self.sentences))
 
-    def get_example(self, idx, **params):
+    def get_example(self, idx=None, **params):
+        if idx is None:
+            idx = self.random_idx()
         sentence = self.sentences[idx]
+        return self.format_input(sentence, **params)
+
+    def format_input(self, sentence, **params):
         indices = self.indices(sentence)
         if self.encoder:
             return left_pad(indices, **params)
         else:
-            return to_categorical(right_pad(indices, **params), len(self.vocab))
+            return right_pad(indices, **params)
 
-    def batch(self, **params):
+    def unformat_input(self, indices, **params):
+        return ' '.join(self.words(indices))
+
+    def unformat_output(self, preds, **params):
+        indices = np.argmax(preds, axis=-1)
+        return ' '.join(self.words(indices))
+
+    def empty_batch(self, **params):
         batch_size = params['batch_size']
         max_words = params['max_words']
-        if self.encoder:
-            return np.zeros((batch_size, max_words), dtype=int)
-        else:
-            return np.zeros((batch_size, max_words, len(self.vocab)))
+        return np.zeros((batch_size, max_words), dtype=int)
 
     def indices(self, words):
         # TODO: Properly tokenize?
@@ -61,11 +70,6 @@ class Dataset(object):
     def words(self, indices):
         # TODO: Properly detokenize and join
         return [self.idx_to_word.get(i) for i in indices]
-
-    def get_empty_batch(self, batch_size=1, max_words=12, **params):
-        X = np.zeros((batch_size, max_words))
-        X[:, -1] = self.word_to_idx[START_TOKEN]
-        return X
 
 
 def get_vocab(text, n=3):

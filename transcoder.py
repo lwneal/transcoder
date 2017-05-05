@@ -2,19 +2,20 @@ import os
 import sys
 import random
 import numpy as np
-from keras.utils import to_categorical
 from keras import layers, models
 
-from dataset import Dataset, left_pad, right_pad
+from dataset import WordDataset, left_pad
 
 
 def get_batch(encoder_dataset, decoder_dataset, **params):
-    X = encoder_dataset.batch(**params)
-    Y = decoder_dataset.batch(**params)
+    X = encoder_dataset.empty_batch(**params)
+    Y = decoder_dataset.empty_batch(**params)
     for i in range(len(X)):
         idx = encoder_dataset.random_idx()
         X[i] = encoder_dataset.get_example(idx, **params)
         Y[i] = decoder_dataset.get_example(idx, **params)
+    # TODO: Can X and Y be the same shape?
+    Y = np.expand_dims(Y, axis=-1)
     return X, Y
 
 
@@ -26,22 +27,22 @@ def generate(encoder_dataset, decoder_dataset, **params):
 def train(model, encoder_dataset, decoder_dataset, **params):
     batches_per_epoch = params['batches_per_epoch']
     training_gen = generate(encoder_dataset, decoder_dataset, **params)
+    X, Y = next(training_gen)
     model.fit_generator(training_gen, steps_per_epoch=batches_per_epoch)
 
 
 def demonstrate(model, encoder_dataset, decoder_dataset, input_text=None, **params):
-    max_words = params['max_words']
-    X = encoder_dataset.get_empty_batch(**params)
-    for i in range(params['batch_size']):
-        words = input_text or random.choice(encoder_dataset.sentences)
-        X[i] = left_pad(encoder_dataset.indices(words)[:max_words], **params)
-    batch_size, max_words = X.shape
+    X = encoder_dataset.empty_batch(**params)
+    for i in range(len(X)):
+        if input_text:
+            X[i] = encoder_dataset.format_input(input_text, **params)
+        else:
+            X[i] = encoder_dataset.get_example(**params)
 
-    preds = model.predict(X)
-    Y = np.argmax(preds, axis=-1)
-    for i in range(len(Y)):
-        left = ' '.join(encoder_dataset.words(X[i]))
-        right = ' '.join(decoder_dataset.words(Y[i]))
+    Y = model.predict(X)
+    for x, y in zip(X, Y):
+        left = encoder_dataset.unformat_input(x)
+        right = decoder_dataset.unformat_output(y)
         print('{} --> {}'.format(left, right))
 
 
@@ -114,8 +115,8 @@ def build_decoder(dataset, **params):
 def main(**params):
     print("Loading dataset")
     # TODO: Separate datasets
-    encoder_dataset = Dataset(params['encoder_input_filename'], encoder=True, **params)
-    decoder_dataset = Dataset(params['decoder_input_filename'], **params)
+    encoder_dataset = WordDataset(params['encoder_input_filename'], encoder=True, **params)
+    decoder_dataset = WordDataset(params['decoder_input_filename'], **params)
     print("Dataset loaded")
 
     print("Building model")
@@ -127,7 +128,7 @@ def main(**params):
     if os.path.exists(params['decoder_weights']):
         decoder.load_weights(params['decoder_weights'])
 
-    combined.compile(loss='categorical_crossentropy', optimizer='adam')
+    combined.compile(loss='sparse_categorical_crossentropy', optimizer='adam')
 
     if params['mode'] == 'train':
         for epoch in range(params['epochs']):

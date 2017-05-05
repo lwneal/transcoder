@@ -50,7 +50,8 @@ def demonstrate(model, encoder_dataset, decoder_dataset, input_text=None, **para
         for X, x in zip(X_list, x_list):
             X[i] = x
     Y = model.predict(X_list)
-    for x, y in zip(X_list[0], Y):
+    X = X_list[0]
+    for x, y in zip(X, Y):
         left = encoder_dataset.unformat_input(x)
         right = decoder_dataset.unformat_output(y)
         print('{} --> {}'.format(left, right))

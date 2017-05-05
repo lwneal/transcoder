@@ -46,9 +46,9 @@ class WordDataset(object):
     def format_input(self, sentence, **params):
         indices = self.indices(sentence)
         if self.encoder:
-            return left_pad(indices, **params)
+            return [left_pad(indices, **params)]
         else:
-            return right_pad(indices, **params)
+            return [right_pad(indices, **params)]
 
     def unformat_input(self, indices, **params):
         return ' '.join(self.words(indices))

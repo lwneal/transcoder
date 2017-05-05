@@ -12,7 +12,7 @@ Options:
       --batch-size=<size>               Batch size for training [default: 16]
       --max-words=<words>               Number of words of context (the N in N-gram) [default: 12]
       --wordvec-size=<size>             Number of units in word embedding [default: 1024]
-      --rnn-type=<type>                 One of LSTM, GRU [default: LSTM]
+      --rnn-type=<type>                 One of LSTM, GRU [default: GRU]
       --rnn-size=<size>                 Number of output units in RNN [default: 1024]
       --rnn-layers=<layers>             Number of layers of RNN to use [default: 1]
       --thought-vector-size=<size>      Size of encoder output (decoder input) vector [default: 1024]

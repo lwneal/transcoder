@@ -79,6 +79,7 @@ def left_pad(indices, max_words=10, **kwargs):
     res[max_words - len(indices):] = indices
     return res
 
+
 def right_pad(indices, max_words=10, **kwargs):
     res = np.zeros(max_words, dtype=int)
     if len(indices) > max_words:

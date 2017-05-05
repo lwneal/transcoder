@@ -4,6 +4,7 @@ import random
 import numpy as np
 from keras import layers, models
 
+import model_words
 from dataset_word import WordDataset
 
 
@@ -47,8 +48,8 @@ def demonstrate(model, encoder_dataset, decoder_dataset, input_text=None, **para
 
 
 def build_model(encoder_dataset, decoder_dataset, **params):
-    encoder = build_encoder(encoder_dataset, **params)
-    decoder = build_decoder(decoder_dataset, **params)
+    encoder = model_words.build_encoder(encoder_dataset, **params)
+    decoder = model_words.build_decoder(decoder_dataset, **params)
 
     combined = models.Sequential()
     combined.add(encoder)
@@ -56,47 +57,12 @@ def build_model(encoder_dataset, decoder_dataset, **params):
     return encoder, decoder, combined
 
 
-def build_encoder(dataset, **params):
-    rnn_type = getattr(layers, params['rnn_type'])
-    wordvec_size = params['wordvec_size']
-    rnn_size = params['rnn_size']
-    rnn_layers = params['rnn_layers']
-    max_words = params['max_words']
-    thought_vector_size = params['thought_vector_size']
-    vocab_len = len(dataset.vocab)
-
-    inp = layers.Input(shape=(max_words,), dtype='int32')
-    x = layers.Embedding(vocab_len, wordvec_size, input_length=max_words, mask_zero=True)(inp)
-    for _ in range(rnn_layers - 1):
-        x = rnn_type(rnn_size, return_sequences=True)(x)
-    x = rnn_type(rnn_size)(x)
-    x = layers.Activation('relu')(x)
-    encoded = layers.Dense(thought_vector_size, activation='tanh')(x)
-    moo = models.Model(inputs=inp, outputs=encoded)
-    return moo
-
-
-def build_decoder(dataset, **params):
-    rnn_type = getattr(layers, params['rnn_type'])
-    wordvec_size = params['wordvec_size']
-    rnn_size = params['rnn_size']
-    rnn_layers = params['rnn_layers']
-    max_words = params['max_words']
-    thought_vector_size = params['thought_vector_size']
-    vocab_len = len(dataset.vocab)
-
-    inp = layers.Input(shape=(thought_vector_size,))
-    x = layers.RepeatVector(max_words)(inp)
-    for _ in range(rnn_layers - 1):
-        x = rnn_type(rnn_size, return_sequences=True)(x)
-    x = rnn_type(rnn_size, return_sequences=True)(x)
-    word_preds = layers.TimeDistributed(layers.Dense(vocab_len, activation='softmax'))(x)
-    return models.Model(inputs=inp, outputs=word_preds)
-
-
 def main(**params):
     print("Loading dataset")
-    encoder_dataset = WordDataset(params['encoder_input_filename'], encoder=True, **params)
+    if params['encoder_input_filename'].endswith('bbox'):
+        encoder_dataset = ImageRegionDataset(params['encoder_input_filename'], encoder=True, **params)
+    else:
+        encoder_dataset = WordDataset(params['encoder_input_filename'], encoder=True, **params)
     decoder_dataset = WordDataset(params['decoder_input_filename'], **params)
     print("Dataset loaded")
 

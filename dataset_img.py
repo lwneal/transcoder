@@ -6,7 +6,7 @@ import numpy as np
 from tokenizer import tokenize_text
 from keras.utils import to_categorical
 
-from imutil import decode_jpg
+from imutil import decode_jpg, show
 
 DATA_DIR = os.path.expanduser('~/data/')
 
@@ -38,6 +38,7 @@ class ImageRegionDataset(object):
         return [image_global, image_local, ctx_vector]
 
     def unformat_input(self, pixels, **params):
+        show(pixels)
         return 'Image input shape: {}'.format(pixels.shape)
 
     def unformat_output(self, preds, **params):

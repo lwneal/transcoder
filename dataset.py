@@ -2,6 +2,7 @@ import re
 import random
 import numpy as np
 from tokenizer import tokenize_text
+from keras.utils import to_categorical
 
 
 PAD_TOKEN = ' '
@@ -10,7 +11,7 @@ START_TOKEN = '<bos>'
 END_TOKEN = '<eos>'
 
 class Dataset(object):
-    def __init__(self, input_filename=None, **params):
+    def __init__(self, input_filename=None, encoder=False, **params):
         if not input_filename:
             raise ValueError("No input filename supplied. See options with --help")
         text = open(input_filename).read()
@@ -22,6 +23,7 @@ class Dataset(object):
         if params.get('lowercase'):
             text = text.lower()
 
+        self.encoder = encoder
         self.sentences = text.splitlines()
         print("Input file {} contains {} sentences".format(input_filename, len(self.sentences)))
         self.vocab = get_vocab(text)
@@ -32,6 +34,17 @@ class Dataset(object):
             self.word_to_idx[word] = i
             self.idx_to_word[i] = word
 
+    def random_idx(self):
+        return np.random.randint(0, len(self.sentences))
+
+    def get_example(self, idx, **params):
+        sentence = self.sentences[idx]
+        indices = self.indices(sentence)
+        if self.encoder:
+            return left_pad(indices, **params)
+        else:
+            return to_categorical(right_pad(indices, **params), len(self.vocab))
+
     def indices(self, words):
         # TODO: Properly tokenize?
         unk = self.word_to_idx[PAD_TOKEN]
@@ -40,17 +53,6 @@ class Dataset(object):
     def words(self, indices):
         # TODO: Properly detokenize and join
         return [self.idx_to_word.get(i) for i in indices]
-
-    def get_example(self, **params):
-        sentence = random.choice(self.sentences)
-        sentence = '{} {} {}'.format(START_TOKEN, sentence, END_TOKEN)
-        si = self.indices(sentence)
-        idx = np.random.randint(0, len(si))
-        left, right = si[:idx], [si[idx]]
-        left = left_pad(left, **params)
-        left = np.array(left)
-        right = np.array(right)
-        return left, right
 
     def get_empty_batch(self, batch_size=1, max_words=12, **params):
         X = np.zeros((batch_size, max_words))

@@ -13,17 +13,12 @@ def train(model, encoder_dataset, decoder_dataset, **params):
         batch_size = params['batch_size']
         max_words = params['max_words']
         decoder_vocab_len = len(decoder_dataset.vocab)
-        sentence_count = len(encoder_dataset.sentences)
         X = np.zeros((batch_size, max_words), dtype=int)
         Y = np.zeros((batch_size, max_words, decoder_vocab_len))
         for i in range(batch_size):
-            j = np.random.randint(0, sentence_count)
-            sent_in = encoder_dataset.sentences[j]
-            sent_out = decoder_dataset.sentences[j]
-            x = left_pad(encoder_dataset.indices(sent_in)[:max_words], **params)
-            y = right_pad(decoder_dataset.indices(sent_out), **params)
-            # TODO: Drop to_categorical and go back to sparse_categorical_crossentropy?
-            X[i], Y[i] = x, to_categorical(y, decoder_vocab_len)
+            idx = encoder_dataset.random_idx()
+            X[i] = encoder_dataset.get_example(idx, **params)
+            Y[i] = decoder_dataset.get_example(idx, **params)
         return X, Y
 
     def gen():
@@ -121,7 +116,7 @@ def build_decoder(dataset, **params):
 def main(**params):
     print("Loading dataset")
     # TODO: Separate datasets
-    encoder_dataset = Dataset(params['encoder_input_filename'], **params)
+    encoder_dataset = Dataset(params['encoder_input_filename'], encoder=True, **params)
     decoder_dataset = Dataset(params['decoder_input_filename'], **params)
     print("Dataset loaded")
 

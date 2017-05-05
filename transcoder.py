@@ -4,7 +4,7 @@ import random
 import numpy as np
 from keras import layers, models
 
-from dataset import WordDataset, left_pad
+from dataset_word import WordDataset
 
 
 def get_batch(encoder_dataset, decoder_dataset, **params):

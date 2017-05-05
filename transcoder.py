@@ -96,7 +96,6 @@ def build_decoder(dataset, **params):
 
 def main(**params):
     print("Loading dataset")
-    # TODO: Separate datasets
     encoder_dataset = WordDataset(params['encoder_input_filename'], encoder=True, **params)
     decoder_dataset = WordDataset(params['decoder_input_filename'], **params)
     print("Dataset loaded")

@@ -1,3 +1,5 @@
+import os
+import json
 import re
 import random
 import numpy as np
@@ -5,6 +7,8 @@ from tokenizer import tokenize_text
 from keras.utils import to_categorical
 
 from imutil import decode_jpg
+
+DATA_DIR = os.path.expanduser('~/data/')
 
 
 class ImageRegionDataset(object):
@@ -26,8 +30,9 @@ class ImageRegionDataset(object):
         return self.format_input(region, **params)
 
     def format_input(self, region, **params):
-        image_global = decode_jpg(region['filename'])
-        image_local = decode_jpg(region['filename'], crop_to_box=region['bbox'])
+        filename = os.path.join(DATA_DIR, str(region['filename']))
+        image_global = decode_jpg(filename)
+        image_local = decode_jpg(filename, crop_to_box=region['bbox'])
         x0, x1, y0, y1 = region['bbox']
         ctx_vector = np.array([x0, x1, y0, y1, (x1 - x0) * (y1 - y0)], dtype=float)
         return [image_global, image_local, ctx_vector]
@@ -40,4 +45,7 @@ class ImageRegionDataset(object):
 
     def empty_batch(self, **params):
         batch_size = params['batch_size']
-        return np.zeros((batch_size, 224, 224, 3), dtype=float)
+        return [
+                np.zeros((batch_size, 224, 224, 3), dtype=float),
+                np.zeros((batch_size, 224, 224, 3), dtype=float),
+                np.zeros((batch_size, 5), dtype=float)]

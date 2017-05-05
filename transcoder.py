@@ -5,19 +5,26 @@ import numpy as np
 from keras import layers, models
 
 import model_words
+import model_img
 from dataset_word import WordDataset
+from dataset_img import ImageRegionDataset
 
 
 def get_batch(encoder_dataset, decoder_dataset, **params):
-    X = encoder_dataset.empty_batch(**params)
-    Y = decoder_dataset.empty_batch(**params)
-    for i in range(len(X)):
+    X_list = encoder_dataset.empty_batch(**params)
+    Y_list = decoder_dataset.empty_batch(**params)
+    batch_size = params['batch_size']
+    for i in range(batch_size):
         idx = encoder_dataset.random_idx()
-        X[i] = encoder_dataset.get_example(idx, **params)
-        Y[i] = decoder_dataset.get_example(idx, **params)
+        x_list = encoder_dataset.get_example(idx, **params)
+        for X, x in zip(X_list, x_list):
+            X[i] = x
+        y_list = decoder_dataset.get_example(idx, **params)
+        for Y, y in zip(Y_list, y_list):
+            Y[i] = y
     # TODO: Can X and Y be the same shape?
     Y = np.expand_dims(Y, axis=-1)
-    return X, Y
+    return X_list, Y
 
 
 def generate(encoder_dataset, decoder_dataset, **params):
@@ -33,22 +40,28 @@ def train(model, encoder_dataset, decoder_dataset, **params):
 
 
 def demonstrate(model, encoder_dataset, decoder_dataset, input_text=None, **params):
-    X = encoder_dataset.empty_batch(**params)
-    for i in range(len(X)):
+    batch_size = params['batch_size']
+    X_list = encoder_dataset.empty_batch(**params)
+    for i in range(batch_size):
         if input_text:
-            X[i] = encoder_dataset.format_input(input_text, **params)
+            x_list = encoder_dataset.format_input(input_text, **params)
         else:
-            X[i] = encoder_dataset.get_example(**params)
-
-    Y = model.predict(X)
-    for x, y in zip(X, Y):
+            x_list = encoder_dataset.get_example(**params)
+        for X, x in zip(X_list, x_list):
+            X[i] = x
+    Y = model.predict(X_list)
+    for x, y in zip(X_list[0], Y):
         left = encoder_dataset.unformat_input(x)
         right = decoder_dataset.unformat_output(y)
         print('{} --> {}'.format(left, right))
 
 
 def build_model(encoder_dataset, decoder_dataset, **params):
-    encoder = model_words.build_encoder(encoder_dataset, **params)
+    if params['encoder_type'] == 'region':
+        encoder = model_img.build_encoder(encoder_dataset, **params)
+    else:
+        encoder = model_words.build_encoder(encoder_dataset, **params)
+
     decoder = model_words.build_decoder(decoder_dataset, **params)
 
     combined = models.Sequential()
@@ -59,7 +72,7 @@ def build_model(encoder_dataset, decoder_dataset, **params):
 
 def main(**params):
     print("Loading dataset")
-    if params['encoder_input_filename'].endswith('bbox'):
+    if params['encoder_type'] == 'region':
         encoder_dataset = ImageRegionDataset(params['encoder_input_filename'], encoder=True, **params)
     else:
         encoder_dataset = WordDataset(params['encoder_input_filename'], encoder=True, **params)

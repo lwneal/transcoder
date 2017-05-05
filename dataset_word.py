@@ -60,7 +60,7 @@ class WordDataset(object):
     def empty_batch(self, **params):
         batch_size = params['batch_size']
         max_words = params['max_words']
-        return np.zeros((batch_size, max_words), dtype=int)
+        return [np.zeros((batch_size, max_words), dtype=int)]
 
     def indices(self, words):
         # TODO: Properly tokenize?

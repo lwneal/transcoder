@@ -19,6 +19,7 @@ def build_encoder(dataset, **params):
     for _ in range(rnn_layers - 1):
         x = rnn_type(rnn_size, return_sequences=True)(x)
     x = rnn_type(rnn_size)(x)
+    x = layers.BatchNormalization()(x)
     x = layers.Activation('relu')(x)
     encoded = layers.Dense(thought_vector_size, activation='tanh')(x)
     moo = models.Model(inputs=inp, outputs=encoded)
@@ -39,5 +40,8 @@ def build_decoder(dataset, **params):
     for _ in range(rnn_layers - 1):
         x = rnn_type(rnn_size, return_sequences=True)(x)
     x = rnn_type(rnn_size, return_sequences=True)(x)
-    word_preds = layers.TimeDistributed(layers.Dense(vocab_len, activation='softmax'))(x)
-    return models.Model(inputs=inp, outputs=word_preds)
+    x = layers.TimeDistributed(layers.Dense(vocab_len))(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation('relu')(x)
+    
+    return models.Model(inputs=inp, outputs=x)

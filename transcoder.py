@@ -65,6 +65,13 @@ def build_model(encoder_dataset, decoder_dataset, **params):
 
     decoder = model_words.build_decoder(decoder_dataset, **params)
 
+    if params['freeze_encoder']:
+        for layer in encoder.layers:
+            layer.trainable = False
+    if params['freeze_decoder']:
+        for layer in decoder.layers:
+            layer.trainable = False
+
     combined = models.Sequential()
     combined.add(encoder)
     combined.add(decoder)

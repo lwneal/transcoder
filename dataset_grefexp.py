@@ -55,10 +55,11 @@ if __name__ == '__main__':
     fp_img = open(img_filename, 'w')
     fp_sentence = open(sentence_filename, 'w')
 
-    for k in get_all_keys(KEY_GREFEXP_VAL):
+    ref_key = KEY_GREFEXP_VAL if 'val' in sys.argv else KEY_GREFEXP_TRAIN
+    for k in get_all_keys(ref_key):
         filename, box, category, texts = get_annotation_for_key(k)
         for sentence in texts:
-            img_info = {'filename': filename, 'bbox': box}
+            img_info = {'filename': filename, 'bbox': box, 'category': category}
             fp_img.write(json.dumps(img_info) + '\n')
             fp_sentence.write(sentence.encode('utf-8') + '\n')
     fp_img.close()

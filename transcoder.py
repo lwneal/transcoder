@@ -6,8 +6,10 @@ from keras import layers, models
 
 import model_words
 import model_img
+import model_img_region
 from dataset_word import WordDataset
-from dataset_img import ImageRegionDataset
+from dataset_img import ImageDataset
+from dataset_img_region import ImageRegionDataset
 
 
 def get_batch(encoder_dataset, decoder_dataset, **params):
@@ -23,8 +25,8 @@ def get_batch(encoder_dataset, decoder_dataset, **params):
         for Y, y in zip(Y_list, y_list):
             Y[i] = y
     # TODO: Can X and Y be the same shape?
-    Y = np.expand_dims(Y, axis=-1)
-    return X_list, Y
+    Y_list[0] = np.expand_dims(Y_list[0], axis=-1)
+    return X_list, Y_list
 
 
 def generate(encoder_dataset, decoder_dataset, **params):
@@ -35,7 +37,6 @@ def generate(encoder_dataset, decoder_dataset, **params):
 def train(model, encoder_dataset, decoder_dataset, **params):
     batches_per_epoch = params['batches_per_epoch']
     training_gen = generate(encoder_dataset, decoder_dataset, **params)
-    X, Y = next(training_gen)
     model.fit_generator(training_gen, steps_per_epoch=batches_per_epoch)
 
 
@@ -57,13 +58,17 @@ def demonstrate(model, encoder_dataset, decoder_dataset, input_text=None, **para
         print('{} --> {}'.format(left, right))
 
 
-def build_model(encoder_dataset, decoder_dataset, **params):
-    if params['encoder_type'] == 'region':
-        encoder = model_img.build_encoder(encoder_dataset, **params)
-    else:
-        encoder = model_words.build_encoder(encoder_dataset, **params)
+def dataset_for_extension(ext):
+    if ext == 'img':
+        return ImageDataset
+    elif ext == 'bbox':
+        return ImageRegionDataset
+    return WordDataset
 
-    decoder = model_words.build_decoder(decoder_dataset, **params)
+
+def build_model(encoder_dataset, decoder_dataset, **params):
+    encoder = encoder_dataset.build_model(**params)
+    decoder = decoder_dataset.build_model(**params)
 
     if params['freeze_encoder']:
         for layer in encoder.layers:
@@ -79,33 +84,32 @@ def build_model(encoder_dataset, decoder_dataset, **params):
 
 
 def main(**params):
-    print("Loading dataset")
-    if params['encoder_type'] == 'region':
-        encoder_dataset = ImageRegionDataset(params['encoder_input_filename'], encoder=True, **params)
-    else:
-        encoder_dataset = WordDataset(params['encoder_input_filename'], encoder=True, **params)
-    decoder_dataset = WordDataset(params['decoder_input_filename'], **params)
-    print("Dataset loaded")
+    print("Loading datasets...")
+    ds = dataset_for_extension(params['encoder_input_filename'].split('.')[-1])
+    encoder_dataset = ds(params['encoder_input_filename'], encoder=True, **params)
 
-    print("Building model")
+    ds = dataset_for_extension(params['decoder_input_filename'].split('.')[-1])
+    decoder_dataset = ds(params['decoder_input_filename'], encoder=False, **params)
+
+
+    print("Building models...")
     encoder, decoder, combined = build_model(encoder_dataset, decoder_dataset, **params)
-    print("Model built")
 
     if os.path.exists(params['encoder_weights']):
         encoder.load_weights(params['encoder_weights'])
     if os.path.exists(params['decoder_weights']):
         decoder.load_weights(params['decoder_weights'])
-
     combined.compile(loss='sparse_categorical_crossentropy', optimizer='adam')
 
     if params['mode'] == 'train':
+        print("Training...")
         for epoch in range(params['epochs']):
             train(combined, encoder_dataset, decoder_dataset, **params)
             demonstrate(combined, encoder_dataset, decoder_dataset, **params)
             encoder.save_weights(params['encoder_weights'])
             decoder.save_weights(params['decoder_weights'])
     elif params['mode'] == 'demo':
-        print("Demonstration time!")
+        print("Starting Demonstration...")
         params['batch_size'] = 1
         while True:
             inp = raw_input("Type a complete sentence in the input language: ")

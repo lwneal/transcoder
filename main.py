@@ -5,7 +5,6 @@ Usage:
 Options:
       --encoder-input-filename=<txt>    Input text file the encoder will read (eg. English sentences)
       --decoder-input-filename=<txt>    Input text file the decoder will try to copy (eg. German sentences)
-      --encoder-type=<type>             One of: region, words [default: words]
       --encoder-weights=<name>          Filename for saved model [default: default_encoder.h5]
       --decoder-weights=<name>          Filename for saved model [default: default_decoder.h5]
       --epochs=<epochs>                 Number of epochs to train [default: 2000].

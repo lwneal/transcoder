@@ -3,6 +3,7 @@ import random
 import numpy as np
 from tokenizer import tokenize_text
 from keras.utils import to_categorical
+import model_words
 
 
 PAD_TOKEN = ' '
@@ -70,6 +71,12 @@ class WordDataset(object):
     def words(self, indices):
         # TODO: Properly detokenize and join
         return [self.idx_to_word.get(i) for i in indices]
+
+    def build_model(self, **params):
+        if self.encoder:
+            return model_words.build_encoder(self, **params)
+        else:
+            return model_words.build_decoder(self, **params)
 
 
 def get_vocab(text, n=3):

@@ -19,6 +19,9 @@ def build_encoder(**params):
 
     if CNN == 'vgg16':
         cnn = applications.vgg16.VGG16(include_top=INCLUDE_TOP)
+        if INCLUDE_TOP:
+            # Pop the softmax layer
+            cnn = models.Model(inputs=cnn.inputs, outputs=cnn.layers[-1].output)
     elif CNN == 'resnet':
         cnn = applications.resnet50.ResNet50(include_top=INCLUDE_TOP)
         # Pop the mean pooling layer
@@ -37,15 +40,9 @@ def build_encoder(**params):
     input_img_global = layers.Input(batch_shape=(BATCH_SIZE, IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS))
     image_global = cnn(input_img_global)
 
-    #image_global = layers.Lambda(lambda x: tf.reduce_mean(x, axis=1))(image_global)
-    #image_global = layers.Lambda(lambda x: tf.reduce_mean(x, axis=1))(image_global)
-
     # Local Image featuers (convnet output for just the bounding box)
     input_img_local = layers.Input(batch_shape=(BATCH_SIZE, IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS))
     image_local = cnn(input_img_local)
-
-    #image_local = layers.Lambda(lambda x: tf.reduce_mean(x, axis=1))(image_local)
-    #image_local = layers.Lambda(lambda x: tf.reduce_mean(x, axis=1))(image_local)
 
     x = layers.Concatenate()([image_global, image_local, ctx])
     x = layers.Dense(THOUGHT_VECTOR_SIZE)(x)

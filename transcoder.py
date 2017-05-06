@@ -99,7 +99,7 @@ def main(**params):
         encoder.load_weights(params['encoder_weights'])
     if os.path.exists(params['decoder_weights']):
         decoder.load_weights(params['decoder_weights'])
-    combined.compile(loss='sparse_categorical_crossentropy', optimizer='adam')
+    combined.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     if params['mode'] == 'train':
         print("Training...")

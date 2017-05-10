@@ -45,9 +45,10 @@ class WordDataset(object):
         return self.format_input(sentence, **params)
 
     def format_input(self, sentence, **params):
+        max_words = params['max_words']
         indices = self.indices(sentence)
         if self.encoder:
-            return [left_pad(indices, **params)]
+            return [left_pad(indices[:max_words], **params)]
         else:
             return [right_pad(indices, **params)]
 

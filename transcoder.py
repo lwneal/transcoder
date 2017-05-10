@@ -30,14 +30,21 @@ def get_batch(encoder_dataset, decoder_dataset, **params):
 
 
 def generate(encoder_dataset, decoder_dataset, **params):
+    # HACK: X and Y should each be a numpy array...
+    # Unless the model takes multiple inputs/outputs
+    def unpack(Z):
+        if isinstance(Z, list) and len(Z) == 1:
+            return Z[0]
+        return Z
+
     while True:
-        yield get_batch(encoder_dataset, decoder_dataset, **params)
+        X, Y = get_batch(encoder_dataset, decoder_dataset, **params)
+        yield unpack(X), unpack(Y)
 
 
 def train(model, encoder_dataset, decoder_dataset, **params):
     batches_per_epoch = params['batches_per_epoch']
     training_gen = generate(encoder_dataset, decoder_dataset, **params)
-    import pdb; pdb.set_trace()
     model.fit_generator(training_gen, steps_per_epoch=batches_per_epoch)
 
 

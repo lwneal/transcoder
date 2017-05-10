@@ -37,6 +37,7 @@ def generate(encoder_dataset, decoder_dataset, **params):
 def train(model, encoder_dataset, decoder_dataset, **params):
     batches_per_epoch = params['batches_per_epoch']
     training_gen = generate(encoder_dataset, decoder_dataset, **params)
+    import pdb; pdb.set_trace()
     model.fit_generator(training_gen, steps_per_epoch=batches_per_epoch)
 
 

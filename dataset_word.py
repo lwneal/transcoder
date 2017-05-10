@@ -65,7 +65,7 @@ class WordDataset(object):
 
     def indices(self, words):
         # TODO: Properly tokenize?
-        unk = self.word_to_idx[PAD_TOKEN]
+        unk = self.word_to_idx[UNK_TOKEN]
         return [self.word_to_idx.get(w, unk) for w in words.split()]
 
     def words(self, indices):

@@ -100,6 +100,7 @@ def main(**params):
 
     print("Building models...")
     encoder, decoder, combined = build_model(encoder_dataset, decoder_dataset, **params)
+    combined.summary()
 
     if os.path.exists(params['encoder_weights']):
         encoder.load_weights(params['encoder_weights'])

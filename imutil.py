@@ -37,7 +37,8 @@ def decode_jpg(jpg, crop_to_box=None, resize_to=(224,224)):
     if crop_to_box:
         # Crop to bounding box
         x0, x1, y0, y1 = crop_to_box
-        img = img.crop((x0,y0,x1,y1))
+        width, height = img.size
+        img = img.crop((x0 * width, y0 * height, x1 * width, y1 * height))
     if resize_to:
         img = img.resize(resize_to)
     return np.array(img).astype(float)

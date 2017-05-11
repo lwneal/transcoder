@@ -50,7 +50,8 @@ class WordDataset(object):
         if self.encoder:
             return [left_pad(indices[:max_words], **params)]
         else:
-            return [right_pad(indices, **params)]
+            num_classes = len(self.vocab)
+            return [to_categorical(right_pad(indices, **params), num_classes)]
 
     def unformat_input(self, indices, **params):
         return ' '.join(self.words(indices))
@@ -62,7 +63,10 @@ class WordDataset(object):
     def empty_batch(self, **params):
         batch_size = params['batch_size']
         max_words = params['max_words']
-        return [np.zeros((batch_size, max_words), dtype=int)]
+        if self.encoder:
+            return [np.zeros((batch_size, max_words), dtype=int)]
+        else:
+            return [np.zeros((batch_size, max_words, len(self.vocab)), dtype=float)]
 
     def indices(self, words):
         # TODO: Properly tokenize?

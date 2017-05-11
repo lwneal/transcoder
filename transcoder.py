@@ -24,8 +24,6 @@ def get_batch(encoder_dataset, decoder_dataset, **params):
         y_list = decoder_dataset.get_example(idx, **params)
         for Y, y in zip(Y_list, y_list):
             Y[i] = y
-    # TODO: Can X and Y be the same shape?
-    Y_list[0] = np.expand_dims(Y_list[0], axis=-1)
     return X_list, Y_list
 
 
@@ -107,7 +105,7 @@ def main(**params):
         encoder.load_weights(params['encoder_weights'])
     if os.path.exists(params['decoder_weights']):
         decoder.load_weights(params['decoder_weights'])
-    combined.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    combined.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     if params['mode'] == 'train':
         print("Training...")

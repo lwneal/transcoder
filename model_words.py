@@ -42,6 +42,6 @@ def build_decoder(dataset, **params):
     x = rnn_type(rnn_size, return_sequences=True)(x)
     x = layers.TimeDistributed(layers.Dense(vocab_len))(x)
     x = layers.BatchNormalization()(x)
-    x = layers.Activation('relu')(x)
+    x = layers.Activation('softmax')(x)
     
     return models.Model(inputs=inp, outputs=x)

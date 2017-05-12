@@ -46,11 +46,12 @@ class WordDataset(object):
 
     def format_input(self, sentence, **params):
         max_words = params['max_words']
-        indices = self.indices(sentence)
         if self.encoder:
+            indices = self.indices(sentence)
             return [left_pad(indices[:max_words], **params)]
         else:
             num_classes = len(self.vocab)
+            indices = self.indices(sentence + ' <eos>')
             return [to_categorical(right_pad(indices, **params), num_classes)]
 
     def unformat_input(self, indices, **params):

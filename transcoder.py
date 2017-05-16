@@ -40,14 +40,67 @@ def generate(encoder_dataset, decoder_dataset, **params):
         yield unpack(X), unpack(Y)
 
 
-def train(model, encoder_dataset, decoder_dataset, **params):
+
+def train(encoder, decoder, discriminator, encoder_dataset, decoder_dataset, **params):
+    batch_size = params['batch_size']
     batches_per_epoch = params['batches_per_epoch']
     training_gen = generate(encoder_dataset, decoder_dataset, **params)
-    model.fit_generator(training_gen, steps_per_epoch=batches_per_epoch)
+
+    transcoder = models.Sequential()
+    transcoder.add(encoder)
+    transcoder.add(decoder)
+    transcoder.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+    avg_loss = 0
+    avg_accuracy = 0
+    print("Training encoder/decoder...")
+    for i in range(batches_per_epoch):
+        X, Y = next(training_gen)
+        loss, accuracy = transcoder.train_on_batch(X, Y)
+        avg_loss = .95 * avg_loss + .05 * loss
+        avg_accuracy = .95 * avg_accuracy + .05 * accuracy
+        sys.stderr.write("[K\r{}/{} batches, batch size {}, loss {:.3f}, accuracy {:.3f}".format(
+            i, batches_per_epoch, batch_size, avg_loss, avg_accuracy))
+    sys.stderr.write('\n')
+
+    avg_loss = 0
+    avg_accuracy = 0
+    print("Training discriminator...")
+    for i in range(batches_per_epoch):
+        # Generate some fake data
+        X_encoder, Y_decoder = next(training_gen)
+        X_generated = transcoder.predict(X_encoder)
+
+        # Shuffle real and generated examples into a batch
+        X_disc = Y_decoder
+        Y_disc = np.zeros(len(X_generated), dtype=np.int)
+        for j in range(len(X_generated)):
+            if np.random.rand() < .5:
+                # Real example, label this 1
+                Y_disc[j] = 1
+            else:
+                # Fake example, label this 0
+                X_disc[j] = X_generated[j]
+                Y_disc[j] = 0
+        # Convert onehot to indices
+        X_disc = np.argmax(X_disc, axis=-1)
+        discriminator.train_on_batch(X_disc, Y_disc)
+        avg_loss = .95 * avg_loss + .05 * loss
+        avg_accuracy = .95 * avg_accuracy + .05 * accuracy
+        sys.stderr.write("[K\r{}/{} batches, batch size {}, loss {:.3f}, accuracy {:.3f}".format(
+            i, batches_per_epoch, batch_size, avg_loss, avg_accuracy))
+    sys.stderr.write('\n')
+    print("Training epoch finished")
 
 
-def demonstrate(model, encoder_dataset, decoder_dataset, input_text=None, **params):
+
+def demonstrate(encoder, decoder, encoder_dataset, decoder_dataset, input_text=None, **params):
     batch_size = params['batch_size']
+
+    model = models.Sequential()
+    model.add(encoder)
+    model.add(decoder)
+
     X_list = encoder_dataset.empty_batch(**params)
     for i in range(batch_size):
         if input_text:
@@ -83,10 +136,21 @@ def build_model(encoder_dataset, decoder_dataset, **params):
         for layer in decoder.layers:
             layer.trainable = False
 
-    combined = models.Sequential()
-    combined.add(encoder)
-    combined.add(decoder)
-    return encoder, decoder, combined
+    discriminator = models.Sequential()
+    vocab_len = len(decoder_dataset.vocab)
+    wordvec_size = 512
+    max_words = params['max_words']
+    discriminator.add(layers.Embedding(vocab_len, wordvec_size, input_length=max_words))
+    discriminator.add(layers.LSTM(512))
+    discriminator.add(layers.BatchNormalization())
+    discriminator.add(layers.Activation('tanh'))
+    discriminator.add(layers.Dense(512))
+    discriminator.add(layers.BatchNormalization())
+    discriminator.add(layers.Activation('tanh'))
+    discriminator.add(layers.Dense(2))
+    discriminator.add(layers.Activation('softmax'))
+    discriminator.compile(loss='sparse_categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
+    return encoder, decoder, discriminator
 
 
 def main(**params):
@@ -97,28 +161,30 @@ def main(**params):
     ds = dataset_for_extension(params['decoder_input_filename'].split('.')[-1])
     decoder_dataset = ds(params['decoder_input_filename'], encoder=False, **params)
 
-
     print("Building models...")
-    encoder, decoder, combined = build_model(encoder_dataset, decoder_dataset, **params)
-    combined.summary()
+    encoder, decoder, discriminator = build_model(encoder_dataset, decoder_dataset, **params)
+    encoder.summary()
+    decoder.summary()
 
     if os.path.exists(params['encoder_weights']):
         encoder.load_weights(params['encoder_weights'])
     if os.path.exists(params['decoder_weights']):
         decoder.load_weights(params['decoder_weights'])
-    combined.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    if os.path.exists(params['discriminator_weights']):
+        discriminator.load_weights(params['discriminator_weights'])
 
     if params['mode'] == 'train':
         print("Training...")
         for epoch in range(params['epochs']):
-            train(combined, encoder_dataset, decoder_dataset, **params)
-            demonstrate(combined, encoder_dataset, decoder_dataset, **params)
+            train(encoder, decoder, discriminator, encoder_dataset, decoder_dataset, **params)
+            demonstrate(encoder, decoder, encoder_dataset, decoder_dataset, **params)
             encoder.save_weights(params['encoder_weights'])
             decoder.save_weights(params['decoder_weights'])
+            discriminator.save_weights(params['discriminator_weights'])
     elif params['mode'] == 'demo':
         print("Starting Demonstration...")
         params['batch_size'] = 1
         while True:
             inp = raw_input("Type a complete sentence in the input language: ")
             inp = inp.decode('utf-8').lower()
-            demonstrate(combined, encoder_dataset, decoder_dataset, input_text=inp, **params)
+            demonstrate(encoder, decoder, encoder_dataset, decoder_dataset, input_text=inp, **params)

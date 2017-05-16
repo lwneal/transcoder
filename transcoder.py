@@ -41,27 +41,11 @@ def generate(encoder_dataset, decoder_dataset, **params):
 
 
 
-def train(encoder, decoder, discriminator, encoder_dataset, decoder_dataset, **params):
+def train(encoder, decoder, transcoder, discriminator, encoder_dataset, decoder_dataset, **params):
     batch_size = params['batch_size']
     batches_per_epoch = params['batches_per_epoch']
     training_gen = generate(encoder_dataset, decoder_dataset, **params)
 
-    transcoder = models.Sequential()
-    transcoder.add(encoder)
-    transcoder.add(decoder)
-    transcoder.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-
-    avg_loss = 0
-    avg_accuracy = 0
-    print("Training encoder/decoder...")
-    for i in range(batches_per_epoch):
-        X, Y = next(training_gen)
-        loss, accuracy = transcoder.train_on_batch(X, Y)
-        avg_loss = .95 * avg_loss + .05 * loss
-        avg_accuracy = .95 * avg_accuracy + .05 * accuracy
-        sys.stderr.write("[K\r{}/{} batches, batch size {}, loss {:.3f}, accuracy {:.3f}".format(
-            i, batches_per_epoch, batch_size, avg_loss, avg_accuracy))
-    sys.stderr.write('\n')
 
     avg_loss = 0
     avg_accuracy = 0
@@ -84,12 +68,25 @@ def train(encoder, decoder, discriminator, encoder_dataset, decoder_dataset, **p
                 Y_disc[j] = 0
         # Convert onehot to indices
         X_disc = np.argmax(X_disc, axis=-1)
-        discriminator.train_on_batch(X_disc, Y_disc)
+        loss, accuracy = discriminator.train_on_batch(X_disc, Y_disc)
         avg_loss = .95 * avg_loss + .05 * loss
         avg_accuracy = .95 * avg_accuracy + .05 * accuracy
         sys.stderr.write("[K\r{}/{} batches, batch size {}, loss {:.3f}, accuracy {:.3f}".format(
             i, batches_per_epoch, batch_size, avg_loss, avg_accuracy))
     sys.stderr.write('\n')
+
+    avg_loss = 0
+    avg_accuracy = 0
+    print("Training encoder/decoder...")
+    for i in range(batches_per_epoch):
+        X, Y = next(training_gen)
+        loss, accuracy = transcoder.train_on_batch(X, Y)
+        avg_loss = .95 * avg_loss + .05 * loss
+        avg_accuracy = .95 * avg_accuracy + .05 * accuracy
+        sys.stderr.write("[K\r{}/{} batches, batch size {}, loss {:.3f}, accuracy {:.3f}".format(
+            i, batches_per_epoch, batch_size, avg_loss, avg_accuracy))
+    sys.stderr.write('\n')
+
     print("Training epoch finished")
 
 
@@ -136,6 +133,11 @@ def build_model(encoder_dataset, decoder_dataset, **params):
         for layer in decoder.layers:
             layer.trainable = False
 
+    transcoder = models.Sequential()
+    transcoder.add(encoder)
+    transcoder.add(decoder)
+    transcoder.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+
     discriminator = models.Sequential()
     vocab_len = len(decoder_dataset.vocab)
     wordvec_size = 512
@@ -149,8 +151,8 @@ def build_model(encoder_dataset, decoder_dataset, **params):
     discriminator.add(layers.Activation('tanh'))
     discriminator.add(layers.Dense(2))
     discriminator.add(layers.Activation('softmax'))
-    discriminator.compile(loss='sparse_categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
-    return encoder, decoder, discriminator
+    discriminator.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    return encoder, decoder, transcoder, discriminator
 
 
 def main(**params):
@@ -162,7 +164,7 @@ def main(**params):
     decoder_dataset = ds(params['decoder_input_filename'], encoder=False, **params)
 
     print("Building models...")
-    encoder, decoder, discriminator = build_model(encoder_dataset, decoder_dataset, **params)
+    encoder, decoder, transcoder, discriminator = build_model(encoder_dataset, decoder_dataset, **params)
     encoder.summary()
     decoder.summary()
 
@@ -176,7 +178,7 @@ def main(**params):
     if params['mode'] == 'train':
         print("Training...")
         for epoch in range(params['epochs']):
-            train(encoder, decoder, discriminator, encoder_dataset, decoder_dataset, **params)
+            train(encoder, decoder, transcoder, discriminator, encoder_dataset, decoder_dataset, **params)
             demonstrate(encoder, decoder, encoder_dataset, decoder_dataset, **params)
             encoder.save_weights(params['encoder_weights'])
             decoder.save_weights(params['decoder_weights'])

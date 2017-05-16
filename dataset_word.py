@@ -6,7 +6,7 @@ from keras.utils import to_categorical
 import model_words
 
 
-PAD_TOKEN = '_'
+PAD_TOKEN = ' '
 UNK_TOKEN = '<unk>'
 START_TOKEN = '<bos>'
 END_TOKEN = '<eos>'

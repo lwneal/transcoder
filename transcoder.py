@@ -46,23 +46,8 @@ def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, de
     batches_per_epoch = params['batches_per_epoch']
     training_gen = generate(encoder_dataset, decoder_dataset, **params)
 
-    # Learn how to transcode
     train_transcoder(transcoder, training_gen, **params)
-
-    # Learn how to discriminate
-    for layer in decoder.layers:
-        layer.trainable = False
-    for layer in discriminator.layers:
-        layer.trainable = True
-    train_discriminator(decoder, discriminator, training_gen, decoder_dataset, **params)
-
-    # Learn how to fool the discriminator
-    for layer in decoder.layers:
-        layer.trainable = True
-    for layer in discriminator.layers:
-        layer.trainable = False
-    train_cgan(cgan, training_gen, decoder, decoder_dataset, **params)
-
+    train_gan(decoder, discriminator, cgan, training_gen, decoder_dataset, **params)
     print("Training epoch finished")
 
 
@@ -82,8 +67,8 @@ def train_transcoder(transcoder, training_gen, **params):
     sys.stderr.write('\n')
 
 
-def train_discriminator(decoder, discriminator, training_gen, decoder_dataset, direction=1, **params):
-    batches_per_epoch = params['batches_per_epoch'] / 2
+def train_gan(decoder, discriminator, cgan, training_gen, decoder_dataset, **params):
+    batches_per_epoch = int(params['batches_per_epoch'] / params['training_iters_per_gan'])
     batch_size = params['batch_size']
     thought_vector_size = params['thought_vector_size']
 
@@ -101,53 +86,54 @@ def train_discriminator(decoder, discriminator, training_gen, decoder_dataset, d
         X_generated = decoder.predict(X_decoder)
 
         # Start with a batch of real ground truth targets
-        X_disc = Y_decoder
-        Y_disc = np.ones(batch_size, dtype=int)
+        X_real = Y_decoder
+        Y_disc = np.ones(batch_size)
 
-        # Shuffle hallucinations into the targets
-        for j in range(batch_size):
-            if np.random.rand() < .5:
-                # Fake example
-                X_disc[j] = X_generated[j]
-                Y_disc[j] = 0
-
+        for layer in decoder.layers:
+            layer.trainable = False
         # Train discriminator layers to detect hallucinations
-        loss, accuracy = discriminator.train_on_batch(X_disc, Y_disc)
+        loss, accuracy = discriminator.train_on_batch(X_real, -Y_disc)
+        avg_loss = .95 * avg_loss + .05 * loss
+        avg_accuracy = .95 * avg_accuracy + .05 * accuracy
+
+        loss, accuracy = discriminator.train_on_batch(X_generated, Y_disc)
         avg_loss = .95 * avg_loss + .05 * loss
         avg_accuracy = .95 * avg_accuracy + .05 * accuracy
         sys.stderr.write("[K\r{}/{} batches, batch size {}, loss {:.3f}, accuracy {:.3f}".format(
             i, batches_per_epoch, batch_size, avg_loss, avg_accuracy))
+        for layer in decoder.layers:
+            layer.trainable = True
+
+        # Clip discriminator weights
+        for layer in discriminator.layers:
+            weights = layer.get_weights()
+            weights = [np.clip(w, -.01, .01) for w in weights]
+            layer.set_weights(weights)
+
+        # Generate a random thought vector
+        X_encoder = np.random.uniform(-1, 1, size=(batch_size, thought_vector_size))
+
+        # Train decoder to generate hallucinations that the discriminator thinks are real
+        # HACK: how does layer.trainable work?
+        for layer in discriminator.layers:
+            layer.trainable = False
+        # TODO: why do all weights in discriminator turn to NaN at this line?
+        loss, accuracy = cgan.train_on_batch(X_encoder, -Y_disc)
+        for layer in discriminator.layers:
+            layer.trainable = True
+
+        avg_loss = .95 * avg_loss + .05 * loss
+        avg_accuracy = .95 * avg_accuracy + .05 * accuracy
+        sys.stderr.write("[K\r{}/{} batches, batch size {}, loss {:.3f}, accuracy {:.3f}".format(
+            i, batches_per_epoch, batch_size, avg_loss, avg_accuracy))
+
+
     sys.stderr.write('\n')
 
     # Print one of those hallucinations
     print("Hallucinated outputs:")
-    for i in len(X_generated):
-        print(decoder_dataset.unformat_output(X_generated[i]))
-
-
-def train_cgan(cgan, training_gen, decoder, decoder_dataset, **params):
-    batches_per_epoch = params['batches_per_epoch'] / 8
-    batch_size = params['batch_size']
-    thought_vector_size = params['thought_vector_size']
-
-    avg_loss = 0
-    avg_accuracy = 0
-    print("Training decoder as generator...")
-    for i in range(batches_per_epoch):
-        # Generate a random thought vector
-        X_encoder = np.random.normal(size=(batch_size, thought_vector_size))
-
-        # Label every thought as "real"
-        Y_disc = np.zeros(batch_size, dtype=int)
-        Y_disc[:] = 1
-
-        # Train decoder to generate hallucinations that the discriminator thinks are real
-        loss, accuracy = cgan.train_on_batch(X_encoder, Y_disc)
-        avg_loss = .95 * avg_loss + .05 * loss
-        avg_accuracy = .95 * avg_accuracy + .05 * accuracy
-        sys.stderr.write("[K\r{}/{} batches, batch size {}, loss {:.3f}, accuracy {:.3f}".format(
-            i, batches_per_epoch, batch_size, avg_loss, avg_accuracy))
-    sys.stderr.write('\n')
+    for i in range(len(X_generated)):
+        print(' ' + decoder_dataset.unformat_output(X_generated[i]))
 
 
 def demonstrate(encoder, decoder, encoder_dataset, decoder_dataset, input_text=None, **params):
@@ -185,6 +171,7 @@ def build_model(encoder_dataset, decoder_dataset, **params):
     encoder = encoder_dataset.build_model(**params)
     decoder = decoder_dataset.build_model(**params)
 
+    # TODO: fix for GAN
     if params['freeze_encoder']:
         for layer in encoder.layers:
             layer.trainable = False
@@ -192,12 +179,12 @@ def build_model(encoder_dataset, decoder_dataset, **params):
         for layer in decoder.layers:
             layer.trainable = False
 
-    transcoder = models.Sequential()
+    transcoder = models.Sequential(name='transcoder')
     transcoder.add(encoder)
     transcoder.add(decoder)
     transcoder.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    discriminator = models.Sequential()
+    discriminator = models.Sequential(name='discriminator')
     vocab_len = len(decoder_dataset.vocab)
     wordvec_size = 512
     max_words = params['max_words']
@@ -210,16 +197,21 @@ def build_model(encoder_dataset, decoder_dataset, **params):
     discriminator.add(layers.Dense(512))
     discriminator.add(layers.BatchNormalization())
     discriminator.add(layers.Activation('tanh'))
-    discriminator.add(layers.Dense(2))
-    discriminator.add(layers.Activation('softmax'))
-    discriminator.compile(loss='sparse_categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
+    discriminator.add(layers.Dense(1))
+    #from keras.layers.advanced_activations import LeakyReLU
+    discriminator.add(layers.Activation('sigmoid'))
+
+    from keras import backend as K
+    def wgan_loss(y_true, y_pred):
+        return K.mean(y_true * y_pred)
+    discriminator.compile(loss=wgan_loss, optimizer='adam', metrics=['accuracy'])
 
     cgan = models.Sequential()
     for layer in decoder.layers:
         cgan.add(layer)
     for layer in discriminator.layers:
         cgan.add(layer)
-    cgan.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    cgan.compile(loss=wgan_loss, optimizer='adam', metrics=['accuracy'])
 
     return encoder, decoder, transcoder, discriminator, cgan
 

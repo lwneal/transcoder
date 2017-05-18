@@ -100,9 +100,6 @@ def train_discriminator(decoder, discriminator, training_gen, decoder_dataset, d
         # Decode those random thoughts into hallucinations
         X_generated = decoder.predict(X_decoder)
 
-        # Print one of those hallucinations
-        #print('\n' + decoder_dataset.unformat_output(X_generated[0]))
-
         # Start with a batch of real ground truth targets
         X_disc = Y_decoder
         Y_disc = np.ones(batch_size, dtype=int)
@@ -121,6 +118,11 @@ def train_discriminator(decoder, discriminator, training_gen, decoder_dataset, d
         sys.stderr.write("[K\r{}/{} batches, batch size {}, loss {:.3f}, accuracy {:.3f}".format(
             i, batches_per_epoch, batch_size, avg_loss, avg_accuracy))
     sys.stderr.write('\n')
+
+    # Print one of those hallucinations
+    print("Hallucinated outputs:")
+    for i in len(X_generated):
+        print(decoder_dataset.unformat_output(X_generated[i]))
 
 
 def train_cgan(cgan, training_gen, decoder, decoder_dataset, **params):
@@ -201,6 +203,7 @@ def build_model(encoder_dataset, decoder_dataset, **params):
     max_words = params['max_words']
     input_shape = (max_words, vocab_len)
     discriminator.add(layers.Dense(wordvec_size, input_shape=input_shape))
+    discriminator.add(layers.LSTM(512, return_sequences=True))
     discriminator.add(layers.LSTM(512))
     discriminator.add(layers.BatchNormalization())
     discriminator.add(layers.Activation('tanh'))

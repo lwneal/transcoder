@@ -209,7 +209,7 @@ def build_model(encoder_dataset, decoder_dataset, **params):
     discriminator.add(layers.Activation('tanh'))
     discriminator.add(layers.Dense(2))
     discriminator.add(layers.Activation('softmax'))
-    discriminator.compile(loss='sparse_categorical_crossentropy', optimizer='sgd', metrics=['accuracy'], lr=.001)
+    discriminator.compile(loss='sparse_categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
 
     cgan = models.Sequential()
     for layer in decoder.layers:

@@ -2,6 +2,7 @@ import os
 import sys
 import random
 import numpy as np
+import tensorflow as tf
 from keras import layers, models
 
 import model_words
@@ -40,41 +41,34 @@ def generate(encoder_dataset, decoder_dataset, **params):
         yield unpack(X), unpack(Y)
 
 
-
-def train(encoder, decoder, transcoder, discriminator, encoder_dataset, decoder_dataset, **params):
+def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, decoder_dataset, **params):
     batch_size = params['batch_size']
     batches_per_epoch = params['batches_per_epoch']
     training_gen = generate(encoder_dataset, decoder_dataset, **params)
 
+    # Learn how to transcode
+    train_transcoder(transcoder, training_gen, **params)
 
-    avg_loss = 0
-    avg_accuracy = 0
-    print("Training discriminator...")
-    for i in range(batches_per_epoch):
-        # Generate some fake data
-        X_encoder, Y_decoder = next(training_gen)
-        X_generated = transcoder.predict(X_encoder)
+    # Learn how to discriminate
+    for layer in decoder.layers:
+        layer.trainable = False
+    for layer in discriminator.layers:
+        layer.trainable = True
+    train_discriminator(decoder, discriminator, training_gen, decoder_dataset, **params)
 
-        # Shuffle real and generated examples into a batch
-        X_disc = Y_decoder
-        Y_disc = np.zeros(len(X_generated), dtype=np.int)
-        for j in range(len(X_generated)):
-            if np.random.rand() < .5:
-                # Real example, label this 1
-                Y_disc[j] = 1
-            else:
-                # Fake example, label this 0
-                X_disc[j] = X_generated[j]
-                Y_disc[j] = 0
-        # Convert onehot to indices
-        X_disc = np.argmax(X_disc, axis=-1)
-        loss, accuracy = discriminator.train_on_batch(X_disc, Y_disc)
-        avg_loss = .95 * avg_loss + .05 * loss
-        avg_accuracy = .95 * avg_accuracy + .05 * accuracy
-        sys.stderr.write("[K\r{}/{} batches, batch size {}, loss {:.3f}, accuracy {:.3f}".format(
-            i, batches_per_epoch, batch_size, avg_loss, avg_accuracy))
-    sys.stderr.write('\n')
+    # Learn how to fool the discriminator
+    for layer in decoder.layers:
+        layer.trainable = True
+    for layer in discriminator.layers:
+        layer.trainable = False
+    train_cgan(cgan, training_gen, **params)
 
+    print("Training epoch finished")
+
+
+def train_transcoder(transcoder, training_gen, **params):
+    batches_per_epoch = params['batches_per_epoch']
+    batch_size = params['batch_size']
     avg_loss = 0
     avg_accuracy = 0
     print("Training encoder/decoder...")
@@ -87,8 +81,71 @@ def train(encoder, decoder, transcoder, discriminator, encoder_dataset, decoder_
             i, batches_per_epoch, batch_size, avg_loss, avg_accuracy))
     sys.stderr.write('\n')
 
-    print("Training epoch finished")
 
+def train_discriminator(decoder, discriminator, training_gen, decoder_dataset, direction=1, **params):
+    batches_per_epoch = params['batches_per_epoch']
+    batch_size = params['batch_size']
+    thought_vector_size = params['thought_vector_size']
+
+    avg_loss = 0
+    avg_accuracy = 0
+    print("Training discriminator...")
+    for i in range(batches_per_epoch):
+        # Get some real decoding targets
+        _, Y_decoder = next(training_gen)
+
+        # Think some random thoughts
+        X_decoder = np.random.normal(size=(batch_size, thought_vector_size))
+
+        # Decode those random thoughts into hallucinations
+        X_generated = decoder.predict(X_decoder)
+
+        # Print one of those hallucinations
+        #print('\n' + decoder_dataset.unformat_output(X_generated[0]))
+
+        # Start with a batch of real ground truth targets
+        X_disc = Y_decoder
+        Y_disc = np.ones(batch_size, dtype=int)
+
+        # Shuffle hallucinations into the targets
+        for j in range(batch_size):
+            if np.random.rand() < .5:
+                # Fake example
+                X_disc[j] = X_generated[j]
+                Y_disc[j] = 0
+
+        # Train discriminator layers to detect hallucinations
+        loss, accuracy = discriminator.train_on_batch(X_disc, Y_disc)
+        avg_loss = .95 * avg_loss + .05 * loss
+        avg_accuracy = .95 * avg_accuracy + .05 * accuracy
+        sys.stderr.write("[K\r{}/{} batches, batch size {}, loss {:.3f}, accuracy {:.3f}".format(
+            i, batches_per_epoch, batch_size, avg_loss, avg_accuracy))
+    sys.stderr.write('\n')
+
+
+def train_cgan(cgan, training_gen, **params):
+    batches_per_epoch = params['batches_per_epoch']
+    batch_size = params['batch_size']
+    thought_vector_size = params['thought_vector_size']
+
+    avg_loss = 0
+    avg_accuracy = 0
+    print("Training decoder as generator...")
+    for i in range(batches_per_epoch):
+        # Generate a random thought vector
+        X_encoder = np.random.normal(size=(batch_size, thought_vector_size))
+
+        # Label every thought as "real"
+        Y_disc = np.zeros(batch_size, dtype=int)
+        Y_disc[:] = 1
+
+        # Train decoder to generate hallucinations that the discriminator thinks are real
+        loss, accuracy = cgan.train_on_batch(X_encoder, Y_disc)
+        avg_loss = .95 * avg_loss + .05 * loss
+        avg_accuracy = .95 * avg_accuracy + .05 * accuracy
+        sys.stderr.write("[K\r{}/{} batches, batch size {}, loss {:.3f}, accuracy {:.3f}".format(
+            i, batches_per_epoch, batch_size, avg_loss, avg_accuracy))
+    sys.stderr.write('\n')
 
 
 def demonstrate(encoder, decoder, encoder_dataset, decoder_dataset, input_text=None, **params):
@@ -142,7 +199,8 @@ def build_model(encoder_dataset, decoder_dataset, **params):
     vocab_len = len(decoder_dataset.vocab)
     wordvec_size = 512
     max_words = params['max_words']
-    discriminator.add(layers.Embedding(vocab_len, wordvec_size, input_length=max_words))
+    input_shape = (max_words, vocab_len)
+    discriminator.add(layers.Dense(wordvec_size, input_shape=input_shape))
     discriminator.add(layers.LSTM(512))
     discriminator.add(layers.BatchNormalization())
     discriminator.add(layers.Activation('tanh'))
@@ -151,8 +209,16 @@ def build_model(encoder_dataset, decoder_dataset, **params):
     discriminator.add(layers.Activation('tanh'))
     discriminator.add(layers.Dense(2))
     discriminator.add(layers.Activation('softmax'))
-    discriminator.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-    return encoder, decoder, transcoder, discriminator
+    discriminator.compile(loss='sparse_categorical_crossentropy', optimizer='sgd', metrics=['accuracy'], lr=.001)
+
+    cgan = models.Sequential()
+    for layer in decoder.layers:
+        cgan.add(layer)
+    for layer in discriminator.layers:
+        cgan.add(layer)
+    cgan.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+    return encoder, decoder, transcoder, discriminator, cgan
 
 
 def main(**params):
@@ -164,9 +230,11 @@ def main(**params):
     decoder_dataset = ds(params['decoder_input_filename'], encoder=False, **params)
 
     print("Building models...")
-    encoder, decoder, transcoder, discriminator = build_model(encoder_dataset, decoder_dataset, **params)
+    encoder, decoder, transcoder, discriminator, cgan = build_model(encoder_dataset, decoder_dataset, **params)
     encoder.summary()
     decoder.summary()
+    discriminator.summary()
+    cgan.summary()
 
     if os.path.exists(params['encoder_weights']):
         encoder.load_weights(params['encoder_weights'])
@@ -178,7 +246,7 @@ def main(**params):
     if params['mode'] == 'train':
         print("Training...")
         for epoch in range(params['epochs']):
-            train(encoder, decoder, transcoder, discriminator, encoder_dataset, decoder_dataset, **params)
+            train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, decoder_dataset, **params)
             demonstrate(encoder, decoder, encoder_dataset, decoder_dataset, **params)
             encoder.save_weights(params['encoder_weights'])
             decoder.save_weights(params['decoder_weights'])

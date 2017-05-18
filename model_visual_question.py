@@ -14,7 +14,7 @@ def build_encoder(vocab_len, **params):
     wordvec_size = params['wordvec_size']
     rnn_size = params['rnn_size']
     rnn_layers = params['rnn_layers']
-    max_words = params['max_words']
+    max_words = params['max_words_encoder']
     thought_vector_size = params['thought_vector_size']
 
     CNN = 'vgg16'

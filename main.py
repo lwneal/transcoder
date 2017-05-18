@@ -12,7 +12,8 @@ Options:
       --batches-per-epoch=<b>           Number of batches per epoch [default: 1000].
       --batch-size=<size>               Batch size for training [default: 16]
       --training-iters-per-gan=<iters>  Iterations of normal training per iteration of GAN [default: 5.0]
-      --max-words=<words>               Number of words of context (the N in N-gram) [default: 12]
+      --max-words-encoder=<ewords>      Number of words of context (the N in N-gram) [default: 12]
+      --max-words-decoder=<dwords>      Number of words of context (the N in N-gram) [default: 12]
       --wordvec-size=<size>             Number of units in word embedding [default: 1024]
       --rnn-type=<type>                 One of LSTM, GRU [default: GRU]
       --rnn-size=<size>                 Number of output units in RNN [default: 1024]

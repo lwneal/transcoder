@@ -188,7 +188,7 @@ def build_model(encoder_dataset, decoder_dataset, **params):
     discriminator = models.Sequential(name='discriminator')
     vocab_len = len(decoder_dataset.vocab)
     wordvec_size = 512
-    max_words = params['max_words']
+    max_words = params['max_words_decoder']
     input_shape = (max_words, vocab_len)
     discriminator.add(layers.Dense(wordvec_size, input_shape=input_shape))
     discriminator.add(layers.LSTM(512, return_sequences=True))

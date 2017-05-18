@@ -29,6 +29,10 @@ class WordDataset(object):
             text = text.lower()
 
         self.is_encoder = is_encoder
+        if self.is_encoder:
+            self.max_words = params['max_words_encoder']
+        else:
+            self.max_words = params['max_words_decoder']
         self.sentences = text.splitlines()
         print("Input file {} contains {} sentences".format(input_filename, len(self.sentences)))
         self.vocab, self.word_to_idx, self.idx_to_word = get_vocab(text)
@@ -44,14 +48,13 @@ class WordDataset(object):
         return self.format_input(sentence, **params)
 
     def format_input(self, sentence, **params):
-        max_words = params['max_words']
         if self.is_encoder:
             indices = self.indices(sentence)
-            return [left_pad(indices[:max_words], **params)]
+            return [left_pad(indices[:self.max_words], self.max_words, **params)]
         else:
             num_classes = len(self.vocab)
             indices = self.indices(sentence + ' <eos>')
-            return [to_categorical(right_pad(indices, **params), num_classes)]
+            return [to_categorical(right_pad(indices, self.max_words, **params), num_classes)]
 
     def unformat_input(self, X, **params):
         indices = X[0]
@@ -63,11 +66,10 @@ class WordDataset(object):
 
     def empty_batch(self, **params):
         batch_size = params['batch_size']
-        max_words = params['max_words']
         if self.is_encoder:
-            return [np.zeros((batch_size, max_words), dtype=int)]
+            return [np.zeros((batch_size, self.max_words), dtype=int)]
         else:
-            return [np.zeros((batch_size, max_words, len(self.vocab)), dtype=float)]
+            return [np.zeros((batch_size, self.max_words, len(self.vocab)), dtype=float)]
 
     def indices(self, words):
         # TODO: Properly tokenize?
@@ -106,7 +108,7 @@ def remove_unicode(text):
     return re.sub(r'[^\x00-\x7f]', r'', text)
 
 
-def left_pad(indices, max_words=10, **kwargs):
+def left_pad(indices, max_words=12, **kwargs):
     res = np.zeros(max_words, dtype=int)
     if len(indices) > max_words:
         indices = indices[-max_words:]
@@ -114,7 +116,7 @@ def left_pad(indices, max_words=10, **kwargs):
     return res
 
 
-def right_pad(indices, max_words=10, **kwargs):
+def right_pad(indices, max_words=12, **kwargs):
     res = np.zeros(max_words, dtype=int)
     if len(indices) > max_words:
         indices = indices[:max_words]

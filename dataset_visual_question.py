@@ -18,7 +18,7 @@ class VisualQuestionDataset(object):
         lines = open(input_filename).readlines()
         self.questions = [json.loads(l) for l in lines]
         text = '\n'.join(q['question'] for q in self.questions)
-        self.words = WordDataset(input_text=text, is_encoder=True)
+        self.words = WordDataset(input_text=text, **params)
         print("Input file {} contains {} visual questions".format(input_filename, len(self.questions)))
 
     def random_idx(self):

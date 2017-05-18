@@ -10,7 +10,7 @@ def build_encoder(dataset, **params):
     wordvec_size = params['wordvec_size']
     rnn_size = params['rnn_size']
     rnn_layers = params['rnn_layers']
-    max_words = params['max_words']
+    max_words = params['max_words_encoder']
     thought_vector_size = params['thought_vector_size']
     vocab_len = len(dataset.vocab)
 
@@ -31,7 +31,7 @@ def build_decoder(dataset, **params):
     wordvec_size = params['wordvec_size']
     rnn_size = params['rnn_size']
     rnn_layers = params['rnn_layers']
-    max_words = params['max_words']
+    max_words = params['max_words_decoder']
     thought_vector_size = params['thought_vector_size']
     vocab_len = len(dataset.vocab)
 

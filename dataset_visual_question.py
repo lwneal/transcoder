@@ -37,9 +37,11 @@ class VisualQuestionDataset(object):
         x_words = self.words.format_input(question, **params)[0]
         return [x_img, x_words]
 
-    def unformat_input(self, pixels, **params):
+    def unformat_input(self, X, **params):
+        pixels, indices = X
         show(pixels)
-        return 'Image input shape: {}'.format(pixels.shape)
+        sentence = ' '.join(self.words.words(indices)).strip()
+        return 'Img: {} Words: {}'.format(pixels.shape, sentence)
 
     def unformat_output(self, preds, **params):
         return 'Image region prediction shape: {}'.format(preds.shape)

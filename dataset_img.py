@@ -35,7 +35,8 @@ class ImageDataset(object):
         img = decode_jpg(filename)
         return [img]
 
-    def unformat_input(self, pixels, **params):
+    def unformat_input(self, X, **params):
+        pixels = X[0]
         show(pixels)
         return 'Image input shape: {}'.format(pixels.shape)
 

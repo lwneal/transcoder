@@ -150,7 +150,7 @@ def demonstrate(encoder, decoder, encoder_dataset, decoder_dataset, input_text=N
         for X, x in zip(X_list, x_list):
             X[i] = x
     Y = model.predict(X_list)
-    X = X_list[0]
+    X = zip(*X_list)
     for x, y in zip(X, Y):
         left = encoder_dataset.unformat_input(x)
         right = decoder_dataset.unformat_output(y)

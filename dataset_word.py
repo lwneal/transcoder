@@ -19,6 +19,7 @@ class WordDataset(object):
             text = open(input_filename).read()
         else:
             text = input_text
+            input_filename = "<from memory>"
 
         if params.get('tokenize'):
             text = remove_unicode(text)
@@ -52,7 +53,8 @@ class WordDataset(object):
             indices = self.indices(sentence + ' <eos>')
             return [to_categorical(right_pad(indices, **params), num_classes)]
 
-    def unformat_input(self, indices, **params):
+    def unformat_input(self, X, **params):
+        indices = X[0]
         return ' '.join(self.words(indices))
 
     def unformat_output(self, preds, **params):

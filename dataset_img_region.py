@@ -35,7 +35,8 @@ class ImageRegionDataset(object):
         ctx_vector = np.array([x0, x1, y0, y1, (x1 - x0) * (y1 - y0)], dtype=float)
         return [image_global, image_local, ctx_vector]
 
-    def unformat_input(self, pixels, **params):
+    def unformat_input(self, X, **params):
+        pixels = X[0]
         show(pixels)
         return 'Image input shape: {}'.format(pixels.shape)
 

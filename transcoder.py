@@ -74,6 +74,8 @@ def train_gan(decoder, discriminator, cgan, training_gen, decoder_dataset, **par
 
     avg_loss = 0
     avg_accuracy = 0
+    g_avg_loss = 0
+    g_avg_accuracy = 0
     print("Training discriminator...")
     for i in range(batches_per_epoch):
         # Get some real decoding targets
@@ -95,12 +97,9 @@ def train_gan(decoder, discriminator, cgan, training_gen, decoder_dataset, **par
         loss, accuracy = discriminator.train_on_batch(X_real, -Y_disc)
         avg_loss = .95 * avg_loss + .05 * loss
         avg_accuracy = .95 * avg_accuracy + .05 * accuracy
-
         loss, accuracy = discriminator.train_on_batch(X_generated, Y_disc)
         avg_loss = .95 * avg_loss + .05 * loss
         avg_accuracy = .95 * avg_accuracy + .05 * accuracy
-        sys.stderr.write("[K\r{}/{} batches, batch size {}, loss {:.3f}, accuracy {:.3f}".format(
-            i, batches_per_epoch, batch_size, avg_loss, avg_accuracy))
         for layer in decoder.layers:
             layer.trainable = True
 
@@ -119,13 +118,13 @@ def train_gan(decoder, discriminator, cgan, training_gen, decoder_dataset, **par
             layer.trainable = False
         # TODO: why do all weights in discriminator turn to NaN at this line?
         loss, accuracy = cgan.train_on_batch(X_encoder, -Y_disc)
+        g_avg_loss = .95 * g_avg_loss + .05 * loss
+        g_avg_accuracy = .95 * g_avg_accuracy + .05 * accuracy
         for layer in discriminator.layers:
             layer.trainable = True
 
-        avg_loss = .95 * avg_loss + .05 * loss
-        avg_accuracy = .95 * avg_accuracy + .05 * accuracy
-        sys.stderr.write("[K\r{}/{} batches, batch size {}, loss {:.3f}, accuracy {:.3f}".format(
-            i, batches_per_epoch, batch_size, avg_loss, avg_accuracy))
+        sys.stderr.write("[K\r{}/{} batches, batch size {}, D loss {:.3f}, Dacc {:.3f}, Gloss {:.3f} Gacc {:.3f}".format(
+            i, batches_per_epoch, batch_size, avg_loss, avg_accuracy, g_avg_loss, g_avg_accuracy))
 
 
     sys.stderr.write('\n')

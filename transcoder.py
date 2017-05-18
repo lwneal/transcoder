@@ -82,7 +82,7 @@ def train_gan(decoder, discriminator, cgan, training_gen, decoder_dataset, **par
         _, Y_decoder = next(training_gen)
 
         # Think some random thoughts
-        X_decoder = np.random.normal(size=(batch_size, thought_vector_size))
+        X_decoder = np.random.uniform(-1, 1, size=(batch_size, thought_vector_size))
 
         # Decode those random thoughts into hallucinations
         X_generated = decoder.predict(X_decoder)
@@ -93,7 +93,6 @@ def train_gan(decoder, discriminator, cgan, training_gen, decoder_dataset, **par
 
         for layer in decoder.layers:
             layer.trainable = False
-        # Train discriminator layers to detect hallucinations
         loss, accuracy = discriminator.train_on_batch(X_real, -Y_disc)
         avg_loss = .95 * avg_loss + .05 * loss
         avg_accuracy = .95 * avg_accuracy + .05 * accuracy
@@ -112,11 +111,8 @@ def train_gan(decoder, discriminator, cgan, training_gen, decoder_dataset, **par
         # Generate a random thought vector
         X_encoder = np.random.uniform(-1, 1, size=(batch_size, thought_vector_size))
 
-        # Train decoder to generate hallucinations that the discriminator thinks are real
-        # HACK: how does layer.trainable work?
         for layer in discriminator.layers:
             layer.trainable = False
-        # TODO: why do all weights in discriminator turn to NaN at this line?
         loss, accuracy = cgan.train_on_batch(X_encoder, -Y_disc)
         g_avg_loss = .95 * g_avg_loss + .05 * loss
         g_avg_accuracy = .95 * g_avg_accuracy + .05 * accuracy

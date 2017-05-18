@@ -12,7 +12,7 @@ START_TOKEN = '<bos>'
 END_TOKEN = '<eos>'
 
 class WordDataset(object):
-    def __init__(self, input_filename=None, encoder=False, **params):
+    def __init__(self, input_filename=None, is_encoder=False, sentences=None, **params):
         if not input_filename:
             raise ValueError("No input filename supplied. See options with --help")
         text = open(input_filename).read()
@@ -24,16 +24,11 @@ class WordDataset(object):
         if params.get('lowercase'):
             text = text.lower()
 
-        self.encoder = encoder
+        self.is_encoder = is_encoder
         self.sentences = text.splitlines()
         print("Input file {} contains {} sentences".format(input_filename, len(self.sentences)))
-        self.vocab = get_vocab(text)
+        self.vocab, self.word_to_idx, self.idx_to_word = get_vocab(text)
         print("Vocabulary contains {} words from {} to {}".format(len(self.vocab), self.vocab[4], self.vocab[-1]))
-        self.word_to_idx = {}
-        self.idx_to_word = {}
-        for i, word in enumerate(self.vocab):
-            self.word_to_idx[word] = i
-            self.idx_to_word[i] = word
 
     def random_idx(self):
         return np.random.randint(0, len(self.sentences))
@@ -46,7 +41,7 @@ class WordDataset(object):
 
     def format_input(self, sentence, **params):
         max_words = params['max_words']
-        if self.encoder:
+        if self.is_encoder:
             indices = self.indices(sentence)
             return [left_pad(indices[:max_words], **params)]
         else:
@@ -64,7 +59,7 @@ class WordDataset(object):
     def empty_batch(self, **params):
         batch_size = params['batch_size']
         max_words = params['max_words']
-        if self.encoder:
+        if self.is_encoder:
             return [np.zeros((batch_size, max_words), dtype=int)]
         else:
             return [np.zeros((batch_size, max_words, len(self.vocab)), dtype=float)]
@@ -79,7 +74,7 @@ class WordDataset(object):
         return [self.idx_to_word.get(i) for i in indices]
 
     def build_model(self, **params):
-        if self.encoder:
+        if self.is_encoder:
             return model_words.build_encoder(self, **params)
         else:
             return model_words.build_decoder(self, **params)
@@ -92,7 +87,14 @@ def get_vocab(text, n=3):
             word_count[word] = 0
         word_count[word] += 1
     words = [w for w in text.split() if word_count[w] > n]
-    return sorted(list(set(words + [PAD_TOKEN, START_TOKEN, END_TOKEN, UNK_TOKEN])))
+    vocab = sorted(list(set(words + [PAD_TOKEN, START_TOKEN, END_TOKEN, UNK_TOKEN])))
+
+    word_to_idx = {}
+    idx_to_word = {}
+    for i, word in enumerate(vocab):
+        word_to_idx[word] = i
+        idx_to_word[i] = word
+    return vocab, word_to_idx, idx_to_word
 
 
 def remove_unicode(text):

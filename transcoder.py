@@ -83,7 +83,7 @@ def train_transcoder(transcoder, training_gen, **params):
 
 
 def train_discriminator(decoder, discriminator, training_gen, decoder_dataset, direction=1, **params):
-    batches_per_epoch = params['batches_per_epoch'] / 4
+    batches_per_epoch = params['batches_per_epoch'] / 2
     batch_size = params['batch_size']
     thought_vector_size = params['thought_vector_size']
 

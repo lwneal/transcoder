@@ -61,7 +61,7 @@ def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, de
         layer.trainable = True
     for layer in discriminator.layers:
         layer.trainable = False
-    train_cgan(cgan, training_gen, **params)
+    train_cgan(cgan, training_gen, decoder, decoder_dataset, **params)
 
     print("Training epoch finished")
 
@@ -83,7 +83,7 @@ def train_transcoder(transcoder, training_gen, **params):
 
 
 def train_discriminator(decoder, discriminator, training_gen, decoder_dataset, direction=1, **params):
-    batches_per_epoch = params['batches_per_epoch']
+    batches_per_epoch = params['batches_per_epoch'] / 4
     batch_size = params['batch_size']
     thought_vector_size = params['thought_vector_size']
 
@@ -123,8 +123,8 @@ def train_discriminator(decoder, discriminator, training_gen, decoder_dataset, d
     sys.stderr.write('\n')
 
 
-def train_cgan(cgan, training_gen, **params):
-    batches_per_epoch = params['batches_per_epoch']
+def train_cgan(cgan, training_gen, decoder, decoder_dataset, **params):
+    batches_per_epoch = params['batches_per_epoch'] / 8
     batch_size = params['batch_size']
     thought_vector_size = params['thought_vector_size']
 

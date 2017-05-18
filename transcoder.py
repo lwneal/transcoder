@@ -181,6 +181,7 @@ def build_model(encoder_dataset, decoder_dataset, **params):
     transcoder.add(decoder)
     transcoder.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
+    # TODO: Build discriminator in model class
     discriminator = models.Sequential(name='discriminator')
     vocab_len = len(decoder_dataset.vocab)
     wordvec_size = 512

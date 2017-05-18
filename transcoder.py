@@ -78,35 +78,37 @@ def train_gan(decoder, discriminator, cgan, training_gen, decoder_dataset, **par
     g_avg_accuracy = 0
     print("Training discriminator...")
     for i in range(batches_per_epoch):
-        # Get some real decoding targets
-        _, Y_decoder = next(training_gen)
+        # Update Discriminator 5x per Generator update
+        for _ in range(5):
+            # Get some real decoding targets
+            _, Y_decoder = next(training_gen)
 
-        # Think some random thoughts
-        X_decoder = np.random.uniform(-1, 1, size=(batch_size, thought_vector_size))
+            # Think some random thoughts
+            X_decoder = np.random.uniform(-1, 1, size=(batch_size, thought_vector_size))
 
-        # Decode those random thoughts into hallucinations
-        X_generated = decoder.predict(X_decoder)
+            # Decode those random thoughts into hallucinations
+            X_generated = decoder.predict(X_decoder)
 
-        # Start with a batch of real ground truth targets
-        X_real = Y_decoder
-        Y_disc = np.ones(batch_size)
+            # Start with a batch of real ground truth targets
+            X_real = Y_decoder
+            Y_disc = np.ones(batch_size)
 
-        for layer in decoder.layers:
-            layer.trainable = False
-        loss, accuracy = discriminator.train_on_batch(X_real, -Y_disc)
-        avg_loss = .95 * avg_loss + .05 * loss
-        avg_accuracy = .95 * avg_accuracy + .05 * accuracy
-        loss, accuracy = discriminator.train_on_batch(X_generated, Y_disc)
-        avg_loss = .95 * avg_loss + .05 * loss
-        avg_accuracy = .95 * avg_accuracy + .05 * accuracy
-        for layer in decoder.layers:
-            layer.trainable = True
+            for layer in decoder.layers:
+                layer.trainable = False
+            loss, accuracy = discriminator.train_on_batch(X_real, -Y_disc)
+            avg_loss = .95 * avg_loss + .05 * loss
+            avg_accuracy = .95 * avg_accuracy + .05 * accuracy
+            loss, accuracy = discriminator.train_on_batch(X_generated, Y_disc)
+            avg_loss = .95 * avg_loss + .05 * loss
+            avg_accuracy = .95 * avg_accuracy + .05 * accuracy
+            for layer in decoder.layers:
+                layer.trainable = True
 
-        # Clip discriminator weights
-        for layer in discriminator.layers:
-            weights = layer.get_weights()
-            weights = [np.clip(w, -.01, .01) for w in weights]
-            layer.set_weights(weights)
+            # Clip discriminator weights
+            for layer in discriminator.layers:
+                weights = layer.get_weights()
+                weights = [np.clip(w, -.01, .01) for w in weights]
+                layer.set_weights(weights)
 
         # Generate a random thought vector
         X_encoder = np.random.uniform(-1, 1, size=(batch_size, thought_vector_size))
@@ -214,10 +216,10 @@ def build_model(encoder_dataset, decoder_dataset, **params):
 def main(**params):
     print("Loading datasets...")
     ds = dataset_for_extension(params['encoder_input_filename'].split('.')[-1])
-    encoder_dataset = ds(params['encoder_input_filename'], encoder=True, **params)
+    encoder_dataset = ds(params['encoder_input_filename'], is_encoder=True, **params)
 
     ds = dataset_for_extension(params['decoder_input_filename'].split('.')[-1])
-    decoder_dataset = ds(params['decoder_input_filename'], encoder=False, **params)
+    decoder_dataset = ds(params['decoder_input_filename'], is_encoder=False, **params)
 
     print("Building models...")
     encoder, decoder, transcoder, discriminator, cgan = build_model(encoder_dataset, decoder_dataset, **params)

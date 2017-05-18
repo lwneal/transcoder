@@ -12,10 +12,13 @@ START_TOKEN = '<bos>'
 END_TOKEN = '<eos>'
 
 class WordDataset(object):
-    def __init__(self, input_filename=None, is_encoder=False, sentences=None, **params):
-        if not input_filename:
+    def __init__(self, input_filename=None, input_text=None, is_encoder=False, **params):
+        if not input_filename and not input_text:
             raise ValueError("No input filename supplied. See options with --help")
-        text = open(input_filename).read()
+        if input_filename:
+            text = open(input_filename).read()
+        else:
+            text = input_text
 
         if params.get('tokenize'):
             text = remove_unicode(text)

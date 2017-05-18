@@ -11,6 +11,7 @@ import model_img_region
 from dataset_word import WordDataset
 from dataset_img import ImageDataset
 from dataset_img_region import ImageRegionDataset
+from dataset_visual_question import VisualQuestionDataset
 
 
 def get_batch(encoder_dataset, decoder_dataset, **params):
@@ -161,6 +162,8 @@ def dataset_for_extension(ext):
         return ImageDataset
     elif ext == 'bbox':
         return ImageRegionDataset
+    elif ext == 'vq':
+        return VisualQuestionDataset
     return WordDataset
 
 

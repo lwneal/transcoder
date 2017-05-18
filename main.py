@@ -18,7 +18,7 @@ Options:
       --rnn-size=<size>                 Number of output units in RNN [default: 1024]
       --rnn-layers=<layers>             Number of layers of RNN to use [default: 1]
       --thought-vector-size=<size>      Size of encoder output (decoder input) vector [default: 1024]
-      --tokenize=<tokenize>             If True, input text will be tokenized [default: True]
+      --tokenize=<tokenize>             If True, input text will be tokenized [default: False]
       --lowercase=<lower>               If True, lowercase all words [default: True]
       --mode=<mode>                     One of train, demo [default: train]
       --max-temperature=<temp>          Sampling temperature for log-Boltzmann distribution [default: 1.0]

@@ -47,6 +47,6 @@ def build_encoder(**params):
     x = layers.Concatenate()([image_global, image_local, ctx])
     x = layers.Dense(THOUGHT_VECTOR_SIZE)(x)
     x = layers.BatchNormalization()(x)
-    x = layers.Activation('relu')(x)
+    x = layers.Activation('tanh')(x)
 
     return models.Model(inputs=[input_img_global, input_img_local, input_ctx], outputs=x)

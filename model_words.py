@@ -45,3 +45,24 @@ def build_decoder(dataset, **params):
     x = layers.Activation('softmax')(x)
     
     return models.Model(inputs=inp, outputs=x)
+
+
+def build_discriminator(dataset, **params):
+    wordvec_size = params['wordvec_size']
+    max_words = params['max_words_decoder']
+    rnn_size = params['rnn_size']
+    rnn_layers = params['rnn_layers']
+    vocab_len = len(dataset.vocab)
+
+    discriminator = models.Sequential(name='discriminator')
+    input_shape = (max_words, vocab_len)
+    discriminator.add(layers.Dense(wordvec_size, input_shape=input_shape))
+    discriminator.add(layers.LSTM(rnn_size))
+    discriminator.add(layers.BatchNormalization())
+    discriminator.add(layers.Activation('tanh'))
+    discriminator.add(layers.Dense(wordvec_size))
+    discriminator.add(layers.BatchNormalization())
+    discriminator.add(layers.Activation('tanh'))
+    discriminator.add(layers.Dense(1))
+    discriminator.add(layers.Activation('sigmoid'))
+    return discriminator

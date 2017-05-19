@@ -125,13 +125,14 @@ def train_gan(decoder, discriminator, cgan, training_gen, decoder_dataset, **par
         sys.stderr.write("[K\r{}/{} batches, batch size {}, D loss {:.3f}, Dacc {:.3f}, Gloss {:.3f} Gacc {:.3f}".format(
             i, batches_per_epoch, batch_size, avg_loss, avg_accuracy, g_avg_loss, g_avg_accuracy))
 
+        if i == 0:
+            print("Hallucinated outputs:")
+            for j in range(len(X_generated)):
+                print(' ' + decoder_dataset.unformat_output(X_generated[j]))
+
 
     sys.stderr.write('\n')
 
-    # Print one of those hallucinations
-    print("Hallucinated outputs:")
-    for i in range(len(X_generated)):
-        print(' ' + decoder_dataset.unformat_output(X_generated[i]))
 
 
 def demonstrate(encoder, decoder, encoder_dataset, decoder_dataset, input_text=None, **params):
@@ -184,23 +185,7 @@ def build_model(encoder_dataset, decoder_dataset, **params):
     transcoder.add(decoder)
     transcoder.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    # TODO: Build discriminator in model class
-    discriminator = models.Sequential(name='discriminator')
-    vocab_len = len(decoder_dataset.vocab)
-    wordvec_size = 512
-    max_words = params['max_words_decoder']
-    input_shape = (max_words, vocab_len)
-    discriminator.add(layers.Dense(wordvec_size, input_shape=input_shape))
-    discriminator.add(layers.LSTM(512, return_sequences=True))
-    discriminator.add(layers.LSTM(512))
-    discriminator.add(layers.BatchNormalization())
-    discriminator.add(layers.Activation('tanh'))
-    discriminator.add(layers.Dense(512))
-    discriminator.add(layers.BatchNormalization())
-    discriminator.add(layers.Activation('tanh'))
-    discriminator.add(layers.Dense(1))
-    #from keras.layers.advanced_activations import LeakyReLU
-    discriminator.add(layers.Activation('sigmoid'))
+    discriminator = decoder_dataset.build_discriminator(**params)
 
     from keras import backend as K
     def wgan_loss(y_true, y_pred):

@@ -86,6 +86,9 @@ class WordDataset(object):
         else:
             return model_words.build_decoder(self, **params)
 
+    def build_discriminator(self, **params):
+        return model_words.build_discriminator(self, **params)
+
 
 def get_vocab(text, n=3):
     word_count = {}

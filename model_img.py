@@ -37,3 +37,55 @@ def build_encoder(**params):
     x = layers.Dense(THOUGHT_VECTOR_SIZE)(x)
 
     return models.Model(inputs=[input_img], outputs=x)
+
+
+def build_decoder(**params):
+    thought_vector_size = params['thought_vector_size']
+    batch_size = params['batch_size']
+    cgru_size = params['cgru_size']
+
+    x_input = layers.Input(batch_shape=(batch_size, thought_vector_size))
+
+    # Repeat vector
+    x = layers.RepeatVector(7)(x)
+    x = layers.RepeatVector(7)(x)
+
+    x = SpatialCGRU(x, cgru_size)
+
+    # Upsample to 224x224
+    x = layers.Upsampling2D()(x)
+    x = layers.Conv2D(256, (3,3), padding='same')(x)
+
+    x = layers.Upsampling2D()(x)
+    x = layers.Conv2D(128, (3,3), padding='same')(x)
+
+    x = layers.Upsampling2D()(x)
+    x = layers.Conv2D(64, (3,3), padding='same')(x)
+
+    x = layers.Upsampling2D()(x)
+    x = layers.Conv2D(32, (3,3), padding='same')(x)
+
+    x = layers.Upsampling2D()(x)
+    x = layers.Conv2D(3, (3,3), padding='same')(x)
+
+    return models.Model(inputs=[input_img], outputs=x)
+
+
+def build_discriminator(**params):
+    D = models.Sequential()
+    D.append(layers.Conv2D(64, padding='same'))
+    D.append(layers.BatchNormalization())
+    D.append(layers.Activation('relu'))
+    D.append(layers.MaxPooling2D())
+    D.append(layers.Conv2D(128, padding='same'))
+    D.append(layers.BatchNormalization())
+    D.append(layers.Activation('relu'))
+    D.append(layers.MaxPooling2D())
+    D.append(layers.Conv2D(256, padding='same'))
+    D.append(layers.BatchNormalization())
+    D.append(layers.Activation('relu'))
+    D.append(layers.MaxPooling2D())
+    D.append(layers.Flatten())
+    D.append(layers.Dense(128, activation='tanh'))
+    return D
+

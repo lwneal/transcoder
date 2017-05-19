@@ -48,4 +48,4 @@ class ImageDataset(object):
         return [np.zeros((batch_size, 224, 224, 3), dtype=float)]
 
     def build_model(self, **params):
-        return model_img.build_encodet(**params)
+        return model_img.build_encoder(**params)

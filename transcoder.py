@@ -172,7 +172,7 @@ def build_model(encoder_dataset, decoder_dataset, **params):
     encoder = encoder_dataset.build_encoder(**params)
     decoder = decoder_dataset.build_decoder(**params)
 
-    # TODO: fix for GAN
+    # TODO: ensure freezing works along with GAN training
     if params['freeze_encoder']:
         for layer in encoder.layers:
             layer.trainable = False
@@ -180,10 +180,13 @@ def build_model(encoder_dataset, decoder_dataset, **params):
         for layer in decoder.layers:
             layer.trainable = False
 
+    # TODO: choose appropriate loss function
+    loss_function = 'mse' if type(decoder_dataset) is ImageDataset else 'categorical_crossentropy'
+
     transcoder = models.Sequential(name='transcoder')
     transcoder.add(encoder)
     transcoder.add(decoder)
-    transcoder.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    transcoder.compile(loss=loss_function, optimizer='adam', metrics=['accuracy'])
 
     discriminator = decoder_dataset.build_discriminator(**params)
 

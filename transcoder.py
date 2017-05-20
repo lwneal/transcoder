@@ -169,8 +169,8 @@ def dataset_for_extension(ext):
 
 
 def build_model(encoder_dataset, decoder_dataset, **params):
-    encoder = encoder_dataset.build_model(**params)
-    decoder = decoder_dataset.build_model(**params)
+    encoder = encoder_dataset.build_encoder(**params)
+    decoder = decoder_dataset.build_decoder(**params)
 
     # TODO: fix for GAN
     if params['freeze_encoder']:

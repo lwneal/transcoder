@@ -32,7 +32,7 @@ class ImageDataset(object):
 
     def format_input(self, region, **params):
         filename = os.path.join(DATA_DIR, str(region['filename']))
-        img = decode_jpg(filename)
+        img = decode_jpg(filename) / 255.
         return [img]
 
     def unformat_input(self, X, **params):
@@ -40,12 +40,19 @@ class ImageDataset(object):
         show(pixels)
         return 'Image input shape: {}'.format(pixels.shape)
 
-    def unformat_output(self, preds, **params):
-        return 'Image region prediction shape: {}'.format(preds.shape)
+    def unformat_output(self, Y, **params):
+        show(Y)
+        return 'Output image shape: {}'.format(Y.shape)
 
     def empty_batch(self, **params):
         batch_size = params['batch_size']
         return [np.zeros((batch_size, 224, 224, 3), dtype=float)]
 
-    def build_model(self, **params):
+    def build_encoder(self, **params):
         return model_img.build_encoder(**params)
+
+    def build_decoder(self, **params):
+        return model_img.build_decoder(**params)
+
+    def build_discriminator(self, **params):
+        return model_img.build_discriminator(**params)

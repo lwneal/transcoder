@@ -5,6 +5,8 @@ import numpy as np
 from keras import layers, models, applications
 import tensorflow as tf
 
+from cgru import SpatialCGRU
+
 IMG_CHANNELS = 3
 IMG_HEIGHT = IMG_WIDTH = 224
 
@@ -46,46 +48,61 @@ def build_decoder(**params):
 
     x_input = layers.Input(batch_shape=(batch_size, thought_vector_size))
 
-    # Repeat vector
-    x = layers.RepeatVector(7)(x)
-    x = layers.RepeatVector(7)(x)
+    # Expand vector from 1x1 to 7x7
+    x = layers.Reshape((1,1,-1))(x_input)
+    x = layers.convolutional.UpSampling2D((7,7))(x)
+    x = layers.Conv2D(128, (7,7), padding='same')(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation('relu')(x)
 
-    x = SpatialCGRU(x, cgru_size)
+    # TODO: optional CGRU
 
-    # Upsample to 224x224
-    x = layers.Upsampling2D()(x)
+    # Upsample from 7x7 to 224x224
+    x = layers.convolutional.UpSampling2D()(x)
     x = layers.Conv2D(256, (3,3), padding='same')(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation('relu')(x)
 
-    x = layers.Upsampling2D()(x)
+    x = layers.convolutional.UpSampling2D()(x)
     x = layers.Conv2D(128, (3,3), padding='same')(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation('relu')(x)
 
-    x = layers.Upsampling2D()(x)
+    x = layers.convolutional.UpSampling2D()(x)
     x = layers.Conv2D(64, (3,3), padding='same')(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation('relu')(x)
 
-    x = layers.Upsampling2D()(x)
+    x = layers.convolutional.UpSampling2D()(x)
     x = layers.Conv2D(32, (3,3), padding='same')(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation('relu')(x)
 
-    x = layers.Upsampling2D()(x)
+    x = layers.convolutional.UpSampling2D()(x)
     x = layers.Conv2D(3, (3,3), padding='same')(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation('sigmoid')(x)
 
-    return models.Model(inputs=[input_img], outputs=x)
+    return models.Model(inputs=[x_input], outputs=x)
 
 
 def build_discriminator(**params):
+    input_shape = (224, 224, 3)
     D = models.Sequential()
-    D.append(layers.Conv2D(64, padding='same'))
-    D.append(layers.BatchNormalization())
-    D.append(layers.Activation('relu'))
-    D.append(layers.MaxPooling2D())
-    D.append(layers.Conv2D(128, padding='same'))
-    D.append(layers.BatchNormalization())
-    D.append(layers.Activation('relu'))
-    D.append(layers.MaxPooling2D())
-    D.append(layers.Conv2D(256, padding='same'))
-    D.append(layers.BatchNormalization())
-    D.append(layers.Activation('relu'))
-    D.append(layers.MaxPooling2D())
-    D.append(layers.Flatten())
-    D.append(layers.Dense(128, activation='tanh'))
+    D.add(layers.Conv2D(64, (3,3), padding='same', input_shape=input_shape))
+    D.add(layers.BatchNormalization())
+    D.add(layers.Activation('relu'))
+    D.add(layers.MaxPooling2D())
+    D.add(layers.Conv2D(128, (3,3), padding='same'))
+    D.add(layers.BatchNormalization())
+    D.add(layers.Activation('relu'))
+    D.add(layers.MaxPooling2D())
+    D.add(layers.Conv2D(256, (3,3), padding='same'))
+    D.add(layers.BatchNormalization())
+    D.add(layers.Activation('relu'))
+    D.add(layers.MaxPooling2D())
+    D.add(layers.Flatten())
+    D.add(layers.Dense(128, activation='relu'))
+    D.add(layers.Dense(1, activation='tanh'))
     return D
 

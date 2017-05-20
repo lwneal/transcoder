@@ -11,6 +11,8 @@ from imutil import decode_jpg, show
 
 DATA_DIR = os.path.expanduser('~/data/')
 
+IMG_WIDTH = 56
+IMG_HEIGHT = 56
 
 class ImageDataset(object):
     def __init__(self, input_filename=None, **params):
@@ -32,7 +34,8 @@ class ImageDataset(object):
 
     def format_input(self, region, **params):
         filename = os.path.join(DATA_DIR, str(region['filename']))
-        img = decode_jpg(filename) / 255.
+        img = decode_jpg(filename, resize_to=(IMG_HEIGHT,IMG_WIDTH))
+        img = img * 1.0 / 255
         return [img]
 
     def unformat_input(self, X, **params):
@@ -46,7 +49,7 @@ class ImageDataset(object):
 
     def empty_batch(self, **params):
         batch_size = params['batch_size']
-        return [np.zeros((batch_size, 224, 224, 3), dtype=float)]
+        return [np.zeros((batch_size, IMG_HEIGHT, IMG_WIDTH, 3), dtype=float)]
 
     def build_encoder(self, **params):
         return model_img.build_encoder(**params)

@@ -20,7 +20,7 @@ Options:
       --rnn-layers=<layers>             Number of layers of RNN to use [default: 1]
       --cgru-size=<size>                Number of output units in SpatialCGRU [default: 256]
       --cgru-layers=<layers>            Number of layers of SpatialCGRU layers to use [default: 0]
-      --thought-vector-size=<size>      Size of encoder output (decoder input) vector [default: 1024]
+      --thought-vector-size=<size>      Size of encoder output (decoder input) vector [default: 2048]
       --tokenize=<tokenize>             If True, input text will be tokenized [default: False]
       --lowercase=<lower>               If True, lowercase all words [default: True]
       --mode=<mode>                     One of train, demo [default: train]

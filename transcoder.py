@@ -195,11 +195,13 @@ def build_model(encoder_dataset, decoder_dataset, **params):
         return K.mean(y_true * y_pred)
     discriminator.compile(loss=wgan_loss, optimizer='adam', metrics=['accuracy'])
 
-    cgan = models.Sequential()
-    for layer in decoder.layers:
-        cgan.add(layer)
-    for layer in discriminator.layers:
-        cgan.add(layer)
+    # TODO: Keras Bug https://github.com/fchollet/keras/issues/5221
+    # Whenever a BatchNormalization layer is shared into more than one Model,
+    #   it becomes corrupted so that it generates this error during training
+    tensor_in = decoder.inputs[0]
+    tensor_out = discriminator(decoder.outputs[0])
+    cgan = models.Model(inputs=tensor_in, outputs=tensor_out)
+
     cgan.compile(loss=wgan_loss, optimizer='adam', metrics=['accuracy'])
 
     return encoder, decoder, transcoder, discriminator, cgan

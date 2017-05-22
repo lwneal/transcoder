@@ -12,34 +12,50 @@ IMG_CHANNELS = 3
 
 
 def build_encoder(**params):
-    THOUGHT_VECTOR_SIZE = params['thought_vector_size']
-    BATCH_SIZE = params['batch_size']
+    thought_vector_size = params['thought_vector_size']
+    batch_size = params['batch_size']
 
+    """
     # TODO: more params
     CNN = 'resnet50'
     include_top = False
     LEARNABLE_CNN_LAYERS = 1
     ACTIVATION = 'relu'
 
+    input_batch_shape = (batch_size, IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS)
+    input_img = layers.Input(batch_shape=input_batch_shape)
     if CNN == 'vgg16':
-        cnn = applications.vgg16.VGG16(include_top=include_top)
+        cnn = applications.vgg16.VGG16(input_tensor=input_img, include_top=include_top)
     elif CNN == 'resnet50':
-        cnn = applications.resnet50.ResNet50(include_top=include_top, pooling=None)
+        cnn = applications.resnet50.ResNet50(input_tensor=input_img, include_top=include_top, pooling=None)
 
     for layer in cnn.layers[:-LEARNABLE_CNN_LAYERS]:
         layer.trainable = False
 
     # Global Image featuers (convnet output for the whole image)
-    input_img = layers.Input(batch_shape=(BATCH_SIZE, IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS))
     x = cnn(input_img)
 
     if not include_top:
         x = layers.Flatten()(x)
+    """
+    # HACK
+    input_batch_shape = (batch_size, IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS)
+    input_img = layers.Input(batch_shape=input_batch_shape)
+    x = layers.Conv2D(64, (3,3), activation='relu')(input_img)
+    x = layers.MaxPooling2D()(x)
+    x = layers.Conv2D(128, (3,3), activation='relu')(x)
+    x = layers.MaxPooling2D()(x)
+    x = layers.Conv2D(256, (3,3), activation='relu')(x)
+    x = layers.MaxPooling2D()(x)
+    x = layers.Conv2D(512, (3,3), activation='relu')(x)
+    x = layers.Flatten()(x)
+    # END HACK
 
-    x = layers.Dense(THOUGHT_VECTOR_SIZE)(x)
+    x = layers.Dense(thought_vector_size)(x)
     x = layers.BatchNormalization()(x)
     x = layers.Activation('relu')(x)
-    x = layers.Dense(THOUGHT_VECTOR_SIZE)(x)
+    x = layers.Dense(thought_vector_size)(x)
+    x = layers.Activation('tanh')(x)
 
     return models.Model(inputs=[input_img], outputs=x)
 
@@ -48,51 +64,68 @@ def build_decoder(**params):
     thought_vector_size = params['thought_vector_size']
     batch_size = params['batch_size']
     cgru_size = params['cgru_size']
+    cgru_layers = params['cgru_layers']
 
     x_input = layers.Input(batch_shape=(batch_size, thought_vector_size))
 
     # Expand vector from 1x1 to NxN
     N = IMG_WIDTH / 8
     x = layers.Reshape((1,1,-1))(x_input)
-    x = layers.Conv2DTranspose(1024, (N,N), strides=(N,N), padding='same')(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.Activation('relu')(x)
+    x = layers.UpSampling2D((N,N))(x)
 
-    # TODO: optional CGRU
+    for _ in range(cgru_layers):
+        x = SpatialCGRU(x, cgru_size)
+
+    # TODO: Uncomment BatchNormalization
+    # Keras Bug https://github.com/fchollet/keras/issues/5221
+
+    # For fun: try branching into two and adding them
+    x = layers.Conv2D(1024, (1,1), padding='same')(x)
+    #x = layers.BatchNormalization()(x)
+    x = layers.Activation('relu')(x)
 
     # Upsample from NxN to IMG_WIDTH
-    x = layers.Conv2DTranspose(512, (3,3), strides=(2,2), padding='same')(x)
-    x = layers.BatchNormalization()(x)
+    #x = layers.Conv2DTranspose(512, (3,3), strides=(2,2), padding='same')(x)
+    x = layers.UpSampling2D((2,2))(x)
+    x = layers.Conv2D(512, (3,3), padding='same')(x)
+    #x = layers.BatchNormalization()(x)
     x = layers.Activation('relu')(x)
 
-    x = layers.Conv2DTranspose(256, (3,3), strides=(2,2), padding='same')(x)
-    x = layers.BatchNormalization()(x)
+    #x = layers.Conv2DTranspose(256, (3,3), strides=(2,2), padding='same')(x)
+    x = layers.UpSampling2D((2,2))(x)
+    x = layers.Conv2D(128, (3,3), padding='same')(x)
+    #x = layers.BatchNormalization()(x)
     x = layers.Activation('relu')(x)
 
-    x = layers.Conv2DTranspose(3, (3,3), strides=(2,2), padding='same')(x)
-    x = layers.BatchNormalization()(x)
+    #x = layers.Conv2DTranspose(3, (3,3), strides=(2,2), padding='same')(x)
+    x = layers.UpSampling2D((2,2))(x)
+    x = layers.Conv2D(3, (3,3), padding='same')(x)
+    #x = layers.BatchNormalization()(x)
     x = layers.Activation('sigmoid')(x)
 
     return models.Model(inputs=[x_input], outputs=x)
 
 
 def build_discriminator(**params):
-    input_shape = (IMG_HEIGHT, IMG_WIDTH, 3)
-    D = models.Sequential()
-    D.add(layers.Conv2D(64, (3,3), padding='same', input_shape=input_shape))
-    D.add(layers.BatchNormalization())
-    D.add(layers.Activation('relu'))
-    D.add(layers.MaxPooling2D())
-    D.add(layers.Conv2D(128, (3,3), padding='same'))
-    D.add(layers.BatchNormalization())
-    D.add(layers.Activation('relu'))
-    D.add(layers.MaxPooling2D())
-    D.add(layers.Conv2D(256, (3,3), padding='same'))
-    D.add(layers.BatchNormalization())
-    D.add(layers.Activation('relu'))
-    D.add(layers.MaxPooling2D())
-    D.add(layers.Flatten())
-    D.add(layers.Dense(128, activation='relu'))
-    D.add(layers.Dense(1, activation='tanh'))
-    return D
+    batch_size = params['batch_size']
+    batch_input_shape = (batch_size, IMG_HEIGHT, IMG_WIDTH, 3)
+
+    img_input = layers.Input(batch_shape=batch_input_shape)
+    x = layers.Conv2D(64, (3,3), padding='same')(img_input)
+    #x = layers.BatchNormalization()(x)
+    x = layers.Activation('relu')(x)
+    x = layers.MaxPooling2D()(x)
+    x = layers.Conv2D(128, (3,3), padding='same')(x)
+    #x = layers.BatchNormalization()(x)
+    x = layers.Activation('relu')(x)
+    x = layers.MaxPooling2D()(x)
+    x = layers.Conv2D(256, (3,3), padding='same')(x)
+    #x = layers.BatchNormalization()(x)
+    x = layers.Activation('relu')(x)
+    x = layers.MaxPooling2D()(x)
+    x = layers.Flatten()(x)
+    x = layers.Dense(128, activation='relu')(x)
+    x = layers.Dense(1, activation='tanh')(x)
+
+    return models.Model(inputs=img_input, outputs=x)
 

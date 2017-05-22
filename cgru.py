@@ -7,6 +7,7 @@ from keras.layers import Recurrent
 from keras import backend as K
 from keras.utils import conv_utils
 from keras import activations
+from keras.engine.topology import InputSpec
 
 transpose = layers.Lambda(lambda x: tf.transpose(x, [0, 2, 1, 3]))
 reverse = layers.Lambda(lambda x: tf.reverse(x, [1]))
@@ -20,7 +21,7 @@ def SpatialCGRU(x, output_size, **kwargs):
     left_rnn = transpose(cgru(transpose(x)))
     right_rnn = transpose(reverse(cgru(reverse(transpose(x)))))
 
-    concat_out = layers.merge([left_rnn, right_rnn, up_rnn, down_rnn], mode='concat', concat_axis=-1)
+    concat_out = layers.Concatenate()([x, down_rnn, up_rnn, left_rnn, right_rnn])
 
     # Convolve the image some more
     output_mask = layers.Conv2D(output_size, (1,1))(concat_out)
@@ -46,7 +47,6 @@ class CGRU(Recurrent):
         self.filter_size = 3
         self.padding = conv_utils.normalize_padding('same')
         # Keras hard-codes the RNN ndim to 3; let's change it to 4
-        from keras.engine.topology import InputSpec
         self.input_spec = InputSpec(ndim=4)
 
     def get_output_shape_for(self, input_shape):
@@ -112,16 +112,27 @@ class CGRU(Recurrent):
     Keras will call this function when you first build the layer.
     """
     def get_initial_states(self, inputs):
-        # Our default spatial CGRU will scan the image top to bottom
-        #   TODO: Learn to implement a Rule 110 cellular automaton as a demonstration
         # Input shape is BATCH_SIZE, IMG_HEIGHT, IMG_WIDTH, CHANNELS
         # Input at each time step is BATCH_SIZE, IMG_WIDTH, CHANNELS
         # Output at each time step is IMG_WIDTH, UNITS 
-        # For GRUs, there is no other state but output
         shape = inputs.shape.as_list()
         batch_size, time_steps, pixels_per_step, channels_per_pixel = shape
-        initial_state = K.zeros((batch_size, pixels_per_step, self.units))
+        initial_state = self.batch_zero_tensor(inputs)
         return [initial_state]
+
+
+    def batch_zero_tensor(self, input_tensor):
+        # We want to run tf.zeros((None, pixels_per_step, self.units)) but that errs
+        # This is a hack to work around it using zeros_like
+        # See https://github.com/fchollet/keras/blob/master/keras/layers/recurrent.py#L225
+        state = K.zeros_like(input_tensor)
+        reduce_axes = (1, -1)                   # TODO: allow different shapes
+        state = K.sum(state, axis=reduce_axes)  # Remove time_steps and channels_per_pixel
+        state = K.expand_dims(state)            # Add a new axis
+        tiling = [1, 1, self.units]             # TODO: allow different shapes
+        state = K.tile(state, tiling)           # Expand new axis to length self.units
+        return state
+
 
     def compute_output_shape(self, input_shape):
         batch_size, time_steps, pixels_per_step, channels_per_pixel = input_shape

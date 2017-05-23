@@ -16,10 +16,10 @@ def SpatialCGRU(x, output_size, **kwargs):
     # Statefully scan the image in each of four directions
     cgru = CGRU(output_size)
 
-    down_rnn = cgru(x)
-    up_rnn = reverse(cgru(reverse(x)))
-    left_rnn = transpose(cgru(transpose(x)))
-    right_rnn = transpose(reverse(cgru(reverse(transpose(x)))))
+    down_rnn = CGRU(output_size/4)(x)
+    up_rnn = reverse(CGRU(output_size/4)(reverse(x)))
+    left_rnn = transpose(CGRU(output_size/4)(transpose(x)))
+    right_rnn = transpose(reverse(CGRU(output_size/4)(reverse(transpose(x)))))
 
     concat_out = layers.Concatenate()([x, down_rnn, up_rnn, left_rnn, right_rnn])
 

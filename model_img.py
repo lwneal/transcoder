@@ -70,8 +70,8 @@ def build_decoder(**params):
 
     # Expand vector from 1x1 to NxN
     N = IMG_WIDTH / 8
-    x = layers.Reshape((1,1,-1))(x_input)
-    x = layers.UpSampling2D((N,N))(x)
+    x = layers.Dense(N * N * 64)(x_input)
+    x = layers.Reshape((N, N, 64))(x)
 
     for _ in range(cgru_layers):
         x = SpatialCGRU(x, cgru_size)
@@ -79,15 +79,13 @@ def build_decoder(**params):
     # TODO: Uncomment BatchNormalization
     # Keras Bug https://github.com/fchollet/keras/issues/5221
 
-    # For fun: try branching into two and adding them
-    x = layers.Conv2D(1024, (1,1), padding='same')(x)
+    x = layers.Conv2D(512, (3,3), padding='same')(x)
     #x = layers.BatchNormalization()(x)
     x = layers.Activation('relu')(x)
-
-    # Upsample from NxN to IMG_WIDTH
     #x = layers.Conv2DTranspose(512, (3,3), strides=(2,2), padding='same')(x)
     x = layers.UpSampling2D((2,2))(x)
-    x = layers.Conv2D(512, (3,3), padding='same')(x)
+
+    x = layers.Conv2D(256, (3,3), padding='same')(x)
     #x = layers.BatchNormalization()(x)
     x = layers.Activation('relu')(x)
 

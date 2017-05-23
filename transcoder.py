@@ -125,7 +125,7 @@ def train_gan(decoder, discriminator, cgan, training_gen, decoder_dataset, **par
         sys.stderr.write("[K\r{}/{} batches, batch size {}, D loss {:.3f}, Dacc {:.3f}, Gloss {:.3f} Gacc {:.3f}".format(
             i, batches_per_epoch, batch_size, avg_loss, avg_accuracy, g_avg_loss, g_avg_accuracy))
 
-        if i == 0:
+        if i == batches_per_epoch - 1:
             print("Hallucinated outputs:")
             for j in range(len(X_generated)):
                 print(' ' + decoder_dataset.unformat_output(X_generated[j]))

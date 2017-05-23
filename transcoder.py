@@ -73,7 +73,7 @@ def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, de
             _, Y_decoder = next(training_gen)
 
             # Think some random thoughts
-            X_decoder = np.random.uniform(-1, 1, size=(batch_size, thought_vector_size))
+            X_decoder = np.random.normal(0, 1, size=(batch_size, thought_vector_size))
 
             # Decode those random thoughts into hallucinations
             X_generated = decoder.predict(X_decoder)

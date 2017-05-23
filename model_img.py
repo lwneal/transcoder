@@ -17,29 +17,41 @@ IMG_CHANNELS = 3
 def build_encoder(**params):
     thought_vector_size = params['thought_vector_size']
     batch_size = params['batch_size']
+    pretrained_encoder = params['pretrained_encoder']
 
-    # TODO: more params
-    CNN = 'resnet50'
     include_top = False
     LEARNABLE_CNN_LAYERS = 1
 
     input_batch_shape = (batch_size, IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS)
     input_img = layers.Input(batch_shape=input_batch_shape)
-    if CNN == 'vgg16':
-        cnn = applications.vgg16.VGG16(input_tensor=input_img, include_top=include_top)
-    elif CNN == 'resnet50':
-        # Note: This is a hacked version of resnet50 with pooling removed
-        cnn = resnet50.ResNet50(include_top=include_top, pooling=None)
+    if pretrained_encoder:
+        if pretrained_encoder == 'vgg16':
+            cnn = applications.vgg16.VGG16(input_tensor=input_img, include_top=include_top)
+        elif pretrained_encoder == 'resnet50':
+            # Note: This is a hacked version of resnet50 with pooling removed
+            cnn = resnet50.ResNet50(include_top=include_top, pooling=None)
+        for layer in cnn.layers[:-LEARNABLE_CNN_LAYERS]:
+            layer.trainable = False
+        x = cnn(input_img)
+    else:
+        x = layers.Conv2D(64, (3,3), padding='same')(input_img)
+        x = layers.BatchNormalization()(x)
+        x = layers.Activation('relu')(x)
+        x = layers.MaxPooling2D()(x)
+        x = layers.Conv2D(128, (3,3), padding='same')(x)
+        x = layers.BatchNormalization()(x)
+        x = layers.Activation('relu')(x)
+        x = layers.MaxPooling2D()(x)
+        x = layers.Conv2D(256, (3,3), padding='same')(x)
+        x = layers.BatchNormalization()(x)
+        x = layers.Activation('relu')(x)
+        x = layers.MaxPooling2D()(x)
+        x = layers.Conv2D(256, (3,3), padding='same')(x)
+        x = layers.BatchNormalization()(x)
+        x = layers.Activation('relu')(x)
+        x = layers.MaxPooling2D()(x)
 
-    for layer in cnn.layers[:-LEARNABLE_CNN_LAYERS]:
-        layer.trainable = False
-
-    # Global Image featuers (convnet output for the whole image)
-    x = cnn(input_img)
-
-    if not include_top:
-        x = layers.Flatten()(x)
-
+    x = layers.Flatten()(x)
     x = layers.Dense(thought_vector_size)(x)
     x = layers.BatchNormalization()(x)
     x = layers.Activation('tanh')(x)

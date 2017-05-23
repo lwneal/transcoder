@@ -18,6 +18,7 @@ Options:
       --rnn-type=<type>                 One of LSTM, GRU [default: GRU]
       --rnn-size=<size>                 Number of output units in RNN [default: 1024]
       --rnn-layers=<layers>             Number of layers of RNN to use [default: 1]
+      --pretrained-encoder=<name>       For image encoders, one of: vgg16, resnet50 [default: None]
       --cgru-size=<size>                Number of output units in SpatialCGRU [default: 256]
       --cgru-layers=<layers>            Number of layers of SpatialCGRU layers to use [default: 0]
       --thought-vector-size=<size>      Size of encoder output (decoder input) vector [default: 2048]

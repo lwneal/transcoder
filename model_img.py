@@ -3,6 +3,7 @@ import sys
 import random
 import numpy as np
 from keras import layers, models, applications
+import resnet50
 import tensorflow as tf
 
 from cgru import SpatialCGRU
@@ -26,7 +27,8 @@ def build_encoder(**params):
     if CNN == 'vgg16':
         cnn = applications.vgg16.VGG16(input_tensor=input_img, include_top=include_top)
     elif CNN == 'resnet50':
-        cnn = applications.resnet50.ResNet50(input_tensor=input_img, include_top=include_top, pooling=None)
+        # Note: This is a hacked version of resnet50 with pooling removed
+        cnn = resnet50.ResNet50(include_top=include_top, pooling=None)
 
     for layer in cnn.layers[:-LEARNABLE_CNN_LAYERS]:
         layer.trainable = False

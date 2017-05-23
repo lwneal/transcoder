@@ -171,6 +171,7 @@ def build_model(encoder_dataset, decoder_dataset, **params):
     encoder = encoder_dataset.build_encoder(**params)
     decoder = decoder_dataset.build_decoder(**params)
 
+
     # TODO: ensure freezing works along with GAN training
     if params['freeze_encoder']:
         for layer in encoder.layers:
@@ -194,9 +195,12 @@ def build_model(encoder_dataset, decoder_dataset, **params):
         return K.mean(y_true * y_pred)
     discriminator.compile(loss=wgan_loss, optimizer='adam', metrics=['accuracy'])
 
-    # TODO: Keras Bug https://github.com/fchollet/keras/issues/5221
+    # HACK: Keras Bug https://github.com/fchollet/keras/issues/5221
     # Whenever a BatchNormalization layer is shared into more than one Model,
     #   it becomes corrupted so that it generates this error during training
+    # Workaround: call _make_train_function
+    discriminator._make_train_function()
+
     tensor_in = decoder.inputs[0]
     tensor_out = discriminator(decoder.outputs[0])
     cgan = models.Model(inputs=tensor_in, outputs=tensor_out)

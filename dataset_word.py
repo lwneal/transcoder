@@ -80,11 +80,11 @@ class WordDataset(object):
         # TODO: Properly detokenize and join
         return [self.idx_to_word.get(i) for i in indices]
 
-    def build_model(self, **params):
-        if self.is_encoder:
-            return model_words.build_encoder(self, **params)
-        else:
-            return model_words.build_decoder(self, **params)
+    def build_encoder(self, **params):
+        return model_words.build_encoder(self, **params)
+
+    def build_decoder(self, **params):
+        return model_words.build_decoder(self, **params)
 
     def build_discriminator(self, **params):
         return model_words.build_discriminator(self, **params)

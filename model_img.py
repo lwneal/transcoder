@@ -3,6 +3,8 @@ import sys
 import random
 import numpy as np
 from keras import layers, models, applications
+from keras.layers.advanced_activations import LeakyReLU
+
 import resnet50
 import tensorflow as tf
 
@@ -90,18 +92,18 @@ def build_discriminator(**params):
     img_input = layers.Input(batch_shape=batch_input_shape)
     x = layers.Conv2D(64, (3,3), padding='same')(img_input)
     x = layers.BatchNormalization()(x)
-    x = layers.Activation('relu')(x)
+    x = layers.Activation(LeakyReLU())(x)
     x = layers.MaxPooling2D()(x)
     x = layers.Conv2D(128, (3,3), padding='same')(x)
     x = layers.BatchNormalization()(x)
-    x = layers.Activation('relu')(x)
+    x = layers.Activation(LeakyReLU())(x)
     x = layers.MaxPooling2D()(x)
     x = layers.Conv2D(256, (3,3), padding='same')(x)
     x = layers.BatchNormalization()(x)
-    x = layers.Activation('relu')(x)
+    x = layers.Activation(LeakyReLU())(x)
     x = layers.MaxPooling2D()(x)
     x = layers.Flatten()(x)
-    x = layers.Dense(128, activation='relu')(x)
+    x = layers.Dense(128, activation=LeakyReLU())(x)
     x = layers.Dense(1, activation='tanh')(x)
 
     return models.Model(inputs=img_input, outputs=x)

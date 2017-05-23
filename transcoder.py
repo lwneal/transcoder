@@ -3,6 +3,7 @@ import sys
 import random
 import numpy as np
 import tensorflow as tf
+import time
 from keras import layers, models
 
 import model_words
@@ -73,10 +74,11 @@ def train_gan(decoder, discriminator, cgan, training_gen, decoder_dataset, **par
     batch_size = params['batch_size']
     thought_vector_size = params['thought_vector_size']
 
-    avg_loss = 0
-    avg_accuracy = 0
+    clipping_time = 0
+    training_start_time = time.time()
+    r_avg_loss = 0
+    d_avg_loss = 0
     g_avg_loss = 0
-    g_avg_accuracy = 0
     print("Training discriminator...")
     for i in range(batches_per_epoch):
         # Update Discriminator 5x per Generator update
@@ -97,19 +99,20 @@ def train_gan(decoder, discriminator, cgan, training_gen, decoder_dataset, **par
             for layer in decoder.layers:
                 layer.trainable = False
             loss, accuracy = discriminator.train_on_batch(X_real, -Y_disc)
-            avg_loss = .95 * avg_loss + .05 * loss
-            avg_accuracy = .95 * avg_accuracy + .05 * accuracy
+            r_avg_loss = .95 * r_avg_loss + .05 * loss
+
             loss, accuracy = discriminator.train_on_batch(X_generated, Y_disc)
-            avg_loss = .95 * avg_loss + .05 * loss
-            avg_accuracy = .95 * avg_accuracy + .05 * accuracy
+            d_avg_loss = .95 * d_avg_loss + .05 * loss
             for layer in decoder.layers:
                 layer.trainable = True
 
             # Clip discriminator weights
+            start_time = time.time()
             for layer in discriminator.layers:
                 weights = layer.get_weights()
                 weights = [np.clip(w, -.01, .01) for w in weights]
                 layer.set_weights(weights)
+            clipping_time += time.time() - start_time
 
         # Generate a random thought vector
         X_encoder = np.random.uniform(-1, 1, size=(batch_size, thought_vector_size))
@@ -118,18 +121,18 @@ def train_gan(decoder, discriminator, cgan, training_gen, decoder_dataset, **par
             layer.trainable = False
         loss, accuracy = cgan.train_on_batch(X_encoder, -Y_disc)
         g_avg_loss = .95 * g_avg_loss + .05 * loss
-        g_avg_accuracy = .95 * g_avg_accuracy + .05 * accuracy
         for layer in discriminator.layers:
             layer.trainable = True
 
-        sys.stderr.write("[K\r{}/{} batches, batch size {}, D loss {:.3f}, Dacc {:.3f}, Gloss {:.3f} Gacc {:.3f}".format(
-            i, batches_per_epoch, batch_size, avg_loss, avg_accuracy, g_avg_loss, g_avg_accuracy))
+        sys.stderr.write("[K\r{}/{} batches, batch size {}, Dg loss {:.3f}, Dr loss {:.3f} G loss {:.3f}".format(
+            i, batches_per_epoch, batch_size, d_avg_loss, r_avg_loss, g_avg_loss))
 
         if i == batches_per_epoch - 1:
             print("\nHallucinated outputs:")
             for j in range(len(X_generated)):
                 print(' ' + decoder_dataset.unformat_output(X_generated[j]))
 
+    print("Trained for {:.2f} s (spent {:.2f} s clipping)".format(time.time() - training_start_time, clipping_time))
     sys.stderr.write('\n')
 
 
@@ -220,10 +223,12 @@ def main(**params):
 
     print("Building models...")
     encoder, decoder, transcoder, discriminator, cgan = build_model(encoder_dataset, decoder_dataset, **params)
+    print("\nEncoder")
     encoder.summary()
+    print("\nDecoder")
     decoder.summary()
+    print("\nDiscriminator")
     discriminator.summary()
-    cgan.summary()
 
     if os.path.exists(params['encoder_weights']):
         encoder.load_weights(params['encoder_weights'])

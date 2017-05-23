@@ -240,8 +240,8 @@ def main(**params):
     if params['mode'] == 'train':
         print("Training...")
         for epoch in range(params['epochs']):
-            train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, decoder_dataset, **params)
             demonstrate(encoder, decoder, encoder_dataset, decoder_dataset, **params)
+            train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, decoder_dataset, **params)
             encoder.save_weights(params['encoder_weights'])
             decoder.save_weights(params['decoder_weights'])
             discriminator.save_weights(params['discriminator_weights'])

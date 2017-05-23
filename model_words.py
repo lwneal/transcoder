@@ -22,7 +22,7 @@ def build_encoder(dataset, **params):
     x = layers.BatchNormalization()(x)
     x = layers.Activation('relu')(x)
     encoded = layers.Dense(thought_vector_size, activation='tanh')(x)
-    moo = models.Model(inputs=inp, outputs=encoded)
+    moo = models.Model(inputs=inp, outputs=encoded, name='word_encoder')
     return moo
 
 
@@ -44,7 +44,7 @@ def build_decoder(dataset, **params):
     x = layers.BatchNormalization()(x)
     x = layers.Activation('softmax')(x)
     
-    return models.Model(inputs=inp, outputs=x)
+    return models.Model(inputs=inp, outputs=x, name='word_decoder')
 
 
 def build_discriminator(dataset, **params):
@@ -54,15 +54,15 @@ def build_discriminator(dataset, **params):
     rnn_layers = params['rnn_layers']
     vocab_len = len(dataset.vocab)
 
-    discriminator = models.Sequential(name='discriminator')
     input_shape = (max_words, vocab_len)
-    discriminator.add(layers.Dense(wordvec_size, input_shape=input_shape))
-    discriminator.add(layers.LSTM(rnn_size))
-    discriminator.add(layers.BatchNormalization())
-    discriminator.add(layers.Activation('tanh'))
-    discriminator.add(layers.Dense(wordvec_size))
-    discriminator.add(layers.BatchNormalization())
-    discriminator.add(layers.Activation('tanh'))
-    discriminator.add(layers.Dense(1))
-    discriminator.add(layers.Activation('sigmoid'))
-    return discriminator
+    x_in = layers.Input(shape=input_shape)
+    x = layers.Dense(wordvec_size)(x_in)
+    x = layers.LSTM(rnn_size)(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation('tanh')(x)
+    x = layers.Dense(wordvec_size)(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation('tanh')(x)
+    x = layers.Dense(1)(x)
+    x = layers.Activation('sigmoid')(x)
+    return models.Model(inputs=x_in, outputs=x, name='word_discriminator')

@@ -11,8 +11,8 @@ from imutil import decode_jpg, show
 
 DATA_DIR = os.path.expanduser('~/data/')
 
-IMG_WIDTH = 56
-IMG_HEIGHT = 56
+IMG_WIDTH = 28
+IMG_HEIGHT = 28
 
 class ImageDataset(object):
     def __init__(self, input_filename=None, **params):

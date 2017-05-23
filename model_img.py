@@ -66,28 +66,23 @@ def build_decoder(**params):
     x_input = layers.Input(batch_shape=(batch_size, thought_vector_size))
 
     # Expand vector from 1x1 to NxN
-    N = IMG_WIDTH / 8
+    N = IMG_WIDTH / 4
     x = layers.Reshape((1, 1, -1))(x_input)
     x = layers.Conv2DTranspose(64, (N, N), strides=(N, N), padding='same')(x)
     x = layers.BatchNormalization()(x)
     x = layers.Activation(LeakyReLU())(x)
 
-    for _ in range(cgru_layers):
-        x = SpatialCGRU(x, cgru_size)
+    x = SpatialCGRU(x, 256)
+    x = layers.Activation(LeakyReLU())(x)
 
-    x = layers.Conv2DTranspose(512, (3,3), strides=(2,2), padding='same')(x)
+    x = layers.Conv2DTranspose(128, (3,3), strides=(2,2), padding='same')(x)
     x = layers.BatchNormalization()(x)
     x = layers.Activation(LeakyReLU())(x)
 
-    x = layers.Conv2DTranspose(256, (3,3), strides=(2,2), padding='same')(x)
-    x = layers.BatchNormalization()(x)
+    x = SpatialCGRU(x, 128)
     x = layers.Activation(LeakyReLU())(x)
 
-    x = layers.Conv2DTranspose(128, (5,5), strides=(2,2), padding='same')(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.Activation(LeakyReLU())(x)
-
-    x = layers.Conv2D(3, (5,5), padding='same')(x)
+    x = layers.Conv2DTranspose(3, (3,3), strides=(2,2), padding='same')(x)
     x = layers.BatchNormalization()(x)
     x = layers.Activation('sigmoid')(x)
 

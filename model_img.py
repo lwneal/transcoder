@@ -15,7 +15,6 @@ def build_encoder(**params):
     thought_vector_size = params['thought_vector_size']
     batch_size = params['batch_size']
 
-    """
     # TODO: more params
     CNN = 'resnet50'
     include_top = False
@@ -37,24 +36,9 @@ def build_encoder(**params):
 
     if not include_top:
         x = layers.Flatten()(x)
-    """
-    # HACK
-    input_batch_shape = (batch_size, IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS)
-    input_img = layers.Input(batch_shape=input_batch_shape)
-    x = layers.Conv2D(64, (3,3), activation='relu')(input_img)
-    x = layers.MaxPooling2D()(x)
-    x = layers.Conv2D(128, (3,3), activation='relu')(x)
-    x = layers.MaxPooling2D()(x)
-    x = layers.Conv2D(256, (3,3), activation='relu')(x)
-    x = layers.MaxPooling2D()(x)
-    x = layers.Conv2D(512, (3,3), activation='relu')(x)
-    x = layers.Flatten()(x)
-    # END HACK
 
     x = layers.Dense(thought_vector_size)(x)
     x = layers.BatchNormalization()(x)
-    x = layers.Activation('relu')(x)
-    x = layers.Dense(thought_vector_size)(x)
     x = layers.Activation('tanh')(x)
 
     return models.Model(inputs=[input_img], outputs=x)

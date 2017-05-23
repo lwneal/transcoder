@@ -47,41 +47,26 @@ def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, de
     # TODO: freeze_encoder and freeze_decoder
     batch_size = params['batch_size']
     batches_per_epoch = params['batches_per_epoch']
-    training_gen = generate(encoder_dataset, decoder_dataset, **params)
-
-    train_transcoder(transcoder, training_gen, **params)
-    train_gan(decoder, discriminator, cgan, training_gen, decoder_dataset, **params)
-    print("Training epoch finished")
-
-
-def train_transcoder(transcoder, training_gen, **params):
-    batches_per_epoch = params['batches_per_epoch']
-    batch_size = params['batch_size']
-    avg_loss = 0
-    avg_accuracy = 0
-    print("Training encoder/decoder...")
-    for i in range(batches_per_epoch):
-        X, Y = next(training_gen)
-        loss, accuracy = transcoder.train_on_batch(X, Y)
-        avg_loss = .95 * avg_loss + .05 * loss
-        avg_accuracy = .95 * avg_accuracy + .05 * accuracy
-        sys.stderr.write("[K\r{}/{} batches, batch size {}, loss {:.3f}, accuracy {:.3f}".format(
-            i, batches_per_epoch, batch_size, avg_loss, avg_accuracy))
-    sys.stderr.write('\n')
-
-
-def train_gan(decoder, discriminator, cgan, training_gen, decoder_dataset, **params):
-    batches_per_epoch = int(params['batches_per_epoch'] / params['training_iters_per_gan'])
-    batch_size = params['batch_size']
     thought_vector_size = params['thought_vector_size']
 
+    training_gen = generate(encoder_dataset, decoder_dataset, **params)
     clipping_time = 0
     training_start_time = time.time()
+    t_avg_loss = 0
+    t_avg_accuracy = 0
     r_avg_loss = 0
     d_avg_loss = 0
     g_avg_loss = 0
-    print("Training discriminator...")
+
+    print("Training...")
     for i in range(batches_per_epoch):
+        # Update transcoder a bunch of times
+        for _ in range(int(params['training_iters_per_gan'])):
+            X, Y = next(training_gen)
+            loss, accuracy = transcoder.train_on_batch(X, Y)
+            t_avg_loss = .95 * t_avg_loss + .05 * loss
+            t_avg_accuracy = .95 * t_avg_accuracy + .05 * accuracy
+
         # Update Discriminator 5x per Generator update
         for _ in range(5):
             # Get some real decoding targets
@@ -125,8 +110,8 @@ def train_gan(decoder, discriminator, cgan, training_gen, decoder_dataset, **par
         for layer in discriminator.layers:
             layer.trainable = True
 
-        sys.stderr.write("[K\r{}/{} batches, batch size {}, Dg loss {:.3f}, Dr loss {:.3f} G loss {:.3f}".format(
-            i, batches_per_epoch, batch_size, d_avg_loss, r_avg_loss, g_avg_loss))
+        sys.stderr.write("[K\r{}/{} batches\tbs {}, D_g {:.3f}, D_r {:.3f} G {:.3f} T {:.3f} Accuracy {:.3f}".format(
+            i, batches_per_epoch, batch_size, d_avg_loss, r_avg_loss, g_avg_loss, t_avg_loss, t_avg_accuracy))
 
         if i == batches_per_epoch - 1:
             print("\nHallucinated outputs:")
@@ -135,7 +120,6 @@ def train_gan(decoder, discriminator, cgan, training_gen, decoder_dataset, **par
 
     print("Trained for {:.2f} s (spent {:.2f} s clipping)".format(time.time() - training_start_time, clipping_time))
     sys.stderr.write('\n')
-
 
 
 def demonstrate(encoder, decoder, encoder_dataset, decoder_dataset, input_text=None, **params):

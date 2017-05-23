@@ -70,33 +70,26 @@ def build_decoder(**params):
 
     # Expand vector from 1x1 to NxN
     N = IMG_WIDTH / 8
-    x = layers.Dense(N * N * 64)(x_input)
-    x = layers.Reshape((N, N, 64))(x)
+    x = layers.Reshape((1, 1, -1))(x_input)
+    x = layers.Conv2DTranspose(512, (N, N), strides=(N, N), padding='same')(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation('relu')(x)
 
     for _ in range(cgru_layers):
         x = SpatialCGRU(x, cgru_size)
 
-    # TODO: Uncomment BatchNormalization
-    # Keras Bug https://github.com/fchollet/keras/issues/5221
-
-    x = layers.Conv2D(512, (3,3), padding='same')(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.Activation('relu')(x)
-    #x = layers.Conv2DTranspose(512, (3,3), strides=(2,2), padding='same')(x)
-    x = layers.UpSampling2D((2,2))(x)
-
-    x = layers.Conv2D(256, (3,3), padding='same')(x)
+    x = layers.Conv2DTranspose(512, (3,3), strides=(2,2), padding='same')(x)
     x = layers.BatchNormalization()(x)
     x = layers.Activation('relu')(x)
 
-    #x = layers.Conv2DTranspose(256, (3,3), strides=(2,2), padding='same')(x)
-    x = layers.UpSampling2D((2,2))(x)
-    x = layers.Conv2D(128, (3,3), padding='same')(x)
+    x = layers.Conv2DTranspose(256, (3,3), strides=(2,2), padding='same')(x)
     x = layers.BatchNormalization()(x)
     x = layers.Activation('relu')(x)
 
-    #x = layers.Conv2DTranspose(3, (3,3), strides=(2,2), padding='same')(x)
-    x = layers.UpSampling2D((2,2))(x)
+    x = layers.Conv2DTranspose(128, (3,3), strides=(2,2), padding='same')(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation('relu')(x)
+
     x = layers.Conv2D(3, (3,3), padding='same')(x)
     x = layers.BatchNormalization()(x)
     x = layers.Activation('sigmoid')(x)

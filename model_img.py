@@ -22,7 +22,6 @@ def build_encoder(**params):
     CNN = 'resnet50'
     include_top = False
     LEARNABLE_CNN_LAYERS = 1
-    ACTIVATION = 'relu'
 
     input_batch_shape = (batch_size, IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS)
     input_img = layers.Input(batch_shape=input_batch_shape)
@@ -61,22 +60,22 @@ def build_decoder(**params):
     x = layers.Reshape((1, 1, -1))(x_input)
     x = layers.Conv2DTranspose(64, (N, N), strides=(N, N), padding='same')(x)
     x = layers.BatchNormalization()(x)
-    x = layers.Activation('relu')(x)
+    x = layers.Activation(LeakyReLU())(x)
 
     for _ in range(cgru_layers):
         x = SpatialCGRU(x, cgru_size)
 
     x = layers.Conv2DTranspose(512, (3,3), strides=(2,2), padding='same')(x)
     x = layers.BatchNormalization()(x)
-    x = layers.Activation('relu')(x)
+    x = layers.Activation(LeakyReLU())(x)
 
     x = layers.Conv2DTranspose(256, (3,3), strides=(2,2), padding='same')(x)
     x = layers.BatchNormalization()(x)
-    x = layers.Activation('relu')(x)
+    x = layers.Activation(LeakyReLU())(x)
 
     x = layers.Conv2DTranspose(128, (5,5), strides=(2,2), padding='same')(x)
     x = layers.BatchNormalization()(x)
-    x = layers.Activation('relu')(x)
+    x = layers.Activation(LeakyReLU())(x)
 
     x = layers.Conv2D(3, (5,5), padding='same')(x)
     x = layers.BatchNormalization()(x)

@@ -110,8 +110,8 @@ def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, de
         for layer in discriminator.layers:
             layer.trainable = True
 
-        sys.stderr.write("[K\r{}/{} batches\tbs {}, D_g {:.3f}, D_r {:.3f} G {:.3f} T {:.3f} Accuracy {:.3f}".format(
-            i, batches_per_epoch, batch_size, d_avg_loss, r_avg_loss, g_avg_loss, t_avg_loss, t_avg_accuracy))
+        sys.stderr.write("[K\r{}/{} batches \tbs {}, D_g {:.3f}, D_r {:.3f} G {:.3f} T {:.3f} Accuracy {:.3f}".format(
+            i + 1, batches_per_epoch, batch_size, d_avg_loss, r_avg_loss, g_avg_loss, t_avg_loss, t_avg_accuracy))
 
         if i == batches_per_epoch - 1:
             print("\nHallucinated outputs:")

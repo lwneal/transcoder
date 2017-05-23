@@ -44,6 +44,7 @@ def generate(encoder_dataset, decoder_dataset, **params):
 
 
 def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, decoder_dataset, **params):
+    # TODO: freeze_encoder and freeze_decoder
     batch_size = params['batch_size']
     batches_per_epoch = params['batches_per_epoch']
     training_gen = generate(encoder_dataset, decoder_dataset, **params)
@@ -171,44 +172,35 @@ def dataset_for_extension(ext):
 
 
 def build_model(encoder_dataset, decoder_dataset, **params):
-    encoder = encoder_dataset.build_encoder(**params)
-    decoder = decoder_dataset.build_decoder(**params)
-
-
-    # TODO: ensure freezing works along with GAN training
-    if params['freeze_encoder']:
-        for layer in encoder.layers:
-            layer.trainable = False
-    if params['freeze_decoder']:
-        for layer in decoder.layers:
-            layer.trainable = False
-
-    # TODO: choose appropriate loss function
-    loss_function = 'mse' if type(decoder_dataset) is ImageDataset else 'categorical_crossentropy'
-
-    transcoder = models.Sequential(name='transcoder')
-    transcoder.add(encoder)
-    transcoder.add(decoder)
-    transcoder.compile(loss=loss_function, optimizer='adam', metrics=['accuracy'])
-
-    discriminator = decoder_dataset.build_discriminator(**params)
+    # HACK: Keras Bug https://github.com/fchollet/keras/issues/5221
+    # Sharing a BatchNormalization layer corrupts the graph
+    # Workaround: carefully call _make_train_function
 
     from keras import backend as K
     def wgan_loss(y_true, y_pred):
         return K.mean(y_true * y_pred)
-    discriminator.compile(loss=wgan_loss, optimizer='adam', metrics=['accuracy'])
+    transcoder_loss = 'mse' if type(decoder_dataset) is ImageDataset else 'categorical_crossentropy'
 
-    # HACK: Keras Bug https://github.com/fchollet/keras/issues/5221
-    # Whenever a BatchNormalization layer is shared into more than one Model,
-    #   it becomes corrupted so that it generates this error during training
-    # Workaround: call _make_train_function
+
+    encoder = encoder_dataset.build_encoder(**params)
+
+    decoder = decoder_dataset.build_decoder(**params)
+
+    discriminator = decoder_dataset.build_discriminator(**params)
+    discriminator.compile(loss=wgan_loss, optimizer='adam', metrics=['accuracy'])
     discriminator._make_train_function()
 
     tensor_in = decoder.inputs[0]
     tensor_out = discriminator(decoder.outputs[0])
     cgan = models.Model(inputs=tensor_in, outputs=tensor_out)
-
     cgan.compile(loss=wgan_loss, optimizer='adam', metrics=['accuracy'])
+    cgan._make_train_function()
+
+    tensor_in = encoder.inputs[0]
+    tensor_out = decoder(encoder.outputs[0])
+    transcoder = models.Model(inputs=tensor_in, outputs=tensor_out)
+    transcoder.compile(loss=transcoder_loss, optimizer='adam', metrics=['accuracy'])
+    transcoder._make_train_function()
 
     return encoder, decoder, transcoder, discriminator, cgan
 

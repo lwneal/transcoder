@@ -80,25 +80,25 @@ def build_decoder(**params):
     # Keras Bug https://github.com/fchollet/keras/issues/5221
 
     x = layers.Conv2D(512, (3,3), padding='same')(x)
-    #x = layers.BatchNormalization()(x)
+    x = layers.BatchNormalization()(x)
     x = layers.Activation('relu')(x)
     #x = layers.Conv2DTranspose(512, (3,3), strides=(2,2), padding='same')(x)
     x = layers.UpSampling2D((2,2))(x)
 
     x = layers.Conv2D(256, (3,3), padding='same')(x)
-    #x = layers.BatchNormalization()(x)
+    x = layers.BatchNormalization()(x)
     x = layers.Activation('relu')(x)
 
     #x = layers.Conv2DTranspose(256, (3,3), strides=(2,2), padding='same')(x)
     x = layers.UpSampling2D((2,2))(x)
     x = layers.Conv2D(128, (3,3), padding='same')(x)
-    #x = layers.BatchNormalization()(x)
+    x = layers.BatchNormalization()(x)
     x = layers.Activation('relu')(x)
 
     #x = layers.Conv2DTranspose(3, (3,3), strides=(2,2), padding='same')(x)
     x = layers.UpSampling2D((2,2))(x)
     x = layers.Conv2D(3, (3,3), padding='same')(x)
-    #x = layers.BatchNormalization()(x)
+    x = layers.BatchNormalization()(x)
     x = layers.Activation('sigmoid')(x)
 
     return models.Model(inputs=[x_input], outputs=x)

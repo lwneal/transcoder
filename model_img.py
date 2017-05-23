@@ -54,8 +54,6 @@ def build_encoder(**params):
     x = layers.Flatten()(x)
     x = layers.Dense(thought_vector_size)(x)
     x = layers.BatchNormalization()(x)
-    x = layers.Activation('tanh')(x)
-
     return models.Model(inputs=[input_img], outputs=x)
 
 

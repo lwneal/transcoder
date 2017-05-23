@@ -71,7 +71,7 @@ def build_decoder(**params):
     # Expand vector from 1x1 to NxN
     N = IMG_WIDTH / 8
     x = layers.Reshape((1, 1, -1))(x_input)
-    x = layers.Conv2DTranspose(512, (N, N), strides=(N, N), padding='same')(x)
+    x = layers.Conv2DTranspose(64, (N, N), strides=(N, N), padding='same')(x)
     x = layers.BatchNormalization()(x)
     x = layers.Activation('relu')(x)
 
@@ -86,11 +86,11 @@ def build_decoder(**params):
     x = layers.BatchNormalization()(x)
     x = layers.Activation('relu')(x)
 
-    x = layers.Conv2DTranspose(128, (3,3), strides=(2,2), padding='same')(x)
+    x = layers.Conv2DTranspose(128, (5,5), strides=(2,2), padding='same')(x)
     x = layers.BatchNormalization()(x)
     x = layers.Activation('relu')(x)
 
-    x = layers.Conv2D(3, (3,3), padding='same')(x)
+    x = layers.Conv2D(3, (5,5), padding='same')(x)
     x = layers.BatchNormalization()(x)
     x = layers.Activation('sigmoid')(x)
 

@@ -113,21 +113,12 @@ def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, de
         sys.stderr.write("[K\r{}/{} batches \tbs {}, D_g {:.3f}, D_r {:.3f} G {:.3f} T {:.3f} Accuracy {:.3f}".format(
             i + 1, batches_per_epoch, batch_size, d_avg_loss, r_avg_loss, g_avg_loss, t_avg_loss, t_avg_accuracy))
 
-        if i == batches_per_epoch - 1:
-            print("\nHallucinated outputs:")
-            for j in range(len(X_generated)):
-                print(' ' + decoder_dataset.unformat_output(X_generated[j]))
-
     print("Trained for {:.2f} s (spent {:.2f} s clipping)".format(time.time() - training_start_time, clipping_time))
     sys.stderr.write('\n')
 
 
-def demonstrate(encoder, decoder, encoder_dataset, decoder_dataset, input_text=None, **params):
+def demonstrate(transcoder, encoder_dataset, decoder_dataset, input_text=None, **params):
     batch_size = params['batch_size']
-
-    model = models.Sequential()
-    model.add(encoder)
-    model.add(decoder)
 
     X_list = encoder_dataset.empty_batch(**params)
     for i in range(batch_size):
@@ -137,12 +128,23 @@ def demonstrate(encoder, decoder, encoder_dataset, decoder_dataset, input_text=N
             x_list = encoder_dataset.get_example(**params)
         for X, x in zip(X_list, x_list):
             X[i] = x
-    Y = model.predict(X_list)
+    Y = transcoder.predict(X_list)
     X = zip(*X_list)
     for x, y in zip(X, Y):
         left = encoder_dataset.unformat_input(x)
         right = decoder_dataset.unformat_output(y)
         print('{} --> {}'.format(left, right))
+
+
+def hallucinate(decoder, decoder_dataset, **params):
+    batch_size = params['batch_size']
+    thought_vector_size = params['thought_vector_size']
+
+    X_decoder = np.random.normal(0, 1, size=(batch_size, thought_vector_size))
+    X_generated = decoder.predict(X_decoder)
+    print("Hallucinated outputs:")
+    for j in range(len(X_generated)):
+        print(' ' + decoder_dataset.unformat_output(X_generated[j]))
 
 
 def dataset_for_extension(ext):
@@ -216,7 +218,8 @@ def main(**params):
     if params['mode'] == 'train':
         print("Training...")
         for epoch in range(params['epochs']):
-            demonstrate(encoder, decoder, encoder_dataset, decoder_dataset, **params)
+            demonstrate(transcoder, encoder_dataset, decoder_dataset, **params)
+            hallucinate(decoder, decoder_dataset, **params)
             train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, decoder_dataset, **params)
             encoder.save_weights(params['encoder_weights'])
             decoder.save_weights(params['decoder_weights'])
@@ -227,4 +230,4 @@ def main(**params):
         while True:
             inp = raw_input("Type a complete sentence in the input language: ")
             inp = inp.decode('utf-8').lower()
-            demonstrate(encoder, decoder, encoder_dataset, decoder_dataset, input_text=inp, **params)
+            demonstrate(transcoder, encoder_dataset, decoder_dataset, input_text=inp, **params)

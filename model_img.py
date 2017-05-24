@@ -73,6 +73,7 @@ def build_decoder(**params):
     x = layers.Activation(LeakyReLU())(x)
 
     x = SpatialCGRU(x, 256)
+    x = layers.BatchNormalization()(x)
     x = layers.Activation(LeakyReLU())(x)
 
     #x = layers.Conv2DTranspose(128, (3,3), strides=(2,2), padding='same')(x)
@@ -81,6 +82,7 @@ def build_decoder(**params):
     x = layers.Activation(LeakyReLU())(x)
 
     x = SpatialCGRU(x, 128)
+    x = layers.BatchNormalization()(x)
     x = layers.Activation(LeakyReLU())(x)
 
     #x = layers.Conv2DTranspose(3, (3,3), strides=(2,2), padding='same')(x)

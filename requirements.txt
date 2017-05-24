@@ -1,0 +1,7 @@
+Keras==2.0.2
+numpy
+Pillow
+tensorflow-gpu
+docopt
+nltk
+h5py

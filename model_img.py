@@ -75,15 +75,18 @@ def build_decoder(**params):
     x = SpatialCGRU(x, 256)
     x = layers.Activation(LeakyReLU())(x)
 
-    x = layers.Conv2DTranspose(128, (3,3), strides=(2,2), padding='same')(x)
+    #x = layers.Conv2DTranspose(128, (3,3), strides=(2,2), padding='same')(x)
+    x = layers.UpSampling2D()(x)
     x = layers.BatchNormalization()(x)
     x = layers.Activation(LeakyReLU())(x)
 
     x = SpatialCGRU(x, 128)
     x = layers.Activation(LeakyReLU())(x)
 
-    x = layers.Conv2DTranspose(3, (3,3), strides=(2,2), padding='same')(x)
-    x = layers.BatchNormalization()(x)
+    #x = layers.Conv2DTranspose(3, (3,3), strides=(2,2), padding='same')(x)
+    x = layers.UpSampling2D()(x)
+    #x = SpatialCGRU(x, 3)
+    x = layers.Conv2D(3, (3,3), padding='same')(x)
     x = layers.Activation('sigmoid')(x)
 
     return models.Model(inputs=[x_input], outputs=x)
@@ -95,7 +98,7 @@ def build_discriminator(**params):
 
     img_input = layers.Input(batch_shape=batch_input_shape)
     x = layers.Conv2D(64, (3,3), padding='same')(img_input)
-    x = layers.BatchNormalization()(x)
+    #x = layers.BatchNormalization()(x)
     x = layers.Activation(LeakyReLU())(x)
     x = layers.MaxPooling2D()(x)
     x = layers.Conv2D(128, (3,3), padding='same')(x)

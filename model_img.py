@@ -37,14 +37,19 @@ def build_encoder(is_discriminator=False, **params):
         x = layers.BatchNormalization()(x)
         x = layers.Activation(LeakyReLU())(x)
         x = layers.MaxPooling2D()(x)
+
         x = layers.Conv2D(128, (3,3), padding='same')(x)
         x = layers.BatchNormalization()(x)
         x = layers.Activation(LeakyReLU())(x)
+
+        x = SpatialCGRU(x, 128)
         x = layers.MaxPooling2D()(x)
+
         x = layers.Conv2D(256, (3,3), padding='same')(x)
         x = layers.BatchNormalization()(x)
         x = layers.Activation(LeakyReLU())(x)
         x = layers.MaxPooling2D()(x)
+
         x = layers.Conv2D(256, (3,3), padding='same')(x)
         x = layers.BatchNormalization()(x)
         x = layers.Activation(LeakyReLU())(x)
@@ -69,28 +74,22 @@ def build_decoder(**params):
     x_input = layers.Input(shape=(thought_vector_size,))
 
     # Expand vector from 1x1 to NxN
-    N = img_width / 4
+    N = img_width / 8
     x = layers.Reshape((1, 1, -1))(x_input)
     x = layers.Conv2DTranspose(64, (N, N), strides=(N, N), padding='same')(x)
     x = layers.BatchNormalization()(x)
     x = layers.Activation(LeakyReLU())(x)
 
-    x = SpatialCGRU(x, 256)
+    # Upsample from NxN to full size
+    x = layers.Conv2DTranspose(256, (3,3), strides=(2,2), padding='same')(x)
     x = layers.BatchNormalization()(x)
     x = layers.Activation(LeakyReLU())(x)
 
-    #x = layers.Conv2DTranspose(128, (3,3), strides=(2,2), padding='same')(x)
-    x = layers.UpSampling2D()(x)
+    x = layers.Conv2DTranspose(128, (3,3), strides=(2,2), padding='same')(x)
     x = layers.BatchNormalization()(x)
     x = layers.Activation(LeakyReLU())(x)
 
-    x = SpatialCGRU(x, 128)
-    x = layers.BatchNormalization()(x)
-    x = layers.Activation(LeakyReLU())(x)
-
-    #x = layers.Conv2DTranspose(3, (3,3), strides=(2,2), padding='same')(x)
-    x = layers.UpSampling2D()(x)
-    x = SpatialCGRU(x, 32)
+    x = layers.Conv2DTranspose(64, (3,3), strides=(2,2), padding='same')(x)
     x = layers.Conv2D(3, (3,3), padding='same')(x)
     x = layers.Activation('sigmoid')(x)
 

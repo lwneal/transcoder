@@ -41,7 +41,7 @@ def evaluate(transcoder, encoder_dataset, decoder_dataset, **params):
     def eval_generator():
         X_list = encoder_dataset.empty_batch(**params)
         for i in range(0, input_count, batch_size):
-            print("\r[K;{} / {}".format(i, input_count)),
+            sys.stderr.write("\r[K{} / {}".format(i, input_count))
             yield get_batch(encoder_dataset, decoder_dataset, base_idx=i, **params)
 
     batch_count = input_count / batch_size

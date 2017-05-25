@@ -9,7 +9,6 @@ import resnet50
 import tensorflow as tf
 
 from cgru import SpatialCGRU
-from dataset_img import IMG_WIDTH, IMG_HEIGHT
 
 IMG_CHANNELS = 3
 
@@ -17,11 +16,12 @@ IMG_CHANNELS = 3
 def build_encoder(is_discriminator=False, **params):
     thought_vector_size = params['thought_vector_size']
     pretrained_encoder = params['pretrained_encoder']
+    img_width = params['img_width']
 
     include_top = False
     LEARNABLE_CNN_LAYERS = 1
 
-    input_shape = (IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS)
+    input_shape = (img_width, img_width, IMG_CHANNELS)
     input_img = layers.Input(shape=input_shape)
     if pretrained_encoder:
         if pretrained_encoder == 'vgg16':
@@ -64,11 +64,12 @@ def build_decoder(**params):
     thought_vector_size = params['thought_vector_size']
     cgru_size = params['cgru_size']
     cgru_layers = params['cgru_layers']
+    img_width = params['img_width']
 
     x_input = layers.Input(shape=(thought_vector_size,))
 
     # Expand vector from 1x1 to NxN
-    N = IMG_WIDTH / 4
+    N = img_width / 4
     x = layers.Reshape((1, 1, -1))(x_input)
     x = layers.Conv2DTranspose(64, (N, N), strides=(N, N), padding='same')(x)
     x = layers.BatchNormalization()(x)

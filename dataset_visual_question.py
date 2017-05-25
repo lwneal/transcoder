@@ -10,7 +10,6 @@ from dataset_word import WordDataset
 import model_visual_question
 from imutil import decode_jpg, show
 
-from dataset_img import IMG_HEIGHT, IMG_WIDTH
 DATA_DIR = os.path.expanduser('~/data/')
 
 
@@ -32,8 +31,9 @@ class VisualQuestionDataset(object):
         return self.format_input(question, **params)
 
     def format_input(self, question, **params):
+        img_width = params['img_width']
         filename = os.path.join(DATA_DIR, str(question['filename']))
-        x_img = decode_jpg(filename, resize_to=(IMG_HEIGHT, IMG_WIDTH))
+        x_img = decode_jpg(filename, resize_to=(img_width, img_width))
         question = question['question'].lower()
         x_words = self.dataset_words.format_input(question, **params)[0]
         return [x_img, x_words]
@@ -48,8 +48,9 @@ class VisualQuestionDataset(object):
         return 'Image region prediction shape: {}'.format(preds.shape)
 
     def empty_batch(self, **params):
+        img_width = params['img_width']
         batch_size = params['batch_size']
-        images = np.zeros((batch_size, IMG_HEIGHT, IMG_WIDTH, 3), dtype=float)
+        images = np.zeros((batch_size, img_width, img_width, 3), dtype=float)
         words = self.dataset_words.empty_batch(**params)[0]
         return [images, words]
 

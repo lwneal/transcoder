@@ -6,7 +6,6 @@ from keras import layers, models, applications
 import tensorflow as tf
 
 from cgru import SpatialCGRU
-from dataset_img import IMG_HEIGHT, IMG_WIDTH
 
 import model_img
 import model_words

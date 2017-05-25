@@ -30,6 +30,9 @@ class VisualQuestionDataset(object):
         question = self.questions[idx]
         return self.format_input(question, **params)
 
+    def count(self):
+        return len(self.questions)
+
     def format_input(self, question, **params):
         img_width = params['img_width']
         filename = os.path.join(DATA_DIR, str(question['filename']))

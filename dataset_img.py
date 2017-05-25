@@ -30,6 +30,9 @@ class ImageDataset(object):
         region = self.regions[idx]
         return self.format_input(region, **params)
 
+    def count(self):
+        return len(self.regions)
+
     def format_input(self, region, **params):
         img_width = params['img_width']
         filename = os.path.join(DATA_DIR, str(region['filename']))

@@ -15,12 +15,15 @@ from dataset_img_region import ImageRegionDataset
 from dataset_visual_question import VisualQuestionDataset
 
 
-def get_batch(encoder_dataset, decoder_dataset, **params):
+def get_batch(encoder_dataset, decoder_dataset, base_idx=None, **params):
     X_list = encoder_dataset.empty_batch(**params)
     Y_list = decoder_dataset.empty_batch(**params)
     batch_size = params['batch_size']
     for i in range(batch_size):
-        idx = encoder_dataset.random_idx()
+        if base_idx is None:
+            idx = encoder_dataset.random_idx()
+        else:
+            idx = base_idx + i
         x_list = encoder_dataset.get_example(idx, **params)
         for X, x in zip(X_list, x_list):
             X[i] = x
@@ -30,7 +33,23 @@ def get_batch(encoder_dataset, decoder_dataset, **params):
     return X_list, Y_list
 
 
-def generate(encoder_dataset, decoder_dataset, **params):
+def evaluate(transcoder, encoder_dataset, decoder_dataset, **params):
+    batch_size = params['batch_size']
+    input_count, output_count = encoder_dataset.count(), decoder_dataset.count()
+    assert input_count == output_count
+
+    def eval_generator():
+        X_list = encoder_dataset.empty_batch(**params)
+        for i in range(0, input_count, batch_size):
+            print("\r[K;{} / {}".format(i, input_count)),
+            yield get_batch(encoder_dataset, decoder_dataset, base_idx=i, **params)
+
+    batch_count = input_count / batch_size
+    scores = transcoder.evaluate_generator(eval_generator(), steps=batch_count)
+    print("Scores: {}".format(scores))
+
+
+def train_generator(encoder_dataset, decoder_dataset, **params):
     # HACK: X and Y should each be a numpy array...
     # Unless the model takes multiple inputs/outputs
     def unpack(Z):
@@ -42,14 +61,13 @@ def generate(encoder_dataset, decoder_dataset, **params):
         X, Y = get_batch(encoder_dataset, decoder_dataset, **params)
         yield unpack(X), unpack(Y)
 
-
 def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, decoder_dataset, **params):
     # TODO: freeze_encoder and freeze_decoder
     batch_size = params['batch_size']
     batches_per_epoch = params['batches_per_epoch']
     thought_vector_size = params['thought_vector_size']
 
-    training_gen = generate(encoder_dataset, decoder_dataset, **params)
+    training_gen = train_generator(encoder_dataset, decoder_dataset, **params)
     clipping_time = 0
     training_start_time = time.time()
     t_avg_loss = 0
@@ -188,6 +206,8 @@ def build_model(encoder_dataset, decoder_dataset, **params):
 
 
 def main(**params):
+    mode = params['mode']
+
     print("Loading datasets...")
     ds = dataset_for_extension(params['encoder_input_filename'].split('.')[-1])
     encoder_dataset = ds(params['encoder_input_filename'], is_encoder=True, **params)
@@ -220,7 +240,10 @@ def main(**params):
             encoder.save_weights(params['encoder_weights'])
             decoder.save_weights(params['decoder_weights'])
             discriminator.save_weights(params['discriminator_weights'])
-    elif params['mode'] == 'demo':
+    elif mode == 'test':
+        print("Testing ")
+        evaluate(transcoder, encoder_dataset, decoder_dataset, **params)
+    elif mode == 'demo':
         print("Starting Demonstration...")
         params['batch_size'] = 1
         while True:

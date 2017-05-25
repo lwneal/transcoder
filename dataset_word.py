@@ -31,12 +31,25 @@ class WordDataset(object):
         self.is_encoder = is_encoder
         if self.is_encoder:
             self.max_words = params['max_words_encoder']
+            vocab_filename = params['load_encoder_vocab']
         else:
             self.max_words = params['max_words_decoder']
+            vocab_filename = params['load_decoder_vocab']
         self.sentences = text.splitlines()
+
         print("Input file {} contains {} sentences".format(input_filename, len(self.sentences)))
-        self.vocab, self.word_to_idx, self.idx_to_word = get_vocab(text)
+
+        if vocab_filename:
+            print("Loading vocabulary from file...")
+            self.vocab, self.word_to_idx, self.idx_to_word = load_vocab_from_file(vocab_filename)
+        else:
+            print("Building vocabulary...")
+            self.vocab, self.word_to_idx, self.idx_to_word = build_vocab(text)
         print("Vocabulary contains {} words from {} to {}".format(len(self.vocab), self.vocab[4], self.vocab[-1]))
+        if self.is_encoder:
+            open('last_used_encoder_vocab.txt', 'w').write('\n'.join(self.vocab))
+        else:
+            open('last_used_decoder_vocab.txt', 'w').write('\n'.join(self.vocab))
 
     def random_idx(self):
         return np.random.randint(0, len(self.sentences))
@@ -46,6 +59,9 @@ class WordDataset(object):
             idx = self.random_idx()
         sentence = self.sentences[idx]
         return self.format_input(sentence, **params)
+    
+    def count(self):
+        return len(self.sentences)
 
     def format_input(self, sentence, **params):
         if self.is_encoder:
@@ -90,7 +106,12 @@ class WordDataset(object):
         return model_words.build_discriminator(self, **params)
 
 
-def get_vocab(text, n=3):
+def load_vocab_from_file(filename):
+    text = open(filename).read()
+    return build_vocab(text, n=0)
+
+
+def build_vocab(text, n=2):
     word_count = {}
     for word in text.split():
         if word not in word_count:

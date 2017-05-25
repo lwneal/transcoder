@@ -10,6 +10,7 @@ from dataset_word import WordDataset
 import model_visual_question
 from imutil import decode_jpg, show
 
+from dataset_img import IMG_HEIGHT, IMG_WIDTH
 DATA_DIR = os.path.expanduser('~/data/')
 
 
@@ -18,7 +19,7 @@ class VisualQuestionDataset(object):
         lines = open(input_filename).readlines()
         self.questions = [json.loads(l) for l in lines]
         text = '\n'.join(q['question'] for q in self.questions)
-        self.words = WordDataset(input_text=text, **params)
+        self.dataset_words = WordDataset(input_text=text, **params)
         print("Input file {} contains {} visual questions".format(input_filename, len(self.questions)))
 
     def random_idx(self):
@@ -32,15 +33,15 @@ class VisualQuestionDataset(object):
 
     def format_input(self, question, **params):
         filename = os.path.join(DATA_DIR, str(question['filename']))
-        x_img = decode_jpg(filename)
+        x_img = decode_jpg(filename, resize_to=(IMG_HEIGHT, IMG_WIDTH))
         question = question['question'].lower()
-        x_words = self.words.format_input(question, **params)[0]
+        x_words = self.dataset_words.format_input(question, **params)[0]
         return [x_img, x_words]
 
     def unformat_input(self, X, **params):
         pixels, indices = X
         show(pixels)
-        sentence = ' '.join(self.words.words(indices)).strip()
+        sentence = ' '.join(self.dataset_words.words(indices)).strip()
         return 'Img: {} Words: {}'.format(pixels.shape, sentence)
 
     def unformat_output(self, preds, **params):
@@ -48,9 +49,15 @@ class VisualQuestionDataset(object):
 
     def empty_batch(self, **params):
         batch_size = params['batch_size']
-        images = np.zeros((batch_size, 224, 224, 3), dtype=float)
-        words = self.words.empty_batch(**params)[0]
+        images = np.zeros((batch_size, IMG_HEIGHT, IMG_WIDTH, 3), dtype=float)
+        words = self.dataset_words.empty_batch(**params)[0]
         return [images, words]
 
-    def build_model(self, **params):
-        return model_visual_question.build_encoder(len(self.words.vocab), **params)
+    def build_encoder(self, **params):
+        return model_visual_question.build_encoder(self.dataset_words, **params)
+
+    def build_decoder(self, **params):
+        return model_visual_question.build_decoder(self.dataset_words, **params)
+
+    def build_discriminator(self, **params):
+        return model_visual_question.build_discriminator(self.dataset_words, **params)

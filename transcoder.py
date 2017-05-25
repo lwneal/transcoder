@@ -176,15 +176,11 @@ def build_model(encoder_dataset, decoder_dataset, **params):
     discriminator.compile(loss=wgan_loss, optimizer='adam', metrics=['accuracy'])
     discriminator._make_train_function()
 
-    tensor_in = decoder.inputs[0]
-    tensor_out = discriminator(decoder.outputs[0])
-    cgan = models.Model(inputs=tensor_in, outputs=tensor_out)
+    cgan = models.Model(inputs=decoder.inputs, outputs=discriminator(decoder.output))
     cgan.compile(loss=wgan_loss, optimizer='adam', metrics=['accuracy'])
     cgan._make_train_function()
 
-    tensor_in = encoder.inputs[0]
-    tensor_out = decoder(encoder.outputs[0])
-    transcoder = models.Model(inputs=tensor_in, outputs=tensor_out)
+    transcoder = models.Model(inputs=encoder.inputs, outputs=decoder(encoder.output))
     transcoder.compile(loss=transcoder_loss, optimizer='adam', metrics=['accuracy'])
     transcoder._make_train_function()
 

@@ -6,58 +6,30 @@ from keras import layers, models, applications
 import tensorflow as tf
 
 from cgru import SpatialCGRU
+from dataset_img import IMG_HEIGHT, IMG_WIDTH
 
-IMG_CHANNELS = 3
-IMG_HEIGHT = IMG_WIDTH = 224
+import model_img
+import model_words
 
 
-def build_encoder(vocab_len, **params):
-    rnn_type = getattr(layers, params['rnn_type'])
-    batch_size = params['batch_size']
-    wordvec_size = params['wordvec_size']
-    rnn_size = params['rnn_size']
-    rnn_layers = params['rnn_layers']
-    max_words = params['max_words_encoder']
+def build_encoder(dataset, **params):
     thought_vector_size = params['thought_vector_size']
-    cgru_layers = params['cgru_layers']
-    cgru_size = params['cgru_size']
 
-    CNN = 'vgg16'
-    INCLUDE_TOP = False
-    LEARNABLE_CNN_LAYERS = 1
+    visual_model = model_img.build_encoder(**params)
+    words_model = model_words.build_encoder(dataset, **params)
 
-    if CNN == 'vgg16':
-        cnn = applications.vgg16.VGG16(include_top=INCLUDE_TOP)
-        if INCLUDE_TOP:
-            # Pop the softmax layer
-            cnn = models.Model(inputs=cnn.inputs, outputs=cnn.layers[-1].output)
-    elif CNN == 'resnet50':
-        cnn = applications.resnet50.ResNet50(include_top=INCLUDE_TOP)
-        # Pop the mean pooling layer
-        cnn = models.Model(inputs=cnn.inputs, outputs=cnn.layers[-2].output)
-
-    for layer in cnn.layers[:-LEARNABLE_CNN_LAYERS]:
-        layer.trainable = False
-
-    input_img = layers.Input(batch_shape=(batch_size, IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS))
-    x_img = cnn(input_img)
-
-    for _ in range(cgru_layers):
-        x_img = SpatialCGRU(x_img, cgru_size)
-    x_img = layers.Flatten()(x_img)
-
-    input_words = layers.Input(batch_shape=(batch_size, max_words,), dtype='int32')
-    x_words = layers.Embedding(vocab_len, wordvec_size, input_length=max_words, mask_zero=True)(input_words)
-    for _ in range(rnn_layers - 1):
-        x_words = rnn_type(rnn_size, return_sequences=True)(x_words)
-    x_words = rnn_type(rnn_size)(x_words)
-    x_words = layers.BatchNormalization()(x_words)
-    x_words = layers.Activation('relu')(x_words)
-    x_words = layers.Dense(thought_vector_size, activation='tanh')(x_words)
-
-    x = layers.Concatenate()([x_img, x_words])
+    x = layers.Concatenate()([visual_model.output, words_model.output])
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation(layers.LeakyReLU())(x)
     x = layers.Dense(thought_vector_size)(x)
     x = layers.BatchNormalization()(x)
-    x = layers.Activation('tanh')(x)
 
-    return models.Model(inputs=[input_img, input_words], outputs=x)
+    return models.Model(inputs=[visual_model.input, words_model.input], outputs=x)
+
+
+def build_decoder(dataset, **params):
+    return model_words.build_decoder(dataset, **params)
+
+
+def build_discriminator(dataset, **params):
+    return model_words.build_discriminator(dataset, **params)

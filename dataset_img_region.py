@@ -9,6 +9,7 @@ from keras.utils import to_categorical
 import model_img_region
 from imutil import decode_jpg, show
 
+from dataset_img import IMG_HEIGHT, IMG_WIDTH
 DATA_DIR = os.path.expanduser('~/data/')
 
 
@@ -45,8 +46,8 @@ class ImageRegionDataset(object):
 
     def empty_batch(self, **params):
         batch_size = params['batch_size']
-        return [np.zeros((batch_size, 224, 224, 3), dtype=float),
-                np.zeros((batch_size, 224, 224, 3), dtype=float),
+        return [np.zeros((batch_size, IMG_HEIGHT, IMG_WIDTH, 3), dtype=float),
+                np.zeros((batch_size, IMG_HEIGHT, IMG_WIDTH, 3), dtype=float),
                 np.zeros((batch_size, 5), dtype=float)]
 
     def build_model(self, **params):

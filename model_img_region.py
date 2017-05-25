@@ -5,8 +5,9 @@ import numpy as np
 from keras import layers, models, applications
 import tensorflow as tf
 
+from dataset_img import IMG_HEIGHT, IMG_WIDTH
+
 IMG_CHANNELS = 3
-IMG_HEIGHT = IMG_WIDTH = 224
 
 
 def build_encoder(**params):

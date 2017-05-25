@@ -64,5 +64,5 @@ def build_discriminator(dataset, **params):
     x = layers.BatchNormalization()(x)
     x = layers.Activation('tanh')(x)
     x = layers.Dense(1)(x)
-    x = layers.Activation('sigmoid')(x)
+    x = layers.Activation('tanh')(x)
     return models.Model(inputs=x_in, outputs=x, name='word_discriminator')

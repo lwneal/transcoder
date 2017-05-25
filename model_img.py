@@ -14,16 +14,15 @@ from dataset_img import IMG_WIDTH, IMG_HEIGHT
 IMG_CHANNELS = 3
 
 
-def build_encoder(**params):
+def build_encoder(is_discriminator=False, **params):
     thought_vector_size = params['thought_vector_size']
-    batch_size = params['batch_size']
     pretrained_encoder = params['pretrained_encoder']
 
     include_top = False
     LEARNABLE_CNN_LAYERS = 1
 
-    input_batch_shape = (batch_size, IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS)
-    input_img = layers.Input(batch_shape=input_batch_shape)
+    input_shape = (IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS)
+    input_img = layers.Input(shape=input_shape)
     if pretrained_encoder:
         if pretrained_encoder == 'vgg16':
             cnn = applications.vgg16.VGG16(input_tensor=input_img, include_top=include_top)
@@ -52,18 +51,21 @@ def build_encoder(**params):
         x = layers.MaxPooling2D()(x)
 
     x = layers.Flatten()(x)
-    x = layers.Dense(thought_vector_size)(x)
-    x = layers.BatchNormalization()(x)
+    if is_discriminator:
+        x = layers.Dense(1)(x)
+        x = layers.Activation('tanh')(x)
+    else:
+        x = layers.Dense(thought_vector_size)(x)
+        x = layers.BatchNormalization()(x)
     return models.Model(inputs=[input_img], outputs=x)
 
 
 def build_decoder(**params):
     thought_vector_size = params['thought_vector_size']
-    batch_size = params['batch_size']
     cgru_size = params['cgru_size']
     cgru_layers = params['cgru_layers']
 
-    x_input = layers.Input(batch_shape=(batch_size, thought_vector_size))
+    x_input = layers.Input(shape=(thought_vector_size,))
 
     # Expand vector from 1x1 to NxN
     N = IMG_WIDTH / 4
@@ -95,44 +97,4 @@ def build_decoder(**params):
 
 
 def build_discriminator(**params):
-    thought_vector_size = params['thought_vector_size']
-    batch_size = params['batch_size']
-    pretrained_encoder = params['pretrained_encoder']
-
-    include_top = False
-    LEARNABLE_CNN_LAYERS = 1
-
-    input_batch_shape = (batch_size, IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS)
-    input_img = layers.Input(batch_shape=input_batch_shape)
-    if pretrained_encoder:
-        if pretrained_encoder == 'vgg16':
-            cnn = applications.vgg16.VGG16(input_tensor=input_img, include_top=include_top)
-        elif pretrained_encoder == 'resnet50':
-            # Note: This is a hacked version of resnet50 with pooling removed
-            cnn = resnet50.ResNet50(include_top=include_top, pooling=None)
-        for layer in cnn.layers[:-LEARNABLE_CNN_LAYERS]:
-            layer.trainable = False
-        x = cnn(input_img)
-    else:
-        x = layers.Conv2D(64, (3,3), padding='same')(input_img)
-        x = layers.BatchNormalization()(x)
-        x = layers.Activation(LeakyReLU())(x)
-        x = layers.MaxPooling2D()(x)
-        x = layers.Conv2D(128, (3,3), padding='same')(x)
-        x = layers.BatchNormalization()(x)
-        x = layers.Activation(LeakyReLU())(x)
-        x = layers.MaxPooling2D()(x)
-        x = layers.Conv2D(256, (3,3), padding='same')(x)
-        x = layers.BatchNormalization()(x)
-        x = layers.Activation(LeakyReLU())(x)
-        x = layers.MaxPooling2D()(x)
-        x = layers.Conv2D(256, (3,3), padding='same')(x)
-        x = layers.BatchNormalization()(x)
-        x = layers.Activation(LeakyReLU())(x)
-        x = layers.MaxPooling2D()(x)
-
-    x = layers.Flatten()(x)
-    x = layers.Dense(1)(x)
-    x = layers.BatchNormalization()(x)
-    return models.Model(inputs=[input_img], outputs=x)
-
+    return build_encoder(is_discriminator=True, **params)

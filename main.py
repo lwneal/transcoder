@@ -31,6 +31,7 @@ Options:
       --max-temperature=<temp>          Sampling temperature for log-Boltzmann distribution [default: 1.0]
       --freeze-encoder=<freeze>         Freeze weights for the encoder [default: False]
       --freeze-decoder=<freeze>         Freeze weights for the decoder [default: False]
+      --enable-gan=<bool>               If False, no GAN training will be applied [default: True]
 """
 from docopt import docopt
 from pprint import pprint

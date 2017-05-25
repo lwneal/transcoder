@@ -66,6 +66,7 @@ def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, de
     batch_size = params['batch_size']
     batches_per_epoch = params['batches_per_epoch']
     thought_vector_size = params['thought_vector_size']
+    enable_gan = params['enable_gan']
 
     training_gen = train_generator(encoder_dataset, decoder_dataset, **params)
     clipping_time = 0
@@ -75,15 +76,22 @@ def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, de
     r_avg_loss = 0
     d_avg_loss = 0
     g_avg_loss = 0
+    batches_per_iter = int(params['training_iters_per_gan'])
 
     print("Training...")
-    for i in range(batches_per_epoch):
+    for i in range(0, batches_per_epoch, batches_per_iter):
+        sys.stderr.write("[K\r{}/{} batches \tbs {}, D_g {:.3f}, D_r {:.3f} G {:.3f} T {:.3f} Accuracy {:.3f}".format(
+            i + 1, batches_per_epoch, batch_size, d_avg_loss, r_avg_loss, g_avg_loss, t_avg_loss, t_avg_accuracy))
+
         # Update transcoder a bunch of times
-        for _ in range(int(params['training_iters_per_gan'])):
+        for _ in range(batches_per_iter):
             X, Y = next(training_gen)
             loss, accuracy = transcoder.train_on_batch(X, Y)
             t_avg_loss = .95 * t_avg_loss + .05 * loss
             t_avg_accuracy = .95 * t_avg_accuracy + .05 * accuracy
+
+        if not enable_gan:
+            continue
 
         # Update Discriminator 5x per Generator update
         for _ in range(5):
@@ -118,18 +126,14 @@ def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, de
                 layer.set_weights(weights)
             clipping_time += time.time() - start_time
 
-        # Generate a random thought vector
+        # Update generator based on a random thought vector
         X_encoder = np.random.uniform(-1, 1, size=(batch_size, thought_vector_size))
-
         for layer in discriminator.layers:
             layer.trainable = False
         loss, accuracy = cgan.train_on_batch(X_encoder, -Y_disc)
         g_avg_loss = .95 * g_avg_loss + .05 * loss
         for layer in discriminator.layers:
             layer.trainable = True
-
-        sys.stderr.write("[K\r{}/{} batches \tbs {}, D_g {:.3f}, D_r {:.3f} G {:.3f} T {:.3f} Accuracy {:.3f}".format(
-            i + 1, batches_per_epoch, batch_size, d_avg_loss, r_avg_loss, g_avg_loss, t_avg_loss, t_avg_accuracy))
 
     print("Trained for {:.2f} s (spent {:.2f} s clipping)".format(time.time() - training_start_time, clipping_time))
     sys.stderr.write('\n')

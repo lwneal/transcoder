@@ -268,4 +268,4 @@ def main(**params):
     elif mode == 'test':
         evaluate(transcoder, encoder_dataset, decoder_dataset, **params)
     elif mode == 'demo':
-        demonstrate(transcoder, encoder_dataset, decoder_dataset, input_text=inp, **params)
+        demonstrate(transcoder, encoder_dataset, decoder_dataset, **params)

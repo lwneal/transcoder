@@ -17,6 +17,8 @@ def build_encoder(is_discriminator=False, **params):
     thought_vector_size = params['thought_vector_size']
     pretrained_encoder = params['pretrained_encoder']
     img_width = params['img_width']
+    cgru_size = params['cgru_size']
+    cgru_layers = params['cgru_layers']
 
     include_top = False
     LEARNABLE_CNN_LAYERS = 1
@@ -42,7 +44,11 @@ def build_encoder(is_discriminator=False, **params):
         x = layers.BatchNormalization()(x)
         x = layers.Activation(LeakyReLU())(x)
 
-        x = SpatialCGRU(x, 128)
+        if cgru_layers >= 1:
+            x = SpatialCGRU(x, cgru_size)
+        else:
+            x = layers.Conv2D(cgru_size * 3 / 2, (3,3), padding='same')(x)
+        x = layers.Activation(LeakyReLU())(x)
         x = layers.MaxPooling2D()(x)
 
         x = layers.Conv2D(256, (3,3), padding='same')(x)
@@ -67,8 +73,6 @@ def build_encoder(is_discriminator=False, **params):
 
 def build_decoder(**params):
     thought_vector_size = params['thought_vector_size']
-    cgru_size = params['cgru_size']
-    cgru_layers = params['cgru_layers']
     img_width = params['img_width']
 
     x_input = layers.Input(shape=(thought_vector_size,))

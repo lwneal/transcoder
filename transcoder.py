@@ -169,14 +169,18 @@ def hallucinate(decoder, decoder_dataset, **params):
         print(' ' + decoder_dataset.unformat_output(X_generated[j]))
 
 
-def dataset_for_extension(ext):
-    if ext == 'img':
-        return ImageDataset
-    elif ext == 'bbox':
-        return ImageRegionDataset
-    elif ext == 'vq':
-        return VisualQuestionDataset
-    return WordDataset
+def find_dataset(input_filename, dataset_type=None, **params):
+    types = {
+        'img': ImageDataset,
+        'bbox': ImageRegionDataset,
+        'vq': VisualQuestionDataset,
+        'txt': WordDataset,
+    }
+    if dataset_type:
+        return types[dataset_type]
+    # If no dataset type is specified, infer based on file extension
+    ext = input_filename.split('.')[-1]
+    return types.get(ext, WordDataset)
 
 
 def build_model(encoder_dataset, decoder_dataset, **params):
@@ -206,51 +210,51 @@ def build_model(encoder_dataset, decoder_dataset, **params):
     transcoder.compile(loss=transcoder_loss, optimizer='adam', metrics=['accuracy'])
     transcoder._make_train_function()
 
-    return encoder, decoder, transcoder, discriminator, cgan
-
-
-def main(**params):
-    mode = params['mode']
-
-    print("Loading datasets...")
-    ds = dataset_for_extension(params['encoder_input_filename'].split('.')[-1])
-    encoder_dataset = ds(params['encoder_input_filename'], is_encoder=True, **params)
-
-    ds = dataset_for_extension(params['decoder_input_filename'].split('.')[-1])
-    decoder_dataset = ds(params['decoder_input_filename'], is_encoder=False, **params)
-
-    print("Building models...")
-    encoder, decoder, transcoder, discriminator, cgan = build_model(encoder_dataset, decoder_dataset, **params)
     print("\nEncoder")
     encoder.summary()
     print("\nDecoder")
     decoder.summary()
     print("\nDiscriminator")
     discriminator.summary()
+    return encoder, decoder, transcoder, discriminator, cgan
 
-    if os.path.exists(params['encoder_weights']):
-        encoder.load_weights(params['encoder_weights'])
-    if os.path.exists(params['decoder_weights']):
-        decoder.load_weights(params['decoder_weights'])
-    if os.path.exists(params['discriminator_weights']):
-        discriminator.load_weights(params['discriminator_weights'])
 
-    if params['mode'] == 'train':
-        print("Training...")
-        for epoch in range(params['epochs']):
+def main(**params):
+    mode = params['mode']
+    epochs = params['epochs']
+    encoder_input_filename = params['encoder_input_filename']
+    encoder_datatype = params['encoder_datatype']
+    decoder_input_filename = params['decoder_input_filename']
+    decoder_datatype = params['decoder_datatype']
+    encoder_weights = params['encoder_weights']
+    decoder_weights = params['decoder_weights']
+    discriminator_weights = params['discriminator_weights']
+
+    print("Loading datasets...")
+    encoder_dataset = find_dataset(encoder_input_filename, encoder_datatype)(encoder_input_filename, is_encoder=True, **params)
+    decoder_dataset = find_dataset(decoder_input_filename, decoder_datatype)(decoder_input_filename, is_encoder=False, **params)
+
+    print("Building models...")
+    encoder, decoder, transcoder, discriminator, cgan = build_model(encoder_dataset, decoder_dataset, **params)
+
+    print("Loading weights...")
+    if os.path.exists(encoder_weights):
+        encoder.load_weights(encoder_weights)
+    if os.path.exists(decoder_weights):
+        decoder.load_weights(decoder_weights)
+    if os.path.exists(discriminator_weights):
+        discriminator.load_weights(discriminator_weights)
+
+    print("Starting mode {}".format(mode))
+    if mode == 'train':
+        for epoch in range(epochs):
+            train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, decoder_dataset, **params)
+            encoder.save_weights(encoder_weights)
+            decoder.save_weights(decoder_weights)
+            discriminator.save_weights(discriminator_weights)
             demonstrate(transcoder, encoder_dataset, decoder_dataset, **params)
             hallucinate(decoder, decoder_dataset, **params)
-            train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, decoder_dataset, **params)
-            encoder.save_weights(params['encoder_weights'])
-            decoder.save_weights(params['decoder_weights'])
-            discriminator.save_weights(params['discriminator_weights'])
     elif mode == 'test':
-        print("Testing ")
         evaluate(transcoder, encoder_dataset, decoder_dataset, **params)
     elif mode == 'demo':
-        print("Starting Demonstration...")
-        params['batch_size'] = 1
-        while True:
-            inp = raw_input("Type a complete sentence in the input language: ")
-            inp = inp.decode('utf-8').lower()
-            demonstrate(transcoder, encoder_dataset, decoder_dataset, input_text=inp, **params)
+        demonstrate(transcoder, encoder_dataset, decoder_dataset, input_text=inp, **params)

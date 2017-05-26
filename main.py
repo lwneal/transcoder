@@ -5,6 +5,8 @@ Usage:
 Options:
       --encoder-input-filename=<txt>    Input text file the encoder will read (eg. English sentences)
       --decoder-input-filename=<txt>    Input text file the decoder will try to copy (eg. German sentences)
+      --encoder-datatype=<type>         One of: img, bbox, vq, text [default: None]
+      --decoder-datatype=<type>         One of: img, bbox, vq, text [default: None]
       --encoder-weights=<name>          Filename for saved model [default: default_encoder.h5]
       --decoder-weights=<name>          Filename for saved model [default: default_decoder.h5]
       --discriminator-weights=<name>    Filename for saved model [default: default_discriminator.h5]

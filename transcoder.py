@@ -62,12 +62,13 @@ def train_generator(encoder_dataset, decoder_dataset, **params):
 
 
 def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, decoder_dataset, **params):
-    # TODO: freeze_encoder and freeze_decoder
     batch_size = params['batch_size']
     batches_per_epoch = params['batches_per_epoch']
     thought_vector_size = params['thought_vector_size']
     enable_gan = params['enable_gan']
     batches_per_iter = int(params['training_iters_per_gan'])
+    freeze_encoder = params['freeze_encoder']
+    freeze_decoder = params['freeze_decoder']
 
     training_gen = train_generator(encoder_dataset, decoder_dataset, **params)
     clipping_time = 0
@@ -83,10 +84,18 @@ def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, de
         sys.stderr.write("[K\r{}/{} batches \tbs {}, D_g {:.3f}, D_r {:.3f} G {:.3f} T {:.3f} Accuracy {:.3f}".format(
             i + 1, batches_per_epoch, batch_size, d_avg_loss, r_avg_loss, g_avg_loss, t_avg_loss, t_avg_accuracy))
 
-        # Update transcoder a bunch of times
+        # Train encoder and decoder on labeled X -> Y pairs
         for _ in range(batches_per_iter):
             X, Y = next(training_gen)
+            if freeze_encoder:
+                for layer in encoder.layers:
+                    layer.trainable = False
+            if freeze_decoder:
+                for layer in decoder.layers:
+                    layer.trainable = False
             loss, accuracy = transcoder.train_on_batch(X, Y)
+            for layer in encoder.layers + decoder.layers:
+                layer.trainable = True
             t_avg_loss = .95 * t_avg_loss + .05 * loss
             t_avg_accuracy = .95 * t_avg_accuracy + .05 * accuracy
 

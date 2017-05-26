@@ -7,17 +7,15 @@ from PIL import Image
 DATA_DIR = os.path.expanduser('~/data')
 
 def save_set(fold, x, y, suffix='png'):
-    fp_txt = open('mnist_{}.txt'.format(fold), 'w')
-    fp_img = open('mnist_{}.img'.format(fold), 'w')
+    fp = open('mnist_{}.dataset'.format(fold), 'w')
     for i in range(len(x)):
         label = y[i]
-        filename = 'mnist/{}/{:05d}_{:d}.{}'.format(fold, i, label, suffix)
-        Image.fromarray(x[i]).save(filename)
-        fp_txt.write('{}\n'.format(label))
-        fp_img.write(json.dumps({'filename': filename}))
-        fp_img.write('\n')
-    fp_txt.close()
-    fp_img.close()
+        img_filename = 'mnist/{}/{:05d}_{:d}.{}'.format(fold, i, label, suffix)
+        Image.fromarray(x[i]).save(img_filename)
+        entry = {'filename': img_filename, 'label': str(label)}
+        fp.write(json.dumps(entry))
+        fp.write('\n')
+    fp.close()
     
 
 if __name__ == '__main__':

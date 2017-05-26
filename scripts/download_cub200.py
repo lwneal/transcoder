@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # Downloads the CUB200 dataset
 import os
+import json
+from subprocess import check_output
 
 DATA_DIR = os.path.expanduser('~/data')
 CUB_DIR = os.path.join(DATA_DIR, 'cub200')
@@ -31,8 +33,23 @@ if __name__ == '__main__':
     mkdir(DATA_DIR)
     mkdir(CUB_DIR)
     os.chdir(CUB_DIR)
+
+    # Download and extract dataset
     download('images', 'http://www.vision.caltech.edu/visipedia-data/CUB-200/images.tgz')
     download('lists', 'http://www.vision.caltech.edu/visipedia-data/CUB-200/lists.tgz')
     download('annotations-mat', 'http://www.vision.caltech.edu/visipedia-data/CUB-200/annotations.tgz')
     download('attributes', 'http://www.vision.caltech.edu/visipedia-data/CUB-200/attributes.tgz')
 
+    # Generate CSV files
+    text = check_output('find images | grep -v "\.\_" | grep jpg$', shell=True)
+    images = text.splitlines()
+
+    fp = open('{}/cub200.dataset'.format(DATA_DIR), 'w')
+    for filename in images:
+        label = filename.lstrip('cub200/images/').split('/')[0].split('.')[-1]
+        line = json.dumps({
+            'filename': filename,
+            'label': label,
+        })
+        fp.write(line + '\n')
+    fp.close()

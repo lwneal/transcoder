@@ -44,12 +44,14 @@ if __name__ == '__main__':
     text = check_output('find images | grep -v "\.\_" | grep jpg$', shell=True)
     images = text.splitlines()
 
+    print("Writing {} items to cub200.dataset".format(len(images)))
     fp = open('{}/cub200.dataset'.format(DATA_DIR), 'w')
     for filename in images:
         label = filename.lstrip('cub200/images/').split('/')[0].split('.')[-1]
         line = json.dumps({
-            'filename': filename,
+            'filename': 'cub200/' + filename,
             'label': label,
         })
         fp.write(line + '\n')
     fp.close()
+    print("CUB200 dataset ready")

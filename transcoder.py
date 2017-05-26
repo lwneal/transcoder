@@ -16,9 +16,9 @@ from dataset_visual_question import VisualQuestionDataset
 
 
 def get_batch(encoder_dataset, decoder_dataset, base_idx=None, **params):
+    batch_size = params['batch_size']
     X_list = encoder_dataset.empty_batch(**params)
     Y_list = decoder_dataset.empty_batch(**params)
-    batch_size = params['batch_size']
     for i in range(batch_size):
         if base_idx is None:
             idx = encoder_dataset.random_idx()
@@ -50,16 +50,16 @@ def evaluate(transcoder, encoder_dataset, decoder_dataset, **params):
 
 
 def train_generator(encoder_dataset, decoder_dataset, **params):
-    # HACK: X and Y should each be a numpy array...
-    # Unless the model takes multiple inputs/outputs
+    # Datasets return a list of arrays
+    # Keras requires either a list of arrays or a single array
     def unpack(Z):
         if isinstance(Z, list) and len(Z) == 1:
             return Z[0]
         return Z
-
     while True:
         X, Y = get_batch(encoder_dataset, decoder_dataset, **params)
         yield unpack(X), unpack(Y)
+
 
 def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, decoder_dataset, **params):
     # TODO: freeze_encoder and freeze_decoder
@@ -67,6 +67,7 @@ def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, de
     batches_per_epoch = params['batches_per_epoch']
     thought_vector_size = params['thought_vector_size']
     enable_gan = params['enable_gan']
+    batches_per_iter = int(params['training_iters_per_gan'])
 
     training_gen = train_generator(encoder_dataset, decoder_dataset, **params)
     clipping_time = 0
@@ -76,7 +77,6 @@ def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, de
     r_avg_loss = 0
     d_avg_loss = 0
     g_avg_loss = 0
-    batches_per_iter = int(params['training_iters_per_gan'])
 
     print("Training...")
     for i in range(0, batches_per_epoch, batches_per_iter):

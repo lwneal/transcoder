@@ -36,12 +36,14 @@ def build_encoder(is_discriminator=False, **params):
         x = cnn(input_img)
     else:
         x = layers.Conv2D(64, (3,3), padding='same')(input_img)
-        x = layers.BatchNormalization()(x)
+        if not is_discriminator:
+            x = layers.BatchNormalization()(x)
         x = layers.Activation(LeakyReLU())(x)
         x = layers.MaxPooling2D()(x)
 
         x = layers.Conv2D(128, (3,3), padding='same')(x)
-        x = layers.BatchNormalization()(x)
+        if not is_discriminator:
+            x = layers.BatchNormalization()(x)
         x = layers.Activation(LeakyReLU())(x)
 
         if cgru_layers >= 1:
@@ -52,12 +54,14 @@ def build_encoder(is_discriminator=False, **params):
         x = layers.MaxPooling2D()(x)
 
         x = layers.Conv2D(256, (3,3), padding='same')(x)
-        x = layers.BatchNormalization()(x)
+        if not is_discriminator:
+            x = layers.BatchNormalization()(x)
         x = layers.Activation(LeakyReLU())(x)
         x = layers.MaxPooling2D()(x)
 
         x = layers.Conv2D(256, (3,3), padding='same')(x)
-        x = layers.BatchNormalization()(x)
+        if not is_discriminator:
+            x = layers.BatchNormalization()(x)
         x = layers.Activation(LeakyReLU())(x)
         x = layers.MaxPooling2D()(x)
 
@@ -77,26 +81,22 @@ def build_decoder(**params):
 
     x_input = layers.Input(shape=(thought_vector_size,))
 
-    # Expand vector from 1x1 to NxN
-    N = img_width / 8
+    # Expand vector from 1x1 to 4x4
+    N = 4
     x = layers.Reshape((1, 1, -1))(x_input)
-    x = layers.Conv2DTranspose(64, (N, N), strides=(N, N), padding='same')(x)
+    x = layers.Conv2DTranspose(128, (N, N), strides=(N, N), padding='same')(x)
     x = layers.BatchNormalization()(x)
     x = layers.Activation(LeakyReLU())(x)
 
-    # Upsample from NxN to full size
-    x = layers.Conv2DTranspose(256, (3,3), strides=(2,2), padding='same')(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.Activation(LeakyReLU())(x)
+    # Upsample to the desired width (powers of 2 only)
+    while N < img_width:
+        x = layers.Conv2DTranspose(256, (5,5), strides=(2,2), padding='same')(x)
+        x = layers.BatchNormalization()(x)
+        x = layers.Activation(LeakyReLU())(x)
+        N *= 2
 
-    x = layers.Conv2DTranspose(128, (3,3), strides=(2,2), padding='same')(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.Activation(LeakyReLU())(x)
-
-    x = layers.Conv2DTranspose(64, (3,3), strides=(2,2), padding='same')(x)
     x = layers.Conv2D(3, (3,3), padding='same')(x)
     x = layers.Activation('sigmoid')(x)
-
     return models.Model(inputs=[x_input], outputs=x)
 
 

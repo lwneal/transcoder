@@ -10,6 +10,7 @@ import model_words
 import model_img
 import model_img_region
 from dataset_word import WordDataset
+from dataset_label import LabelDataset
 from dataset_img import ImageDataset
 from dataset_img_region import ImageRegionDataset
 from dataset_visual_question import VisualQuestionDataset
@@ -184,6 +185,7 @@ def find_dataset(input_filename, dataset_type=None, **params):
         'bbox': ImageRegionDataset,
         'vq': VisualQuestionDataset,
         'txt': WordDataset,
+        'lab': LabelDataset,
     }
     if dataset_type:
         return types[dataset_type]

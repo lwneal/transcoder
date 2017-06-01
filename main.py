@@ -5,6 +5,8 @@ Usage:
 Options:
       --encoder-input-filename=<txt>    Input text file the encoder will read (eg. English sentences)
       --decoder-input-filename=<txt>    Input text file the decoder will try to copy (eg. German sentences)
+      --encoder-datatype=<type>         One of: img, bbox, vq, text [default: None]
+      --decoder-datatype=<type>         One of: img, bbox, vq, text [default: None]
       --encoder-weights=<name>          Filename for saved model [default: default_encoder.h5]
       --decoder-weights=<name>          Filename for saved model [default: default_decoder.h5]
       --discriminator-weights=<name>    Filename for saved model [default: default_discriminator.h5]
@@ -20,9 +22,8 @@ Options:
       --rnn-size=<size>                 Number of output units in RNN [default: 1024]
       --rnn-layers=<layers>             Number of layers of RNN to use [default: 1]
       --pretrained-encoder=<name>       For image encoders, one of: vgg16, resnet50 [default: None]
-      --csr-size=<size>                Number of output units in SpatialCGRU [default: 256]
-      --csr-layers=<layers>            Number of layers of SpatialCGRU layers to use [default: 0]
-      --thought-vector-size=<size>      Size of encoder output (decoder input) vector [default: 2048]
+      --csr-size=<size>                 Number of output units in conv spatial recurrent [default: 256]
+      --csr-layers=<layers>             Number of conv spatial RNN layers to use [default: 0]
       --tokenize=<tokenize>             If True, input text will be tokenized [default: False]
       --lowercase=<lower>               If True, lowercase all words [default: True]
       --load-encoder-vocab=<vocab>      Filename, save/load vocabulary from this file [default: None]
@@ -31,6 +32,7 @@ Options:
       --max-temperature=<temp>          Sampling temperature for log-Boltzmann distribution [default: 1.0]
       --freeze-encoder=<freeze>         Freeze weights for the encoder [default: False]
       --freeze-decoder=<freeze>         Freeze weights for the decoder [default: False]
+      --enable-gan=<bool>               If False, no GAN training will be applied [default: True]
 """
 from docopt import docopt
 from pprint import pprint

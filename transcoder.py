@@ -10,15 +10,16 @@ import model_words
 import model_img
 import model_img_region
 from dataset_word import WordDataset
+from dataset_label import LabelDataset
 from dataset_img import ImageDataset
 from dataset_img_region import ImageRegionDataset
 from dataset_visual_question import VisualQuestionDataset
 
 
 def get_batch(encoder_dataset, decoder_dataset, base_idx=None, **params):
+    batch_size = params['batch_size']
     X_list = encoder_dataset.empty_batch(**params)
     Y_list = decoder_dataset.empty_batch(**params)
-    batch_size = params['batch_size']
     for i in range(batch_size):
         if base_idx is None:
             idx = encoder_dataset.random_idx()
@@ -50,22 +51,25 @@ def evaluate(transcoder, encoder_dataset, decoder_dataset, **params):
 
 
 def train_generator(encoder_dataset, decoder_dataset, **params):
-    # HACK: X and Y should each be a numpy array...
-    # Unless the model takes multiple inputs/outputs
+    # Datasets return a list of arrays
+    # Keras requires either a list of arrays or a single array
     def unpack(Z):
         if isinstance(Z, list) and len(Z) == 1:
             return Z[0]
         return Z
-
     while True:
         X, Y = get_batch(encoder_dataset, decoder_dataset, **params)
         yield unpack(X), unpack(Y)
 
+
 def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, decoder_dataset, **params):
-    # TODO: freeze_encoder and freeze_decoder
     batch_size = params['batch_size']
     batches_per_epoch = params['batches_per_epoch']
     thought_vector_size = params['thought_vector_size']
+    enable_gan = params['enable_gan']
+    batches_per_iter = int(params['training_iters_per_gan'])
+    freeze_encoder = params['freeze_encoder']
+    freeze_decoder = params['freeze_decoder']
 
     training_gen = train_generator(encoder_dataset, decoder_dataset, **params)
     clipping_time = 0
@@ -77,13 +81,27 @@ def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, de
     g_avg_loss = 0
 
     print("Training...")
-    for i in range(batches_per_epoch):
-        # Update transcoder a bunch of times
-        for _ in range(int(params['training_iters_per_gan'])):
+    for i in range(0, batches_per_epoch, batches_per_iter):
+        sys.stderr.write("[K\r{}/{} batches \tbs {}, D_g {:.3f}, D_r {:.3f} G {:.3f} T {:.3f} Accuracy {:.3f}".format(
+            i + 1, batches_per_epoch, batch_size, d_avg_loss, r_avg_loss, g_avg_loss, t_avg_loss, t_avg_accuracy))
+
+        # Train encoder and decoder on labeled X -> Y pairs
+        for _ in range(batches_per_iter):
             X, Y = next(training_gen)
+            if freeze_encoder:
+                for layer in encoder.layers:
+                    layer.trainable = False
+            if freeze_decoder:
+                for layer in decoder.layers:
+                    layer.trainable = False
             loss, accuracy = transcoder.train_on_batch(X, Y)
+            for layer in encoder.layers + decoder.layers:
+                layer.trainable = True
             t_avg_loss = .95 * t_avg_loss + .05 * loss
             t_avg_accuracy = .95 * t_avg_accuracy + .05 * accuracy
+
+        if not enable_gan:
+            continue
 
         # Update Discriminator 5x per Generator update
         for _ in range(5):
@@ -118,18 +136,14 @@ def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, de
                 layer.set_weights(weights)
             clipping_time += time.time() - start_time
 
-        # Generate a random thought vector
+        # Update generator based on a random thought vector
         X_encoder = np.random.uniform(-1, 1, size=(batch_size, thought_vector_size))
-
         for layer in discriminator.layers:
             layer.trainable = False
         loss, accuracy = cgan.train_on_batch(X_encoder, -Y_disc)
         g_avg_loss = .95 * g_avg_loss + .05 * loss
         for layer in discriminator.layers:
             layer.trainable = True
-
-        sys.stderr.write("[K\r{}/{} batches \tbs {}, D_g {:.3f}, D_r {:.3f} G {:.3f} T {:.3f} Accuracy {:.3f}".format(
-            i + 1, batches_per_epoch, batch_size, d_avg_loss, r_avg_loss, g_avg_loss, t_avg_loss, t_avg_accuracy))
 
     print("Trained for {:.2f} s (spent {:.2f} s clipping)".format(time.time() - training_start_time, clipping_time))
     sys.stderr.write('\n')
@@ -165,14 +179,19 @@ def hallucinate(decoder, decoder_dataset, **params):
         print(' ' + decoder_dataset.unformat_output(X_generated[j]))
 
 
-def dataset_for_extension(ext):
-    if ext == 'img':
-        return ImageDataset
-    elif ext == 'bbox':
-        return ImageRegionDataset
-    elif ext == 'vq':
-        return VisualQuestionDataset
-    return WordDataset
+def find_dataset(input_filename, dataset_type=None, **params):
+    types = {
+        'img': ImageDataset,
+        'bbox': ImageRegionDataset,
+        'vq': VisualQuestionDataset,
+        'txt': WordDataset,
+        'lab': LabelDataset,
+    }
+    if dataset_type:
+        return types[dataset_type]
+    # If no dataset type is specified, infer based on file extension
+    ext = input_filename.split('.')[-1]
+    return types.get(ext, WordDataset)
 
 
 def build_model(encoder_dataset, decoder_dataset, **params):
@@ -202,51 +221,51 @@ def build_model(encoder_dataset, decoder_dataset, **params):
     transcoder.compile(loss=transcoder_loss, optimizer='adam', metrics=['accuracy'])
     transcoder._make_train_function()
 
-    return encoder, decoder, transcoder, discriminator, cgan
-
-
-def main(**params):
-    mode = params['mode']
-
-    print("Loading datasets...")
-    ds = dataset_for_extension(params['encoder_input_filename'].split('.')[-1])
-    encoder_dataset = ds(params['encoder_input_filename'], is_encoder=True, **params)
-
-    ds = dataset_for_extension(params['decoder_input_filename'].split('.')[-1])
-    decoder_dataset = ds(params['decoder_input_filename'], is_encoder=False, **params)
-
-    print("Building models...")
-    encoder, decoder, transcoder, discriminator, cgan = build_model(encoder_dataset, decoder_dataset, **params)
     print("\nEncoder")
     encoder.summary()
     print("\nDecoder")
     decoder.summary()
     print("\nDiscriminator")
     discriminator.summary()
+    return encoder, decoder, transcoder, discriminator, cgan
 
-    if os.path.exists(params['encoder_weights']):
-        encoder.load_weights(params['encoder_weights'])
-    if os.path.exists(params['decoder_weights']):
-        decoder.load_weights(params['decoder_weights'])
-    if os.path.exists(params['discriminator_weights']):
-        discriminator.load_weights(params['discriminator_weights'])
 
-    if params['mode'] == 'train':
-        print("Training...")
-        for epoch in range(params['epochs']):
+def main(**params):
+    mode = params['mode']
+    epochs = params['epochs']
+    encoder_input_filename = params['encoder_input_filename']
+    encoder_datatype = params['encoder_datatype']
+    decoder_input_filename = params['decoder_input_filename']
+    decoder_datatype = params['decoder_datatype']
+    encoder_weights = params['encoder_weights']
+    decoder_weights = params['decoder_weights']
+    discriminator_weights = params['discriminator_weights']
+
+    print("Loading datasets...")
+    encoder_dataset = find_dataset(encoder_input_filename, encoder_datatype)(encoder_input_filename, is_encoder=True, **params)
+    decoder_dataset = find_dataset(decoder_input_filename, decoder_datatype)(decoder_input_filename, is_encoder=False, **params)
+
+    print("Building models...")
+    encoder, decoder, transcoder, discriminator, cgan = build_model(encoder_dataset, decoder_dataset, **params)
+
+    print("Loading weights...")
+    if os.path.exists(encoder_weights):
+        encoder.load_weights(encoder_weights)
+    if os.path.exists(decoder_weights):
+        decoder.load_weights(decoder_weights)
+    if os.path.exists(discriminator_weights):
+        discriminator.load_weights(discriminator_weights)
+
+    print("Starting mode {}".format(mode))
+    if mode == 'train':
+        for epoch in range(epochs):
+            train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, decoder_dataset, **params)
+            encoder.save_weights(encoder_weights)
+            decoder.save_weights(decoder_weights)
+            discriminator.save_weights(discriminator_weights)
             demonstrate(transcoder, encoder_dataset, decoder_dataset, **params)
             hallucinate(decoder, decoder_dataset, **params)
-            train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, decoder_dataset, **params)
-            encoder.save_weights(params['encoder_weights'])
-            decoder.save_weights(params['decoder_weights'])
-            discriminator.save_weights(params['discriminator_weights'])
     elif mode == 'test':
-        print("Testing ")
         evaluate(transcoder, encoder_dataset, decoder_dataset, **params)
     elif mode == 'demo':
-        print("Starting Demonstration...")
-        params['batch_size'] = 1
-        while True:
-            inp = raw_input("Type a complete sentence in the input language: ")
-            inp = inp.decode('utf-8').lower()
-            demonstrate(transcoder, encoder_dataset, decoder_dataset, input_text=inp, **params)
+        demonstrate(transcoder, encoder_dataset, decoder_dataset, **params)

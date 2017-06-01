@@ -10,7 +10,7 @@ from keras import activations
 from keras.engine.topology import InputSpec
 
 
-def QuadCSR(x, output_size, tie_weights=False, **kwargs):
+def QuadCSR(output_size, tie_weights=False, **kwargs):
     """
     This helper layer combines four Convolutional Spatial Recurrent layers,
     one in each direction to learn global context at each point in an image.

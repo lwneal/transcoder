@@ -269,3 +269,4 @@ def main(**params):
         evaluate(transcoder, encoder_dataset, decoder_dataset, **params)
     elif mode == 'demo':
         demonstrate(transcoder, encoder_dataset, decoder_dataset, **params)
+        hallucinate(decoder, decoder_dataset, **params)

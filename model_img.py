@@ -8,7 +8,7 @@ from keras.layers.advanced_activations import LeakyReLU
 import resnet50
 import tensorflow as tf
 
-from cgru import SpatialCGRU
+from csr import QuadCSR
 
 IMG_CHANNELS = 3
 
@@ -62,8 +62,8 @@ def build_encoder(is_discriminator=False, **params):
 
 def build_decoder(**params):
     thought_vector_size = params['thought_vector_size']
-    cgru_size = params['cgru_size']
-    cgru_layers = params['cgru_layers']
+    csr_size = params['csr_size']
+    csr_layers = params['csr_layers']
     img_width = params['img_width']
 
     x_input = layers.Input(shape=(thought_vector_size,))

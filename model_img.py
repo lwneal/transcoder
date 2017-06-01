@@ -8,7 +8,7 @@ from keras.layers.advanced_activations import LeakyReLU
 import resnet50
 import tensorflow as tf
 
-from cgru import SpatialCGRU
+from csr import QuadCSR
 
 IMG_CHANNELS = 3
 
@@ -77,6 +77,8 @@ def build_encoder(is_discriminator=False, **params):
 
 def build_decoder(**params):
     thought_vector_size = params['thought_vector_size']
+    csr_size = params['csr_size']
+    csr_layers = params['csr_layers']
     img_width = params['img_width']
 
     x_input = layers.Input(shape=(thought_vector_size,))
@@ -93,6 +95,8 @@ def build_decoder(**params):
         x = layers.Conv2DTranspose(256, (5,5), strides=(2,2), padding='same')(x)
         x = layers.BatchNormalization()(x)
         x = layers.Activation(LeakyReLU())(x)
+        if csr_layers > 0:
+            x = QuadCSR(csr_size)(x)
         N *= 2
 
     x = layers.Conv2D(3, (3,3), padding='same')(x)

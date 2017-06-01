@@ -9,42 +9,58 @@ from keras.utils import conv_utils
 from keras import activations
 from keras.engine.topology import InputSpec
 
-transpose = layers.Lambda(lambda x: tf.transpose(x, [0, 2, 1, 3]))
-reverse = layers.Lambda(lambda x: tf.reverse(x, [1]))
 
-def SpatialCGRU(x, output_size, **kwargs):
-    # Statefully scan the image in each of four directions
-    cgru = CGRU(output_size)
+def QuadCSR(output_size, tie_weights=False, **kwargs):
+    """
+    This helper layer combines four Convolutional Spatial Recurrent layers,
+    one in each direction to learn global context at each point in an image.
+    """
 
-    down_rnn = CGRU(output_size/4)(x)
-    up_rnn = reverse(CGRU(output_size/4)(reverse(x)))
-    left_rnn = transpose(CGRU(output_size/4)(transpose(x)))
-    right_rnn = transpose(reverse(CGRU(output_size/4)(reverse(transpose(x)))))
+    def apply_layers(x):
+        # Transpose or reverse the columns for left-to-right, bottom-to-top, etc
+        transpose = layers.Lambda(lambda x: tf.transpose(x, [0, 2, 1, 3]))
+        reverse = layers.Lambda(lambda x: tf.reverse(x, [1]))
 
-    concat_out = layers.Concatenate()([x, down_rnn, up_rnn, left_rnn, right_rnn])
+        # In problems with rotational symmetry, directional weights can be tied
+        if tie_weights:
+            csr = CSR(output_size, **kwargs)
+            down_rnn = csr(x)
+            up_rnn = reverse(csr(reverse(x)))
+            left_rnn = transpose(csr(transpose(x)))
+            right_rnn = transpose(reverse(csr(reverse(transpose(x)))))
+        else:
+            down_rnn = CSR(output_size/4, **kwargs)(x)
+            up_rnn = reverse(CSR(output_size/4, **kwargs)(reverse(x)))
+            left_rnn = transpose(CSR(output_size/4, **kwargs)(transpose(x)))
+            right_rnn = transpose(reverse(CSR(output_size/4, **kwargs)(reverse(transpose(x)))))
 
-    # Convolve the image some more
-    output_mask = layers.Conv2D(output_size, (1,1))(concat_out)
-    return output_mask
+        # Combine spatial context with the input at each position
+        concat_out = layers.Concatenate()([down_rnn, up_rnn, left_rnn, right_rnn])
+        output_mask = layers.Conv2D(output_size, (1,1))(concat_out)
+        return output_mask
+    return apply_layers
 
 
-class CGRU(Recurrent):
-    """ A 1D convolutional tanh/sigmoid GRU with no dropout and no regularization
+class CSR(Recurrent):
+    """ 
+    This is the Convolutional Spatial Recurrent layer in the top-to-bottom direction
+    It's implemented as a 1D convolutional GRU with no dropout or regularization
     Convolves forward along the first non-batch axis (ie from top to bottom of an image)
     """
-    def __init__(self, units=10, *args, **kwargs):
+    def __init__(self, units=10, filter_size=3, *args, **kwargs):
         # __init__ just sets params, doesn't allocate anything
-        super(CGRU, self).__init__(return_sequences=True, **kwargs)
+        super(CSR, self).__init__(return_sequences=True, **kwargs)
         self.units = units
 
         # TODO: Handle all the normal RNN parameters
         self.activation = activations.get('tanh')
+        #self.activation = layers.advanced_activations.LeakyReLU()
         self.recurrent_activation = activations.get('hard_sigmoid')
         self.dropout = 0
         self.recurrent_dropout = 0
 
         # TODO: Handle all the normal Conv1D parameters
-        self.filter_size = 3
+        self.filter_size = filter_size
         self.padding = conv_utils.normalize_padding('same')
         # Keras hard-codes the RNN ndim to 3; let's change it to 4
         self.input_spec = InputSpec(ndim=4)
@@ -53,7 +69,6 @@ class CGRU(Recurrent):
         return (input_shape[0], input_shape[1], input_shape[2], self.units)
 
     def build(self, input_shape):
-        print("Calling build() for ConvGRU with input shape {}".format(input_shape))
         batch_size = input_shape[0]
         time_steps = input_shape[1]
         pixels_per_step = input_shape[2]
@@ -111,7 +126,7 @@ class CGRU(Recurrent):
     """
     Keras will call this function when you first build the layer.
     """
-    def get_initial_states(self, inputs):
+    def get_initial_state(self, inputs):
         # Input shape is BATCH_SIZE, IMG_HEIGHT, IMG_WIDTH, CHANNELS
         # Input at each time step is BATCH_SIZE, IMG_WIDTH, CHANNELS
         # Output at each time step is IMG_WIDTH, UNITS 

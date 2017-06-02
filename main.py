@@ -16,6 +16,7 @@ Options:
       --training-iters-per-gan=<iters>  Iterations of normal training per iteration of GAN [default: 5.0]
       --max-words-encoder=<ewords>      Number of words of context (the N in N-gram) [default: 12]
       --max-words-decoder=<dwords>      Number of words of context (the N in N-gram) [default: 12]
+      --thought-vector-size=<size>      Size of encoder output (decoder input) vector [default: 2048]
       --img-width=<width>               Resize images to this width in pixels [default: 64]
       --wordvec-size=<size>             Number of units in word embedding [default: 1024]
       --rnn-type=<type>                 One of LSTM, GRU [default: GRU]

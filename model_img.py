@@ -17,8 +17,8 @@ def build_encoder(is_discriminator=False, **params):
     thought_vector_size = params['thought_vector_size']
     pretrained_encoder = params['pretrained_encoder']
     img_width = params['img_width']
-    cgru_size = params['cgru_size']
-    cgru_layers = params['cgru_layers']
+    cgru_size = params['csr_size']
+    cgru_layers = params['csr_layers']
 
     include_top = False
     LEARNABLE_CNN_LAYERS = 1
@@ -47,7 +47,7 @@ def build_encoder(is_discriminator=False, **params):
         x = layers.Activation(LeakyReLU())(x)
 
         if cgru_layers >= 1:
-            x = SpatialCGRU(x, cgru_size)
+            x = QuadCSR(cgru_size)(x)
         else:
             x = layers.Conv2D(cgru_size * 3 / 2, (3,3), padding='same')(x)
         x = layers.Activation(LeakyReLU())(x)

@@ -195,6 +195,7 @@ def find_dataset(input_filename, dataset_type=None, **params):
 
 
 def build_model(encoder_dataset, decoder_dataset, **params):
+    enable_gan = params['enable_gan']
     # HACK: Keras Bug https://github.com/fchollet/keras/issues/5221
     # Sharing a BatchNormalization layer corrupts the graph
     # Workaround: carefully call _make_train_function
@@ -209,13 +210,17 @@ def build_model(encoder_dataset, decoder_dataset, **params):
 
     decoder = decoder_dataset.build_decoder(**params)
 
-    discriminator = decoder_dataset.build_discriminator(**params)
-    discriminator.compile(loss=wgan_loss, optimizer='adam', metrics=['accuracy'])
-    discriminator._make_train_function()
+    if enable_gan:
+        discriminator = decoder_dataset.build_discriminator(**params)
+        discriminator.compile(loss=wgan_loss, optimizer='adam', metrics=['accuracy'])
+        discriminator._make_train_function()
 
-    cgan = models.Model(inputs=decoder.inputs, outputs=discriminator(decoder.output))
-    cgan.compile(loss=wgan_loss, optimizer='adam', metrics=['accuracy'])
-    cgan._make_train_function()
+        cgan = models.Model(inputs=decoder.inputs, outputs=discriminator(decoder.output))
+        cgan.compile(loss=wgan_loss, optimizer='adam', metrics=['accuracy'])
+        cgan._make_train_function()
+    else:
+        discriminator = models.Sequential()
+        cgan = models.Sequential()
 
     transcoder = models.Model(inputs=encoder.inputs, outputs=decoder(encoder.output))
     transcoder.compile(loss=transcoder_loss, optimizer='adam', metrics=['accuracy'])
@@ -240,6 +245,7 @@ def main(**params):
     encoder_weights = params['encoder_weights']
     decoder_weights = params['decoder_weights']
     discriminator_weights = params['discriminator_weights']
+    enable_gan = params['enable_gan']
 
     print("Loading datasets...")
     encoder_dataset = find_dataset(encoder_input_filename, encoder_datatype)(encoder_input_filename, is_encoder=True, **params)
@@ -253,7 +259,7 @@ def main(**params):
         encoder.load_weights(encoder_weights)
     if os.path.exists(decoder_weights):
         decoder.load_weights(decoder_weights)
-    if os.path.exists(discriminator_weights):
+    if os.path.exists(discriminator_weights) and enable_gan:
         discriminator.load_weights(discriminator_weights)
 
     print("Starting mode {}".format(mode))
@@ -262,7 +268,8 @@ def main(**params):
             train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, decoder_dataset, **params)
             encoder.save_weights(encoder_weights)
             decoder.save_weights(decoder_weights)
-            discriminator.save_weights(discriminator_weights)
+            if enable_gan:
+                discriminator.save_weights(discriminator_weights)
             demonstrate(transcoder, encoder_dataset, decoder_dataset, **params)
             hallucinate(decoder, decoder_dataset, **params)
     elif mode == 'test':

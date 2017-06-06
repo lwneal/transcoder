@@ -145,6 +145,7 @@ def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, de
         for layer in discriminator.layers:
             layer.trainable = True
 
+    sys.stderr.write('\n')
     print("Trained for {:.2f} s (spent {:.2f} s clipping)".format(time.time() - training_start_time, clipping_time))
     sys.stderr.write('\n')
 

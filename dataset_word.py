@@ -44,7 +44,8 @@ class WordDataset(object):
             self.vocab, self.word_to_idx, self.idx_to_word = load_vocab_from_file(vocab_filename)
         else:
             print("Building vocabulary...")
-            self.vocab, self.word_to_idx, self.idx_to_word = build_vocab(text)
+            rarity = params['vocab_rarity']
+            self.vocab, self.word_to_idx, self.idx_to_word = build_vocab(text, n=rarity)
         print("Vocabulary contains {} words from {} to {}".format(len(self.vocab), self.vocab[4], self.vocab[-1]))
         if self.is_encoder:
             open('last_used_encoder_vocab.txt', 'w').write('\n'.join(self.vocab))

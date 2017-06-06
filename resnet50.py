@@ -125,6 +125,7 @@ def conv_block(input_tensor, kernel_size, filters, stage, block, strides=(2, 2))
 def ResNet50(include_top=True, weights='imagenet',
              input_tensor=None, input_shape=None,
              pooling=None,
+             name_prefix=None,
              classes=1000):
     """Instantiates the ResNet50 architecture.
 
@@ -249,7 +250,10 @@ def ResNet50(include_top=True, weights='imagenet',
     else:
         inputs = img_input
     # Create model.
-    model = Model(inputs, x, name='resnet50')
+    name = 'resnet50'
+    if name_prefix:
+        name = '{}_resnet50'.format(name_prefix)
+    model = Model(inputs, x)
 
     # load weights
     if weights == 'imagenet':

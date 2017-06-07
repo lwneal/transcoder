@@ -38,31 +38,31 @@ def build_encoder(is_discriminator=False, **params):
         x = layers.Conv2D(64, (3,3), padding='same')(input_img)
         if not is_discriminator:
             x = layers.BatchNormalization()(x)
-        x = layers.Activation(LeakyReLU())(x)
+        x = layers.LeakyReLU()(x)
         x = layers.MaxPooling2D()(x)
 
         x = layers.Conv2D(128, (3,3), padding='same')(x)
         if not is_discriminator:
             x = layers.BatchNormalization()(x)
-        x = layers.Activation(LeakyReLU())(x)
+        x = layers.LeakyReLU()(x)
 
         if cgru_layers >= 1:
             x = QuadCSR(cgru_size)(x)
         else:
             x = layers.Conv2D(cgru_size * 3 / 2, (3,3), padding='same')(x)
-        x = layers.Activation(LeakyReLU())(x)
+        x = layers.LeakyReLU()(x)
         x = layers.MaxPooling2D()(x)
 
         x = layers.Conv2D(256, (3,3), padding='same')(x)
         if not is_discriminator:
             x = layers.BatchNormalization()(x)
-        x = layers.Activation(LeakyReLU())(x)
+        x = layers.LeakyReLU()(x)
         x = layers.MaxPooling2D()(x)
 
         x = layers.Conv2D(256, (3,3), padding='same')(x)
         if not is_discriminator:
             x = layers.BatchNormalization()(x)
-        x = layers.Activation(LeakyReLU())(x)
+        x = layers.LeakyReLU()(x)
         x = layers.MaxPooling2D()(x)
 
     x = layers.Flatten()(x)

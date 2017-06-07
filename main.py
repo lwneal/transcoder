@@ -27,6 +27,7 @@ Options:
       --csr-layers=<layers>             Number of conv spatial RNN layers to use [default: 0]
       --tokenize=<tokenize>             If True, input text will be tokenized [default: False]
       --lowercase=<lower>               If True, lowercase all words [default: True]
+      --vocab-rarity=<v>                Minimum number of occurrences of a word [default: 1]
       --load-encoder-vocab=<vocab>      Filename, save/load vocabulary from this file [default: None]
       --load-decoder-vocab=<vocab>      Filename, save/load vocabulary from this file [default: None]
       --mode=<mode>                     One of train, test, demo [default: train]

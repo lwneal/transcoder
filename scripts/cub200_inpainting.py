@@ -2,11 +2,11 @@
 # Requires that CUB200 has already been downloaded
 # Generates a copy of CUB200 with random regions blacked out
 # For use as training data for inpainting
-import numpy as np
+import sys
 import os
 import json
+import numpy as np
 from PIL import Image, ImageDraw
-from subprocess import check_output
 
 DATA_DIR = os.path.expanduser('~/data')
 CUB_DIR = os.path.join(DATA_DIR, 'cub200')
@@ -22,6 +22,9 @@ def mkdir(path):
 
 
 if __name__ == '__main__':
+    if os.path.exists(OUTPUT_DIR):
+        print("{} already exists, {} exiting".format(OUTPUT_DIR, sys.argv[0]))
+        exit()
     mkdir(OUTPUT_DIR)
     os.chdir(IMG_DIR)
 

@@ -85,19 +85,22 @@ def build_decoder(**params):
     x_input = layers.Input(shape=(thought_vector_size,))
 
     # Expand vector from 1x1 to 4x4
+    x = layers.Reshape((img_width/16, img_width/16, -1))(x_input)
     N = 4
-    x = layers.Reshape((1, 1, -1))(x_input)
-    x = layers.Conv2DTranspose(128, (N, N), strides=(N, N), padding='same')(x)
+    #x = layers.Reshape((1, 1, -1))(x_input)
+    #x = layers.Conv2DTranspose(128, (N, N), strides=(N, N), padding='same')(x)
+
+    x = layers.Conv2DTranspose(256, (3, 3), strides=(1, 1), padding='same')(x)
     x = layers.BatchNormalization()(x)
-    x = layers.Activation(LeakyReLU())(x)
+    x = layers.LeakyReLU()(x)
 
     # Upsample to the desired width (powers of 2 only)
     while N < img_width:
         x = layers.Conv2DTranspose(256, (5,5), strides=(2,2), padding='same')(x)
         x = layers.BatchNormalization()(x)
         x = layers.Activation(LeakyReLU())(x)
-        if csr_layers > 0:
-            x = QuadCSR(csr_size)(x)
+        #if csr_layers > 0:
+        #    x = QuadCSR(csr_size)(x)
         N *= 2
 
     x = layers.Conv2D(3, (3,3), padding='same')(x)

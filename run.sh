@@ -14,8 +14,8 @@ python main.py \
     --decoder-weights inpainting_dec.h5 \
     --discriminator-weights inpainting_disc.h5 \
     --thought-vector-size 64 \
-    --img-width 256 \
-    --csr-layers 1 \
+    --img-width 64 \
     --enable-gan True \
-    --batches-per-epoch 100 \
+    --csr-layers 0 \
+    --batches-per-epoch 1000 \
     --epochs 100

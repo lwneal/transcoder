@@ -36,8 +36,9 @@ class ImageRegionDataset(object):
         return [image_global, image_local, ctx_vector]
 
     def unformat_input(self, X, **params):
-        pixels = X[0]
-        show(pixels)
+        pixels, pixels_inside_box, ctx = X
+        box = ctx[:4]
+        show(pixels, box=box)
         return 'Image input shape: {}'.format(pixels.shape)
 
     def unformat_output(self, preds, **params):

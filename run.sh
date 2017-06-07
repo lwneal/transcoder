@@ -1,5 +1,7 @@
 #!/bin/bash
 
+pip install -r requirements.txt
+
 # Download the dataset and generate inpainting examples
 scripts/download_cub200.py
 scripts/cub200_inpainting.py

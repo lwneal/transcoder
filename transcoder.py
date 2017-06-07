@@ -70,6 +70,7 @@ def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, de
     batches_per_iter = int(params['training_iters_per_gan'])
     freeze_encoder = params['freeze_encoder']
     freeze_decoder = params['freeze_decoder']
+    img_width = params['img_width']
 
     training_gen = train_generator(encoder_dataset, decoder_dataset, **params)
     clipping_time = 0
@@ -109,7 +110,9 @@ def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, de
             _, Y_decoder = next(training_gen)
 
             # Think some random thoughts
-            X_decoder = np.random.normal(0, 1, size=(batch_size, thought_vector_size))
+            # HACK:
+            #X_decoder = np.random.normal(0, 1, size=(batch_size, thought_vector_size))
+            X_decoder = np.random.normal(0, 1, size=(batch_size, img_width/4, img_width/4, thought_vector_size))
 
             # Decode those random thoughts into hallucinations
             X_generated = decoder.predict(X_decoder)
@@ -137,7 +140,9 @@ def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, de
             clipping_time += time.time() - start_time
 
         # Update generator based on a random thought vector
-        X_encoder = np.random.uniform(-1, 1, size=(batch_size, thought_vector_size))
+        #X_encoder = np.random.uniform(-1, 1, size=(batch_size, thought_vector_size))
+        # HACK:
+        X_encoder = np.random.uniform(-1, 1, size=(batch_size, img_width/4, img_width/4, thought_vector_size))
         for layer in discriminator.layers:
             layer.trainable = False
         loss, accuracy = cgan.train_on_batch(X_encoder, -Y_disc)
@@ -172,8 +177,12 @@ def demonstrate(transcoder, encoder_dataset, decoder_dataset, input_text=None, *
 def hallucinate(decoder, decoder_dataset, **params):
     batch_size = params['batch_size']
     thought_vector_size = params['thought_vector_size']
+    img_width = params['img_width']
 
-    X_decoder = np.random.normal(0, 1, size=(batch_size, thought_vector_size))
+    #HACK
+    #X_decoder = np.random.normal(0, 1, size=(batch_size, thought_vector_size))
+    X_decoder = np.random.normal(0, 1, size=(batch_size, img_width/4, img_width/4, thought_vector_size))
+
     X_generated = decoder.predict(X_decoder)
     print("Hallucinated outputs:")
     for j in range(len(X_generated)):

@@ -179,6 +179,48 @@ def hallucinate(decoder, decoder_dataset, **params):
         print(' ' + decoder_dataset.unformat_output(X_generated[j]))
 
 
+def dream(encoder, decoder, encoder_dataset, decoder_dataset, **params):
+    batch_size = params['batch_size']
+    thought_vector_size = params['thought_vector_size']
+
+    # Select two inputs in the dataset
+    img_idx = 41
+    for _ in range(10):
+        input_start = encoder_dataset.get_example(img_idx, **params)
+        input_end = encoder_dataset.get_example(img_idx + 1, **params)
+        #encoder_dataset.unformat_input(input_start)
+        #encoder_dataset.unformat_input(input_end)
+
+        # Use the encoder to get the latent vector for each example
+        X_list = encoder_dataset.empty_batch(**params)
+        for X, x in zip(X_list, input_start):
+            X[0] = x
+        for X, x in zip(X_list, input_end):
+            X[1] = x
+
+        latent = encoder.predict(X_list)
+        latent_start, latent_end = latent[0], latent[1]
+
+        # Interpolate between the two latent vectors, and output
+        # the result of the decoder at each step
+        # TODO: Something other than linear interpolation?
+        STEPS = 24
+        for i in range(STEPS):
+            print("Writing img {} frame {}".format(img_idx, i))
+            c = float(i) / STEPS
+            v = c * latent_end + (1 - c) * latent_start
+            img = decoder.predict(np.expand_dims(v, axis=0))[0]
+            #decoder_dataset.unformat_output(img)
+            import imutil
+            jpg = imutil.encode_jpg(img, resize_to=(512,512))
+            with open('dream.mjpeg', 'a') as fp:
+                fp.write(jpg)
+            imutil.show(img)
+        print("Done")
+
+        img_idx += 1
+
+
 def find_dataset(input_filename, dataset_type=None, **params):
     types = {
         'img': ImageDataset,
@@ -270,3 +312,5 @@ def main(**params):
     elif mode == 'demo':
         demonstrate(transcoder, encoder_dataset, decoder_dataset, **params)
         hallucinate(decoder, decoder_dataset, **params)
+    elif mode == 'dream':
+        dream(encoder, decoder, encoder_dataset, decoder_dataset, **params)

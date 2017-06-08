@@ -39,6 +39,7 @@ def build_encoder(is_discriminator=False, **params):
         if not is_discriminator:
             x = layers.BatchNormalization()(x)
         x = layers.Activation(LeakyReLU())(x)
+
         x = layers.MaxPooling2D()(x)
 
         x = layers.Conv2D(128, (3,3), padding='same')(x)
@@ -57,9 +58,17 @@ def build_encoder(is_discriminator=False, **params):
         if not is_discriminator:
             x = layers.BatchNormalization()(x)
         x = layers.Activation(LeakyReLU())(x)
+        x = layers.Conv2D(256, (3,3), padding='same')(x)
+        if not is_discriminator:
+            x = layers.BatchNormalization()(x)
+        x = layers.Activation(LeakyReLU())(x)
         x = layers.MaxPooling2D()(x)
 
-        x = layers.Conv2D(256, (3,3), padding='same')(x)
+        x = layers.Conv2D(384, (3,3), padding='same')(x)
+        if not is_discriminator:
+            x = layers.BatchNormalization()(x)
+        x = layers.Activation(LeakyReLU())(x)
+        x = layers.Conv2D(384, (3,3), padding='same')(x)
         if not is_discriminator:
             x = layers.BatchNormalization()(x)
         x = layers.Activation(LeakyReLU())(x)
@@ -97,6 +106,7 @@ def build_decoder(**params):
         x = layers.Activation(LeakyReLU())(x)
         if csr_layers > 0:
             x = QuadCSR(csr_size)(x)
+            csr_layers -= 1
         N *= 2
 
     x = layers.Conv2D(3, (3,3), padding='same')(x)

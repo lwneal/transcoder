@@ -182,6 +182,7 @@ def hallucinate(decoder, decoder_dataset, **params):
 def dream(encoder, decoder, encoder_dataset, decoder_dataset, **params):
     batch_size = params['batch_size']
     thought_vector_size = params['thought_vector_size']
+    video_filename = params['video_filename']
 
     # Select two inputs in the dataset
     img_idx = 41
@@ -204,7 +205,7 @@ def dream(encoder, decoder, encoder_dataset, decoder_dataset, **params):
         # Interpolate between the two latent vectors, and output
         # the result of the decoder at each step
         # TODO: Something other than linear interpolation?
-        STEPS = 24
+        STEPS = 240
         for i in range(STEPS):
             print("Writing img {} frame {}".format(img_idx, i))
             c = float(i) / STEPS
@@ -212,10 +213,7 @@ def dream(encoder, decoder, encoder_dataset, decoder_dataset, **params):
             img = decoder.predict(np.expand_dims(v, axis=0))[0]
             #decoder_dataset.unformat_output(img)
             import imutil
-            jpg = imutil.encode_jpg(img, resize_to=(512,512))
-            with open('dream.mjpeg', 'a') as fp:
-                fp.write(jpg)
-            imutil.show(img)
+            imutil.show(img, video_filename=video_filename, resize_to=(512,512))
         print("Done")
 
         img_idx += 1

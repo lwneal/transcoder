@@ -53,7 +53,7 @@ def show(data, filename=None, box=None, video_filename=None, resize_to=(224,224)
     elif type(data) == Image.Image:
         pixels = np.array(data)
     else:
-        pixels = decode_jpg(data, preprocess=False)
+        pixels = decode_jpg(data)
     if box:
         draw_box(pixels, box)
 
@@ -86,7 +86,7 @@ def show(data, filename=None, box=None, video_filename=None, resize_to=(224,224)
 
     # Output JPG files can be collected into a video with ffmpeg -i *.jpg
     if video_filename:
-        open(video_filename, 'a').write(encode_jpg(pixels))
+        open(video_filename, 'a').write(encode_jpg(pixels, resize_to=resize_to))
 
 
 def combine_images(generated_images):

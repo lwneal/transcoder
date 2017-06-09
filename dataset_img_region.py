@@ -36,8 +36,9 @@ class ImageRegionDataset(object):
         return [image_global, image_local, ctx_vector]
 
     def unformat_input(self, X, **params):
-        pixels = X[0]
-        show(pixels)
+        pixels, pixels_inside_box, ctx = X
+        box = ctx[:4]
+        show(pixels, box=box)
         return 'Image input shape: {}'.format(pixels.shape)
 
     def unformat_output(self, preds, **params):
@@ -50,5 +51,11 @@ class ImageRegionDataset(object):
                 np.zeros((batch_size, img_width, img_width, 3), dtype=float),
                 np.zeros((batch_size, 5), dtype=float)]
 
-    def build_model(self, **params):
+    def build_encoder(self, **params):
         return model_img_region.build_encoder(**params)
+
+    def build_decoder(self, **params):
+        return model_img_region.build_decoder(**params)
+
+    def build_discriminator(self, **params):
+        return model_img_region.build_discriminator(**params)

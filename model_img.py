@@ -13,7 +13,7 @@ from csr import QuadCSR
 IMG_CHANNELS = 3
 
 
-def build_encoder(is_discriminator=False, **params):
+def build_encoder(is_discriminator=False, pooling=None, **params):
     thought_vector_size = params['thought_vector_size']
     pretrained_encoder = params['pretrained_encoder']
     img_width = params['img_width']
@@ -30,7 +30,7 @@ def build_encoder(is_discriminator=False, **params):
             cnn = applications.vgg16.VGG16(input_tensor=input_img, include_top=include_top)
         elif pretrained_encoder == 'resnet50':
             # Note: This is a hacked version of resnet50 with pooling removed
-            cnn = resnet50.ResNet50(include_top=include_top, pooling=None)
+            cnn = resnet50.ResNet50(include_top=include_top, pooling=pooling)
         for layer in cnn.layers[:-LEARNABLE_CNN_LAYERS]:
             layer.trainable = False
         x = cnn(input_img)
@@ -38,30 +38,25 @@ def build_encoder(is_discriminator=False, **params):
         x = layers.Conv2D(64, (3,3), padding='same')(input_img)
         if not is_discriminator:
             x = layers.BatchNormalization()(x)
-        x = layers.Activation(LeakyReLU())(x)
-
+        x = layers.LeakyReLU()(x)
         x = layers.MaxPooling2D()(x)
 
         x = layers.Conv2D(128, (3,3), padding='same')(x)
         if not is_discriminator:
             x = layers.BatchNormalization()(x)
-        x = layers.Activation(LeakyReLU())(x)
+        x = layers.LeakyReLU()(x)
 
         if cgru_layers >= 1:
             x = QuadCSR(cgru_size)(x)
         else:
             x = layers.Conv2D(cgru_size * 3 / 2, (3,3), padding='same')(x)
-        x = layers.Activation(LeakyReLU())(x)
+        x = layers.LeakyReLU()(x)
         x = layers.MaxPooling2D()(x)
 
         x = layers.Conv2D(256, (3,3), padding='same')(x)
         if not is_discriminator:
             x = layers.BatchNormalization()(x)
-        x = layers.Activation(LeakyReLU())(x)
-        x = layers.Conv2D(256, (3,3), padding='same')(x)
-        if not is_discriminator:
-            x = layers.BatchNormalization()(x)
-        x = layers.Activation(LeakyReLU())(x)
+        x = layers.LeakyReLU()(x)
         x = layers.MaxPooling2D()(x)
 
         x = layers.Conv2D(384, (3,3), padding='same')(x)
@@ -71,10 +66,11 @@ def build_encoder(is_discriminator=False, **params):
         x = layers.Conv2D(384, (3,3), padding='same')(x)
         if not is_discriminator:
             x = layers.BatchNormalization()(x)
-        x = layers.Activation(LeakyReLU())(x)
+        x = layers.LeakyReLU()(x)
         x = layers.MaxPooling2D()(x)
 
-    x = layers.Flatten()(x)
+    if not pooling:
+        x = layers.Flatten()(x)
     if is_discriminator:
         x = layers.Dense(1)(x)
         x = layers.Activation('tanh')(x)

@@ -54,7 +54,7 @@ def show(data, filename=None, box=None, video_filename=None, resize_to=(224,224)
         pixels = np.array(data)
     else:
         pixels = decode_jpg(data)
-    if box:
+    if box is not None:
         draw_box(pixels, box)
 
     if pixels.shape[-1] > 3:
@@ -105,8 +105,10 @@ def combine_images(generated_images):
 
 
 def draw_box(img, box, color=1.0):
-    x0, x1, y0, y1 = (int(val) for val in box)
     height, width, channels = img.shape
+    if all(0 < i < 1.0 for i in box):
+        box = np.multiply(box, (width, width, height, height))
+    x0, x1, y0, y1 = (int(val) for val in box)
     x0 = np.clip(x0, 0, width-1)
     x1 = np.clip(x1, 0, width-1)
     y0 = np.clip(y0, 0, height-1)

@@ -32,7 +32,14 @@ def decode_jpg(jpg, crop_to_box=None, resize_to=(224,224)):
         img = Image.open(StringIO(jpg))
     else:
         # Input is a filename
-        img = Image.open(jpg)
+        try:
+            img = Image.open(jpg)
+        except IOError:
+            # PIL cannot open some TIF files
+            import cv2
+            cv2_img = cv2.imread(jpg)
+            img = Image.fromarray(cv2_img)
+
     img = img.convert('RGB')
     if crop_to_box:
         # Crop to bounding box

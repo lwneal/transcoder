@@ -5,7 +5,6 @@ import numpy as np
 from keras import layers, models, applications
 import tensorflow as tf
 
-from cgru import SpatialCGRU
 
 import model_img
 import model_words

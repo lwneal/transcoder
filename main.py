@@ -30,11 +30,12 @@ Options:
       --vocab-rarity=<v>                Minimum number of occurrences of a word [default: 1]
       --load-encoder-vocab=<vocab>      Filename, save/load vocabulary from this file [default: None]
       --load-decoder-vocab=<vocab>      Filename, save/load vocabulary from this file [default: None]
-      --mode=<mode>                     One of train, test, demo [default: train]
+      --mode=<mode>                     One of train, test, demo, dream [default: train]
       --max-temperature=<temp>          Sampling temperature for log-Boltzmann distribution [default: 1.0]
       --freeze-encoder=<freeze>         Freeze weights for the encoder [default: False]
       --freeze-decoder=<freeze>         Freeze weights for the decoder [default: False]
       --enable-gan=<bool>               If False, no GAN training will be applied [default: True]
+      --video-filename=<fn>             Output video filename for dream mode [default: output.mjpeg]
 """
 from docopt import docopt
 from pprint import pprint

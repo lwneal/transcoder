@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # Downloads the CUB200 dataset
 import os
-import random
+import numpy as np
 import json
 from subprocess import check_output
 
 
+np.random.seed(0x308cfb)
 DATA_DIR = os.path.expanduser('~/data')
 CUB_DIR = os.path.join(DATA_DIR, 'cub200')
 
@@ -76,7 +77,7 @@ if __name__ == '__main__':
     # Split into a training and a test set
     TRAIN_TEST_SPLIT = .8
     split_idx = int(float(len(images)) * TRAIN_TEST_SPLIT)
-    random.shuffle(images)
+    np.random.shuffle(images)
     train_images, test_images = images[:split_idx], images[split_idx:]
 
     save_image_dataset(train_images, "train")

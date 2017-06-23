@@ -27,6 +27,8 @@ class ImageDataset(object):
     def get_example(self, idx=None, **params):
         if idx is None:
             idx = self.random_idx()
+        if idx > len(self.regions):
+            raise ValueError("Example index {} out of bounds (number of examples is {})".format(idx, len(self.regions)))
         region = self.regions[idx]
         return self.format_input(region, **params)
 

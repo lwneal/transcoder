@@ -6,10 +6,9 @@ from keras.utils import to_categorical
 
 class LabelDataset(object):
     def __init__(self, input_filename=None, **params):
-        if not input_filename:
-            raise ValueError("No input filename supplied. See options with --help")
-        lines = open(input_filename).readlines()
+        vocab_filename = params['vocabulary_filename']
 
+        lines = open(input_filename).readlines()
         self.idx_to_name = {}
         self.name_to_idx = {}
         self.labels = []
@@ -17,11 +16,18 @@ class LabelDataset(object):
             item = json.loads(line)
             self.labels.append(item['label'])
         
+        # HACK: on training set, use test set as the source of class indices
+        # Fixes crash when test set is small and is missing some classes
         distinct_labels = sorted(list(set(self.labels)))
+        if vocab_filename:
+            print("Drawing classes from file {}".format(vocab_filename))
+            vocab_labels = [json.loads(line)['label'] for line in open(vocab_filename).readlines()]
+            distinct_labels = sorted(list(set(vocab_labels)))
+
         for idx, label in enumerate(distinct_labels):
             self.idx_to_name[idx] = label
             self.name_to_idx[label] = idx
-        print("Input file {} contains {} labels".format(input_filename, len(self.labels)))
+        print("Input file {} contains {} labels out of {} classes".format(input_filename, len(self.labels), len(distinct_labels)))
 
     def random_idx(self):
         return np.random.randint(0, len(self.labels))

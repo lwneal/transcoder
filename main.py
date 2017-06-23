@@ -36,6 +36,7 @@ Options:
       --freeze-decoder=<freeze>         Freeze weights for the decoder [default: False]
       --enable-gan=<bool>               If False, no GAN training will be applied [default: True]
       --video-filename=<fn>             Output video filename for dream mode [default: output.mjpeg]
+      --vocabulary-filename=<n>         Filename to draw vocabulary from, to match label indices in test/train folds [default: None]
 """
 from docopt import docopt
 from pprint import pprint

@@ -168,23 +168,27 @@ def train(encoder, decoder, transcoder, discriminator, cgan, encoder_dataset, de
     sys.stderr.write('\n')
 
 
-def demonstrate(transcoder, encoder_dataset, decoder_dataset, input_text=None, **params):
+def demonstrate(transcoder, encoder_dataset, decoder_dataset, **params):
     batch_size = params['batch_size']
 
     X_list = encoder_dataset.empty_batch(**params)
+    Y_list = decoder_dataset.empty_batch(**params)
     for i in range(batch_size):
-        if input_text:
-            x_list = encoder_dataset.format_input(input_text, **params)
-        else:
-            x_list = encoder_dataset.get_example(**params)
+        idx = np.random.randint(encoder_dataset.count())
+        x_list = encoder_dataset.get_example(idx, **params)
+        y_list = decoder_dataset.get_example(idx, **params)
         for X, x in zip(X_list, x_list):
             X[i] = x
-    Y = transcoder.predict(X_list)
+        for Y, y in zip(Y_list, y_list):
+            Y[i] = y
     X = zip(*X_list)
-    for x, y in zip(X, Y):
-        left = encoder_dataset.unformat_input(x)
-        right = decoder_dataset.unformat_output(y)
-        print('{} --> {}'.format(left, right))
+    Y_gen = transcoder.predict(X_list)
+    Y_true = Y_list[0]
+    for x, y_gen, y_true in zip(X, Y_gen, Y_true):
+        x_input = encoder_dataset.unformat_input(x)
+        y_generated = decoder_dataset.unformat_output(y_gen)
+        y_truth = decoder_dataset.unformat_output(y_true)
+        print('{} --> {} ({})'.format(x_input, y_generated, y_truth))
 
 
 def hallucinate(decoder, decoder_dataset, **params):

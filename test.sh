@@ -6,7 +6,7 @@ function pass() {
 
 function fail() {
     echo "[31mERROR: Test failed with exit code $?[0m"
-    exit
+    exit 1
 }
 
 # This command should work
@@ -16,12 +16,13 @@ python main.py \
  --decoder-input-filename ~/data/mnist_train.dataset \
  --decoder-datatype img \
  --thought-vector-size 2 \
- --encoder-weights mnist_twodim.h5 \
- --decoder-weights mnist_twodim.h5 \
- --discriminator-weights mnist_twodim.h5 \
+ --encoder-weights mnist_manifold_2dim_enc.h5 \
+ --decoder-weights mnist_manifold_2dim_dec \
+ --discriminator-weights mnist_manifold_2dim_disc.h5 \
  --pretrained-encoder vgg16 \
  --img-width 32 \
  --batches-per-epoch 10 \
+ --batch-size 1 \
  --epochs 1 \
  --enable-gan True \
  --mode train \
@@ -40,6 +41,7 @@ python main.py \
  --enable-gan False \
  --img-width 128 \
  --batches-per-epoch 100 \
+ --batch-size 16 \
  --thought-vector-size 512 \
  --mode test \
 && pass || fail

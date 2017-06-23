@@ -18,6 +18,12 @@ from dataset_visual_question import VisualQuestionDataset
 
 def get_batch(encoder_dataset, decoder_dataset, base_idx=None, **params):
     batch_size = params['batch_size']
+    # The last batch might need to be a smaller partial batch
+    example_count = min(encoder_dataset.count(), decoder_dataset.count())
+    if base_idx is not None and base_idx + batch_size > example_count:
+        batch_size = example_count - base_idx
+        params['batch_size'] = batch_size
+        #print("\nFinal batch at base idx {} with odd size: {}".format(base_idx, batch_size))
     X_list = encoder_dataset.empty_batch(**params)
     Y_list = decoder_dataset.empty_batch(**params)
     for i in range(batch_size):
@@ -43,7 +49,13 @@ def evaluate(transcoder, encoder_dataset, decoder_dataset, **params):
         X_list = encoder_dataset.empty_batch(**params)
         for i in range(0, input_count, batch_size):
             sys.stderr.write("\r[K{} / {}".format(i, input_count))
+            sys.stderr.write('\nbase idx {}'.format(i))
             yield get_batch(encoder_dataset, decoder_dataset, base_idx=i, **params)
+        # HACK: Keras is dumb and asynchronously queues up batches beyond the last one
+        # Could be solved if evaluate_generator() workers used an atomic counter
+        while True:
+            yield get_batch(encoder_dataset, decoder_dataset, base_idx=i, **params)
+
 
     batch_count = input_count / batch_size
     scores = transcoder.evaluate_generator(eval_generator(), steps=batch_count)

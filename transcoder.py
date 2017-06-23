@@ -49,7 +49,6 @@ def evaluate(transcoder, encoder_dataset, decoder_dataset, **params):
         X_list = encoder_dataset.empty_batch(**params)
         for i in range(0, input_count, batch_size):
             sys.stderr.write("\r[K{} / {}".format(i, input_count))
-            sys.stderr.write('\nbase idx {}'.format(i))
             yield get_batch(encoder_dataset, decoder_dataset, base_idx=i, **params)
         # HACK: Keras is dumb and asynchronously queues up batches beyond the last one
         # Could be solved if evaluate_generator() workers used an atomic counter

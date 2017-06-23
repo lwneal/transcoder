@@ -9,7 +9,7 @@ function fail() {
     exit 1
 }
 
-# This command should work
+# Test that we can train an autoencoder with a GAN
 python main.py \
  --encoder-input-filename ~/data/mnist_train.dataset \
  --encoder-datatype img \
@@ -29,7 +29,7 @@ python main.py \
 && pass || fail
 
 
-# This command doesn't work currently, it fails because of a bug
+# Test that we can evaluate on a dataset with odd length
 python main.py \
  --encoder-input-filename ~/data/cub200.dataset \
  --decoder-input-filename ~/data/cub200.dataset \

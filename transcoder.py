@@ -269,20 +269,22 @@ def build_model(encoder_dataset, decoder_dataset, **params):
 
     decoder = decoder_dataset.build_decoder(**params)
 
+    metrics = ['accuracy']
+
     if enable_gan:
         discriminator = decoder_dataset.build_discriminator(**params)
-        discriminator.compile(loss=wgan_loss, optimizer='adam', metrics=['accuracy'])
+        discriminator.compile(loss=wgan_loss, optimizer='adam', metrics=metrics)
         discriminator._make_train_function()
 
         cgan = models.Model(inputs=decoder.inputs, outputs=discriminator(decoder.output))
-        cgan.compile(loss=wgan_loss, optimizer='adam', metrics=['accuracy'])
+        cgan.compile(loss=wgan_loss, optimizer='adam', metrics=metrics)
         cgan._make_train_function()
     else:
         discriminator = models.Sequential()
         cgan = models.Sequential()
 
     transcoder = models.Model(inputs=encoder.inputs, outputs=decoder(encoder.output))
-    transcoder.compile(loss=transcoder_loss, optimizer='adam', metrics=['accuracy'])
+    transcoder.compile(loss=transcoder_loss, optimizer='adam', metrics=metrics)
     transcoder._make_train_function()
 
     print("\nEncoder")

@@ -50,6 +50,7 @@ def evaluate(transcoder, encoder_dataset, decoder_dataset, **params):
         for i in range(0, input_count, batch_size):
             sys.stderr.write("\r[K{} / {}".format(i, input_count))
             yield get_batch(encoder_dataset, decoder_dataset, base_idx=i, **params)
+        sys.stderr.write("\n")
         # HACK: Keras is dumb and asynchronously queues up batches beyond the last one
         # Could be solved if evaluate_generator() workers used an atomic counter
         while True:
@@ -58,7 +59,13 @@ def evaluate(transcoder, encoder_dataset, decoder_dataset, **params):
 
     batch_count = input_count / batch_size
     scores = transcoder.evaluate_generator(eval_generator(), steps=batch_count)
-    print("Scores: {}".format(scores))
+    print("Completed evaluation on {} items".format(batch_count))
+    print("input: {}".format(params['encoder_input_filename']))
+    print("output: {}".format(params['decoder_input_filename']))
+    print("encoder: {}".format(params['encoder_weights']))
+    print("decoder: {}".format(params['decoder_weights']))
+    for name, val in zip(['loss'] + transcoder.metrics, scores):
+        print("{}: {}".format(name, val))
 
 
 def train_generator(encoder_dataset, decoder_dataset, **params):

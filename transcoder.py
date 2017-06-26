@@ -14,6 +14,7 @@ from dataset_label import LabelDataset
 from dataset_img import ImageDataset
 from dataset_img_region import ImageRegionDataset
 from dataset_visual_question import VisualQuestionDataset
+import imutil
 
 
 def get_batch(encoder_dataset, decoder_dataset, base_idx=None, **params):
@@ -206,6 +207,7 @@ def dream(encoder, decoder, encoder_dataset, decoder_dataset, **params):
     batch_size = params['batch_size']
     thought_vector_size = params['thought_vector_size']
     video_filename = params['video_filename']
+    dream_fps = params['dream_fps']
 
     # Select two inputs in the dataset
     img_idx = 41
@@ -228,14 +230,12 @@ def dream(encoder, decoder, encoder_dataset, decoder_dataset, **params):
         # Interpolate between the two latent vectors, and output
         # the result of the decoder at each step
         # TODO: Something other than linear interpolation?
-        STEPS = 240
-        for i in range(STEPS):
+        for i in range(dream_fps):
             print("Writing img {} frame {}".format(img_idx, i))
-            c = float(i) / STEPS
+            c = float(i) / dream_fps
             v = c * latent_end + (1 - c) * latent_start
             img = decoder.predict(np.expand_dims(v, axis=0))[0]
             #decoder_dataset.unformat_output(img)
-            import imutil
             imutil.show(img, video_filename=video_filename, resize_to=(512,512))
         print("Done")
 

@@ -43,7 +43,7 @@ def simplecnn_7a(is_discriminator=False, **params):
     x = layers.Conv2D(384, (3,3), padding='same')(x)
     if not is_discriminator:
         x = layers.BatchNormalization()(x)
-    x = layers.Activation(LeakyReLU())(x)
+    x = layers.LeakyReLU()(x)
     x = layers.Conv2D(384, (3,3), padding='same')(x)
     if not is_discriminator:
         x = layers.BatchNormalization()(x)
@@ -91,7 +91,7 @@ def csrnn_7a(is_discriminator=False, **params):
     x = layers.Conv2D(384, (3,3), padding='same')(x)
     if not is_discriminator:
         x = layers.BatchNormalization()(x)
-    x = layers.Activation(LeakyReLU())(x)
+    x = layers.LeakyReLU()(x)
     x = layers.Conv2D(384, (3,3), padding='same')(x)
     if not is_discriminator:
         x = layers.BatchNormalization()(x)
@@ -118,16 +118,16 @@ def simpledeconv_a(**params):
     x = layers.Reshape((1, 1, -1))(x_input)
     x = layers.Conv2DTranspose(128, (N, N), strides=(N, N), padding='same')(x)
     x = layers.BatchNormalization()(x)
-    x = layers.Activation(LeakyReLU())(x)
+    x = layers.LeakyReLU()(x)
 
     # Upsample to the desired width (powers of 2 only)
     while N < img_width:
         x = layers.Conv2DTranspose(256, (5,5), strides=(2,2), padding='same')(x)
         x = layers.BatchNormalization()(x)
-        x = layers.Activation(LeakyReLU())(x)
+        x = layers.LeakyReLU()(x)
         x = layers.Conv2D(256, (3,3), padding='same')(x)
         x = layers.BatchNormalization()(x)
-        x = layers.Activation(LeakyReLU())(x)
+        x = layers.LeakyReLU()(x)
         N *= 2
 
     x = layers.Conv2D(3, (3,3), padding='same')(x)
@@ -146,13 +146,13 @@ def csrnn_deconv_a(**params):
     x = layers.Reshape((1, 1, -1))(x_input)
     x = layers.Conv2DTranspose(128, (N, N), strides=(N, N), padding='same')(x)
     x = layers.BatchNormalization()(x)
-    x = layers.Activation(LeakyReLU())(x)
+    x = layers.LeakyReLU()(x)
 
     # Upsample to the desired width (powers of 2 only)
     while N < img_width:
         x = layers.Conv2DTranspose(256, (5,5), strides=(2,2), padding='same')(x)
         x = layers.BatchNormalization()(x)
-        x = layers.Activation(LeakyReLU())(x)
+        x = layers.LeakyReLU()(x)
         x = QuadCSR(128)(x)
         N *= 2
 

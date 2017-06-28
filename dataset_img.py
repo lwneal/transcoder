@@ -7,7 +7,7 @@ from tokenizer import tokenize_text
 from keras.utils import to_categorical
 
 import model_img
-from imutil import decode_jpg, show
+import imutil
 
 DATA_DIR = os.path.expanduser('~/data/')
 
@@ -38,17 +38,17 @@ class ImageDataset(object):
     def format_input(self, region, **params):
         img_width = params['img_width']
         filename = os.path.join(DATA_DIR, str(region['filename']))
-        img = decode_jpg(filename, resize_to=(img_width, img_width))
+        img = imutil.decode_jpg(filename, resize_to=(img_width, img_width))
         img = img * 1.0 / 255
         return [img]
 
     def unformat_input(self, X, **params):
         pixels = X[0]
-        show(pixels)
+        imutil.add_to_figure(pixels)
         return 'Image input shape: {}'.format(pixels.shape)
 
     def unformat_output(self, Y, **params):
-        show(Y)
+        imutil.add_to_figure(Y)
         return 'Output image shape: {}'.format(Y.shape)
 
     def empty_batch(self, **params):

@@ -190,6 +190,7 @@ def demonstrate(transcoder, encoder_dataset, decoder_dataset, **params):
         y_generated = decoder_dataset.unformat_output(y_gen)
         y_truth = decoder_dataset.unformat_output(y_true)
         print('{} --> {} ({})'.format(x_input, y_generated, y_truth))
+    imutil.show_figure()
 
 
 def hallucinate(decoder, decoder_dataset, **params):
@@ -201,6 +202,7 @@ def hallucinate(decoder, decoder_dataset, **params):
     print("Hallucinated outputs:")
     for j in range(len(X_generated)):
         print(' ' + decoder_dataset.unformat_output(X_generated[j]))
+    imutil.show_figure()
 
 
 def dream(encoder, decoder, encoder_dataset, decoder_dataset, **params):

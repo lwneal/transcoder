@@ -51,6 +51,14 @@ def decode_jpg(jpg, crop_to_box=None, resize_to=(224,224)):
         img = img.resize(resize_to)
     return np.array(img).astype(float)
 
+figure = []
+def add_to_figure(data):
+    figure.append(data)
+
+def show_figure(**kwargs):
+    global figure
+    show(np.array(figure), **kwargs)
+    figure = []
 
 # Swiss-army knife for putting an image on the screen
 # Accepts numpy arrays, PIL Image objects, or jpgs

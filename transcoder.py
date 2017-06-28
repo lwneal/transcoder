@@ -354,11 +354,13 @@ def main(**params):
             if enable_gan:
                 discriminator.save_weights(discriminator_weights)
             demonstrate(transcoder, encoder_dataset, decoder_dataset, **params)
-            hallucinate(decoder, decoder_dataset, **params)
+            if enable_gan:
+                hallucinate(decoder, decoder_dataset, **params)
     elif mode == 'test':
         evaluate(transcoder, encoder_dataset, decoder_dataset, **params)
     elif mode == 'demo':
         demonstrate(transcoder, encoder_dataset, decoder_dataset, **params)
-        hallucinate(decoder, decoder_dataset, **params)
+        if enable_gan:
+            hallucinate(decoder, decoder_dataset, **params)
     elif mode == 'dream':
         dream(encoder, decoder, encoder_dataset, decoder_dataset, **params)

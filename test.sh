@@ -24,10 +24,9 @@ function test1() {
      --encoder-datatype img \
      --decoder-datatype img \
      --thought-vector-size 2 \
-     --encoder-weights mnist_manifold_2dim_enc.h5 \
-     --decoder-weights mnist_manifold_2dim_dec \
-     --discriminator-weights mnist_manifold_2dim_disc.h5 \
-     --pretrained-encoder vgg16 \
+     --encoder-model simplecnn_7a \
+     --decoder-model simpledeconv_a \
+     --discriminator-model simplecnn_7a \
      --img-width 32 \
      --batches-per-epoch 10 \
      --batch-size 1 \
@@ -46,6 +45,8 @@ function test2() {
      --encoder-datatype img \
      --decoder-datatype lab \
      --enable-gan False \
+     --encoder-model simplecnn_7a \
+     --decoder-model label_decoder \
      --batch-size 16 \
      --thought-vector-size 512 \
      --mode test
@@ -54,6 +55,6 @@ function test2() {
 cleanup
 
 for i in `seq 2`; do
-    test$i 2>/dev/null && pass || fail
+    test$i && pass || fail
     cleanup
 done

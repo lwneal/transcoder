@@ -6,6 +6,7 @@ import tensorflow as tf
 import time
 from keras import layers, models
 
+import model_definitions
 import model_words
 import model_img
 import model_img_region
@@ -261,7 +262,14 @@ def find_dataset(input_filename, dataset_type=None, **params):
 
 
 def build_model(encoder_dataset, decoder_dataset, **params):
+    encoder_model = params['encoder_model']
+    decoder_model = params['decoder_model']
+    discriminator_model = params['discriminator_model']
     enable_gan = params['enable_gan']
+    metrics = ['accuracy']
+    optimizer = 'adam'
+    transcoder_loss = 'mse' if type(decoder_dataset) is ImageDataset else 'categorical_crossentropy'
+
     # HACK: Keras Bug https://github.com/fchollet/keras/issues/5221
     # Sharing a BatchNormalization layer corrupts the graph
     # Workaround: carefully call _make_train_function
@@ -269,29 +277,28 @@ def build_model(encoder_dataset, decoder_dataset, **params):
     from keras import backend as K
     def wgan_loss(y_true, y_pred):
         return K.mean(y_true * y_pred)
-    transcoder_loss = 'mse' if type(decoder_dataset) is ImageDataset else 'categorical_crossentropy'
 
+    build_encoder = getattr(model_definitions, encoder_model)
+    encoder = build_encoder(dataset=encoder_dataset, **params)
 
-    encoder = encoder_dataset.build_encoder(**params)
-
-    decoder = decoder_dataset.build_decoder(**params)
-
-    metrics = ['accuracy']
+    build_decoder = getattr(model_definitions, decoder_model)
+    decoder = build_decoder(dataset=decoder_dataset, **params)
 
     if enable_gan:
-        discriminator = decoder_dataset.build_discriminator(**params)
-        discriminator.compile(loss=wgan_loss, optimizer='adam', metrics=metrics)
+        build_discriminator = getattr(model_definitions, discriminator_model)
+        discriminator = build_discriminator(is_discriminator=True, dataset=decoder_dataset, **params)
+        discriminator.compile(loss=wgan_loss, optimizer=optimizer, metrics=metrics)
         discriminator._make_train_function()
 
         cgan = models.Model(inputs=decoder.inputs, outputs=discriminator(decoder.output))
-        cgan.compile(loss=wgan_loss, optimizer='adam', metrics=metrics)
+        cgan.compile(loss=wgan_loss, optimizer=optimizer, metrics=metrics)
         cgan._make_train_function()
     else:
         discriminator = models.Sequential()
         cgan = models.Sequential()
 
     transcoder = models.Model(inputs=encoder.inputs, outputs=decoder(encoder.output))
-    transcoder.compile(loss=transcoder_loss, optimizer='adam', metrics=metrics)
+    transcoder.compile(loss=transcoder_loss, optimizer=optimizer, metrics=metrics)
     transcoder._make_train_function()
 
     print("\nEncoder")

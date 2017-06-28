@@ -5,13 +5,16 @@ Usage:
 Options:
       --experiment-name=<n>             Name of the experiment [Required]
       --stdout-filename=<f>             Filename for copy of stdout [default: stdout.txt]
-      --encoder-input-filename=<txt>    Input text file the encoder will read (eg. English sentences)
-      --decoder-input-filename=<txt>    Input text file the decoder will try to copy (eg. German sentences)
+      --encoder-input-filename=<txt>    Dataset or text file for encoder
+      --decoder-input-filename=<txt>    Dataset or text file for decoder
       --encoder-datatype=<type>         One of: img, bbox, vq, txt, lab [default: None]
       --decoder-datatype=<type>         One of: img, bbox, vq, txt, lab [default: None]
       --encoder-weights=<name>          Filename for saved model [default: encoder.h5]
       --decoder-weights=<name>          Filename for saved model [default: decoder.h5]
       --discriminator-weights=<name>    Filename for saved model [default: discriminator.h5]
+      --encoder-model=<m>               Model name for encoder (see models.py) [default: None]
+      --decoder-model=<m>               Model name for decoder (see models.py) [default: None]
+      --discriminator-model=<m>         Model name for discriminator (see models.py) [default: None]
       --epochs=<epochs>                 Number of epochs to train [default: 2000].
       --batches-per-epoch=<b>           Number of batches per epoch [default: 1000].
       --batch-size=<size>               Batch size for training [default: 16]
@@ -24,9 +27,6 @@ Options:
       --rnn-type=<type>                 One of LSTM, GRU [default: GRU]
       --rnn-size=<size>                 Number of output units in RNN [default: 1024]
       --rnn-layers=<layers>             Number of layers of RNN to use [default: 1]
-      --pretrained-encoder=<name>       For image encoders, one of: vgg16, resnet50 [default: None]
-      --csr-size=<size>                 Number of output units in conv spatial recurrent [default: 256]
-      --csr-layers=<layers>             Number of conv spatial RNN layers to use [default: 0]
       --tokenize=<tokenize>             If True, input text will be tokenized [default: False]
       --lowercase=<lower>               If True, lowercase all words [default: True]
       --vocab-rarity=<v>                Minimum number of occurrences of a word [default: 1]

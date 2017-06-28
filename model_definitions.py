@@ -98,8 +98,6 @@ def csrnn_7a(is_discriminator=False, **params):
     x = layers.LeakyReLU()(x)
     x = layers.MaxPooling2D()(x)
 
-    if not pooling:
-        x = layers.Flatten()(x)
     if is_discriminator:
         x = layers.Dense(1)(x)
         x = layers.Activation('tanh')(x)

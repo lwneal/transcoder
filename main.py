@@ -3,6 +3,7 @@ Usage:
         main.py [options]
 
 Options:
+      --experiment-name=<n>             Name of the experiment [Required]
       --encoder-input-filename=<txt>    Input text file the encoder will read (eg. English sentences)
       --decoder-input-filename=<txt>    Input text file the decoder will try to copy (eg. German sentences)
       --encoder-datatype=<type>         One of: img, bbox, vq, text [default: None]
@@ -39,6 +40,7 @@ Options:
       --dream-fps=<n>                   Integer, number of frames between dream examples [default: 30]
       --vocabulary-filename=<n>         Filename to draw vocabulary from, to match label indices in test/train folds [default: None]
 """
+import os
 from docopt import docopt
 from pprint import pprint
 
@@ -68,7 +70,27 @@ def argval(val):
     return val
 
 
+def slugify(value):
+    """
+    Normalizes string, converts to lowercase, removes non-alpha characters,
+    and converts spaces to hyphens.
+    """
+    import unicodedata
+    import re
+    value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore')
+    value = unicode(re.sub('[^\w\s-]', '', value).strip().lower())
+    return unicode(re.sub('[-\s]+', '-', value))
+
+
 if __name__ == '__main__':
     params = get_params()
+    name = params['experiment_name']
+    if not name:
+        raise ValueError("Empty value for required option --experiment-name")
+    name = slugify(unicode(name))
+    os.chdir(os.path.expanduser('~/results'))
+    os.mkdir(name)
+    os.chdir(name)
+
     import transcoder
     transcoder.main(**params)

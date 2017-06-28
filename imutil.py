@@ -1,6 +1,7 @@
 import math
 import os
 import tempfile
+import time
 import subprocess
 from distutils import spawn
 import numpy as np
@@ -54,7 +55,7 @@ def decode_jpg(jpg, crop_to_box=None, resize_to=(224,224)):
 # Swiss-army knife for putting an image on the screen
 # Accepts numpy arrays, PIL Image objects, or jpgs
 # Numpy arrays can consist of multiple images, which will be collated
-def show(data, filename=None, box=None, video_filename=None, resize_to=(224,224)):
+def show(data, save=True, filename=None, box=None, video_filename=None, resize_to=(224,224)):
     if type(data) == type(np.array([])):
         pixels = data
     elif type(data) == Image.Image:
@@ -70,6 +71,9 @@ def show(data, filename=None, box=None, video_filename=None, resize_to=(224,224)
         pixels = np.expand_dims(pixels, axis=-1)
     while len(pixels.shape) > 3:
         pixels = combine_images(pixels)
+
+    if save and filename is None:
+        filename = '{}.jpg'.format(int(time.time() * 1000))
 
     if filename is None:
         filename = tempfile.NamedTemporaryFile(suffix='.jpg').name

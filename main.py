@@ -101,7 +101,8 @@ if __name__ == '__main__':
         raise ValueError("Empty value for required option --experiment-name")
     name = slugify(unicode(name))
     os.chdir(os.path.expanduser('~/results'))
-    os.mkdir(name)
+    if not os.path.exists(name):
+        os.mkdir(name)
     os.chdir(name)
 
     if params['stdout_filename']:

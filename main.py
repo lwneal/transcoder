@@ -4,6 +4,7 @@ Usage:
 
 Options:
       --experiment-name=<n>             Name of the experiment [Required]
+      --stdout-filename=<f>             Filename for copy of stdout [default: stdout.txt]
       --encoder-input-filename=<txt>    Input text file the encoder will read (eg. English sentences)
       --decoder-input-filename=<txt>    Input text file the decoder will try to copy (eg. German sentences)
       --encoder-datatype=<type>         One of: img, bbox, vq, text [default: None]
@@ -40,6 +41,7 @@ Options:
       --dream-fps=<n>                   Integer, number of frames between dream examples [default: 30]
       --vocabulary-filename=<n>         Filename to draw vocabulary from, to match label indices in test/train folds [default: None]
 """
+import sys
 import os
 from docopt import docopt
 from pprint import pprint
@@ -82,6 +84,16 @@ def slugify(value):
     return unicode(re.sub('[-\s]+', '-', value))
 
 
+class Logger(object):
+    def __init__(self, name='stdout.log'):
+        self.terminal = sys.stdout
+        self.log = open(name, "a")
+
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+
+
 if __name__ == '__main__':
     params = get_params()
     name = params['experiment_name']
@@ -91,6 +103,9 @@ if __name__ == '__main__':
     os.chdir(os.path.expanduser('~/results'))
     os.mkdir(name)
     os.chdir(name)
+
+    if params['stdout_filename']:
+        sys.stdout = Logger(params['stdout_filename'])
 
     import transcoder
     transcoder.main(**params)

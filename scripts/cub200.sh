@@ -22,7 +22,7 @@ python main.py \
  --decoder-model $DECODER \
  --discriminator-model $ENCODER \
  --thought-vector-size 64 \
- --epochs 1 \
+ --epochs 100 \
  --batches-per-epoch 400 \
  --stdout-filename train_aae.txt \
  --mode train
@@ -39,7 +39,7 @@ python main.py \
  --thought-vector-size 64 \
  --freeze-encoder True \
  --enable-gan False \
- --epochs 1 \
+ --epochs 10 \
  --batches-per-epoch 200 \
  --stdout-filename train_classifier.txt \
  --mode train

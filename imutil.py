@@ -80,7 +80,7 @@ def show(data, save=True, filename=None, box=None, video_filename=None, resize_t
     while len(pixels.shape) > 3:
         pixels = combine_images(pixels)
 
-    if save and filename is None:
+    if save and filename is None and video_filename is None:
         filename = '{}.jpg'.format(int(time.time() * 1000))
 
     if filename is None:

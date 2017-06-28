@@ -192,10 +192,11 @@ def demonstrate(transcoder, encoder_dataset, decoder_dataset, **params):
         y_generated = decoder_dataset.unformat_output(y_gen)
         y_truth = decoder_dataset.unformat_output(y_true)
         print('{} --> {} ({})'.format(x_input, y_generated, y_truth))
-    imutil.show_figure()
+    fig_filename = '{}_demo.jpg'.format(int(time.time()))
+    imutil.show_figure(filename=fig_filename)
 
 
-def hallucinate(decoder, decoder_dataset, **params):
+def hallucinate(decoder, decoder_dataset, dist='gaussian', **params):
     batch_size = params['batch_size']
     thought_vector_size = params['thought_vector_size']
 
@@ -204,7 +205,8 @@ def hallucinate(decoder, decoder_dataset, **params):
     print("Hallucinated outputs:")
     for j in range(len(X_generated)):
         print(' ' + decoder_dataset.unformat_output(X_generated[j]))
-    imutil.show_figure()
+    fig_filename = '{}_halluc_{}.jpg'.format(int(time.time()), dist)
+    imutil.show_figure(filename=fig_filename)
 
 
 def dream(encoder, decoder, encoder_dataset, decoder_dataset, **params):
@@ -330,6 +332,12 @@ def main(**params):
     encoder, decoder, transcoder, discriminator, cgan = build_model(encoder_dataset, decoder_dataset, **params)
 
     print("Loading weights...")
+    if encoder_weights is None:
+        encoder_weights = 'encoder_{}.h5'.format(params['encoder_model'])
+    if decoder_weights is None:
+        decoder_weights = 'decoder_{}.h5'.format(params['decoder_model'])
+    if discriminator_weights is None:
+        discriminator_weights = 'disc_{}.h5'.format(params['discriminator_model'])
     if os.path.exists(encoder_weights):
         encoder.load_weights(encoder_weights)
     if os.path.exists(decoder_weights):

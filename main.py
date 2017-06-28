@@ -9,9 +9,9 @@ Options:
       --decoder-input-filename=<txt>    Dataset or text file for decoder
       --encoder-datatype=<type>         One of: img, bbox, vq, txt, lab [default: None]
       --decoder-datatype=<type>         One of: img, bbox, vq, txt, lab [default: None]
-      --encoder-weights=<name>          Filename for saved model [default: encoder.h5]
-      --decoder-weights=<name>          Filename for saved model [default: decoder.h5]
-      --discriminator-weights=<name>    Filename for saved model [default: discriminator.h5]
+      --encoder-weights=<name>          Filename for saved model [default: None]
+      --decoder-weights=<name>          Filename for saved model [default: None]
+      --discriminator-weights=<name>    Filename for saved model [default: None]
       --encoder-model=<m>               Model name for encoder (see models.py) [default: None]
       --decoder-model=<m>               Model name for decoder (see models.py) [default: None]
       --discriminator-model=<m>         Model name for discriminator (see models.py) [default: None]

@@ -69,5 +69,6 @@ python main.py \
  --mode dream
 
 # Re-encode the video to mp4 for storage
+cd ~/results/$EXPERIMENT_NAME
 ffmpeg -i dream_output.mjpeg dream.mp4
 rm dream_output.mjpeg

@@ -32,7 +32,7 @@ Options:
       --vocab-rarity=<v>                Minimum number of occurrences of a word [default: 1]
       --load-encoder-vocab=<vocab>      Filename, save/load vocabulary from this file [default: None]
       --load-decoder-vocab=<vocab>      Filename, save/load vocabulary from this file [default: None]
-      --mode=<mode>                     One of train, test, demo, dream [default: train]
+      --mode=<mode>                     One of train, evaluate, demo, dream [default: train]
       --max-temperature=<temp>          Sampling temperature for log-Boltzmann distribution [default: 1.0]
       --freeze-encoder=<freeze>         Freeze weights for the encoder [default: False]
       --freeze-decoder=<freeze>         Freeze weights for the decoder [default: False]
@@ -96,6 +96,7 @@ class Logger(object):
 
 if __name__ == '__main__':
     params = get_params()
+
     name = params['experiment_name']
     if not name:
         raise ValueError("Empty value for required option --experiment-name")
@@ -104,6 +105,13 @@ if __name__ == '__main__':
     if not os.path.exists(name):
         os.mkdir(name)
     os.chdir(name)
+
+    if params['encoder_weights'] is None:
+        params['encoder_weights'] = 'encoder_{}.h5'.format(params['encoder_model'])
+    if params['decoder_weights'] is None:
+        params['decoder_weights'] = 'decoder_{}.h5'.format(params['decoder_model'])
+    if params['discriminator_weights'] is None:
+        params['discriminator_weights'] = 'disc_{}.h5'.format(params['discriminator_model'])
 
     if params['stdout_filename']:
         sys.stdout = Logger(params['stdout_filename'])

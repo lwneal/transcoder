@@ -332,12 +332,6 @@ def main(**params):
     encoder, decoder, transcoder, discriminator, cgan = build_model(encoder_dataset, decoder_dataset, **params)
 
     print("Loading weights...")
-    if encoder_weights is None:
-        encoder_weights = 'encoder_{}.h5'.format(params['encoder_model'])
-    if decoder_weights is None:
-        decoder_weights = 'decoder_{}.h5'.format(params['decoder_model'])
-    if discriminator_weights is None:
-        discriminator_weights = 'disc_{}.h5'.format(params['discriminator_model'])
     if os.path.exists(encoder_weights):
         encoder.load_weights(encoder_weights)
     if os.path.exists(decoder_weights):
@@ -356,7 +350,7 @@ def main(**params):
             demonstrate(transcoder, encoder_dataset, decoder_dataset, **params)
             if enable_gan:
                 hallucinate(decoder, decoder_dataset, **params)
-    elif mode == 'test':
+    elif mode == 'evaluate':
         evaluate(transcoder, encoder_dataset, decoder_dataset, **params)
     elif mode == 'demo':
         demonstrate(transcoder, encoder_dataset, decoder_dataset, **params)

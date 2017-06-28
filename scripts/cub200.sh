@@ -10,7 +10,7 @@ DECODER=$2
 
 EXPERIMENT_NAME=cub200_64dim_${ENCODER}_${DECODER}_`date +%s`
 
-scripts/download_mnist.py
+scripts/download_cub200.py
 
 # First train a manifold
 python main.py \

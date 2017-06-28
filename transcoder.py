@@ -60,13 +60,14 @@ def evaluate(transcoder, encoder_dataset, decoder_dataset, **params):
 
     batch_count = input_count / batch_size
     scores = transcoder.evaluate_generator(eval_generator(), steps=batch_count)
+    print("")
     print("Completed evaluation on {} items".format(batch_count))
     print("input: {}".format(params['encoder_input_filename']))
     print("output: {}".format(params['decoder_input_filename']))
     print("encoder: {}".format(params['encoder_weights']))
     print("decoder: {}".format(params['decoder_weights']))
     for name, val in zip(['loss'] + transcoder.metrics, scores):
-        print("{}: {}".format(name, val))
+        print("{}: {:.5f}".format(name, val))
 
 
 def train_generator(encoder_dataset, decoder_dataset, **params):

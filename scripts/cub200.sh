@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 if [[ $# -lt 2 ]]; then
     echo "Usage: $0 encoder_model decoder_model"

@@ -20,8 +20,8 @@ function test1() {
     python main.py \
      --experiment-name unittest123 \
      --encoder-input-filename ~/data/mnist_train.dataset \
-     --encoder-datatype img \
      --decoder-input-filename ~/data/mnist_train.dataset \
+     --encoder-datatype img \
      --decoder-datatype img \
      --thought-vector-size 2 \
      --encoder-weights mnist_manifold_2dim_enc.h5 \
@@ -41,16 +41,11 @@ function test2() {
     # Test that we can evaluate on a dataset with odd length
     python main.py \
      --experiment-name unittest123 \
-     --encoder-input-filename ~/data/cub200.dataset \
-     --decoder-input-filename ~/data/cub200.dataset \
+     --encoder-input-filename ~/data/cub200_test.dataset \
+     --decoder-input-filename ~/data/cub200_test.dataset \
      --encoder-datatype img \
      --decoder-datatype lab \
-     --encoder-weights cub200_classifier_encoder.h5 \
-     --decoder-weights cub200_classifier_decoder.h5 \
-     --discriminator-weights /dev/null \
      --enable-gan False \
-     --img-width 128 \
-     --batches-per-epoch 100 \
      --batch-size 16 \
      --thought-vector-size 512 \
      --mode test
@@ -59,6 +54,6 @@ function test2() {
 cleanup
 
 for i in `seq 2`; do
-    test$i && pass || fail
+    test$i 2>/dev/null && pass || fail
     cleanup
 done

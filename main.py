@@ -7,11 +7,11 @@ Options:
       --stdout-filename=<f>             Filename for copy of stdout [default: stdout.txt]
       --encoder-input-filename=<txt>    Input text file the encoder will read (eg. English sentences)
       --decoder-input-filename=<txt>    Input text file the decoder will try to copy (eg. German sentences)
-      --encoder-datatype=<type>         One of: img, bbox, vq, text [default: None]
-      --decoder-datatype=<type>         One of: img, bbox, vq, text [default: None]
-      --encoder-weights=<name>          Filename for saved model [default: default_encoder.h5]
-      --decoder-weights=<name>          Filename for saved model [default: default_decoder.h5]
-      --discriminator-weights=<name>    Filename for saved model [default: default_discriminator.h5]
+      --encoder-datatype=<type>         One of: img, bbox, vq, txt, lab [default: None]
+      --decoder-datatype=<type>         One of: img, bbox, vq, txt, lab [default: None]
+      --encoder-weights=<name>          Filename for saved model [default: encoder.h5]
+      --decoder-weights=<name>          Filename for saved model [default: decoder.h5]
+      --discriminator-weights=<name>    Filename for saved model [default: discriminator.h5]
       --epochs=<epochs>                 Number of epochs to train [default: 2000].
       --batches-per-epoch=<b>           Number of batches per epoch [default: 1000].
       --batch-size=<size>               Batch size for training [default: 16]

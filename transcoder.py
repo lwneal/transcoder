@@ -92,6 +92,7 @@ def train(encoder, decoder, transcoder, discriminator, cgan, classifier, transcl
     batches_per_iter = int(params['training_iters_per_gan'])
     freeze_encoder = params['freeze_encoder']
     freeze_decoder = params['freeze_decoder']
+    enable_transcoder = not (freeze_encoder and freeze_decoder)
 
     training_gen = train_generator(encoder_dataset, decoder_dataset, **params)
     if enable_classifier:
@@ -120,19 +121,20 @@ def train(encoder, decoder, transcoder, discriminator, cgan, classifier, transcl
         ))
 
         # Train encoder and decoder on labeled X -> Y pairs
-        for _ in range(batches_per_iter):
-            X, Y = next(training_gen)
-            if freeze_encoder:
-                for layer in encoder.layers:
-                    layer.trainable = False
-            if freeze_decoder:
-                for layer in decoder.layers:
-                    layer.trainable = False
-            loss, accuracy = transcoder.train_on_batch(X, Y)
-            for layer in encoder.layers + decoder.layers:
-                layer.trainable = True
-            t_avg_loss = .95 * t_avg_loss + .05 * loss
-            t_avg_accuracy = .95 * t_avg_accuracy + .05 * accuracy
+        if enable_transcoder:
+            for _ in range(batches_per_iter):
+                X, Y = next(training_gen)
+                if freeze_encoder:
+                    for layer in encoder.layers:
+                        layer.trainable = False
+                if freeze_decoder:
+                    for layer in decoder.layers:
+                        layer.trainable = False
+                loss, accuracy = transcoder.train_on_batch(X, Y)
+                for layer in encoder.layers + decoder.layers:
+                    layer.trainable = True
+                t_avg_loss = .95 * t_avg_loss + .05 * loss
+                t_avg_accuracy = .95 * t_avg_accuracy + .05 * accuracy
 
         if enable_gan:
             # Update Discriminator 5x per Generator update
@@ -182,14 +184,15 @@ def train(encoder, decoder, transcoder, discriminator, cgan, classifier, transcl
             c_avg_loss = .95 * c_avg_loss + .05 * loss
             c_avg_accuracy = .95 * c_avg_accuracy + .05 * accuracy
 
-        # Update generator based on a random thought vector
-        X_encoder = np.random.uniform(-1, 1, size=(batch_size, thought_vector_size))
-        for layer in discriminator.layers:
-            layer.trainable = False
-        loss, accuracy = cgan.train_on_batch(X_encoder, -Y_disc)
-        g_avg_loss = .95 * g_avg_loss + .05 * loss
-        for layer in discriminator.layers:
-            layer.trainable = True
+        if enable_gan:
+            # Update generator based on a random thought vector
+            X_encoder = np.random.uniform(-1, 1, size=(batch_size, thought_vector_size))
+            for layer in discriminator.layers:
+                layer.trainable = False
+            loss, accuracy = cgan.train_on_batch(X_encoder, -Y_disc)
+            g_avg_loss = .95 * g_avg_loss + .05 * loss
+            for layer in discriminator.layers:
+                layer.trainable = True
 
     sys.stderr.write('\n')
     print("Trained for {:.2f} s (spent {:.2f} s clipping)".format(time.time() - training_start_time, clipping_time))
@@ -323,12 +326,17 @@ def counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_datase
             break
     print('\n')
     print("Original Image:")
-    imutil.show(decoder.predict(encoder.predict(X)), filename='{}_counterfactual_orig.jpg'.format(int(time.time())))
+    img = decoder.predict(encoder.predict(X))[0]
+    imutil.show(img, filename='{}_counterfactual_orig.jpg'.format(int(time.time())))
+    imutil.add_to_figure(img)
     print("Original Classification: {}".format(classifier_dataset.unformat_output(original_class)))
 
     print("Counterfactual Image:")
-    imutil.show(decoder.predict(Z), filename='{}_counterfactual_{}.jpg'.format(int(time.time()), selected_class))
+    img = decoder.predict(Z)[0]
+    imutil.show(img, filename='{}_counterfactual_{}.jpg'.format(int(time.time()), selected_class))
+    imutil.add_to_figure(img)
     print("Counterfactual Classification: {}".format(classifier_dataset.unformat_output(classification)))
+    imutil.show_figure(filename='{}_counterfactual.jpg'.format(int(time.time())), resize_to=None)
 
 def find_dataset(input_filename, dataset_type=None, **params):
     types = {

@@ -393,6 +393,7 @@ def build_model(encoder_dataset, decoder_dataset, classifier_dataset, **params):
         transclassifier.compile(loss=classifier_loss, optimizer=optimizer, metrics=metrics)
     else:
         classifier = models.Sequential()
+        transclassifier = models.Sequential()
 
     transcoder = models.Model(inputs=encoder.inputs, outputs=decoder(encoder.output))
     transcoder.compile(loss=transcoder_loss, optimizer=optimizer, metrics=metrics)

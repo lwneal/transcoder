@@ -8,7 +8,7 @@ fi
 ENCODER=$1
 DECODER=$2
 
-EXPERIMENT_NAME=cub200_64dim_${ENCODER}_${DECODER}_`date +%s`
+EXPERIMENT_NAME=cub200_big_128dim_${ENCODER}_${DECODER}_`date +%s`
 
 scripts/download_cub200.py
 
@@ -22,7 +22,7 @@ python main.py \
  --encoder-model $ENCODER \
  --decoder-model $DECODER \
  --discriminator-model $ENCODER \
- --thought-vector-size 64 \
+ --thought-vector-size 128 \
  --epochs 100 \
  --batches-per-epoch 400 \
  --img-width 128 \
@@ -38,7 +38,7 @@ python main.py \
  --decoder-datatype lab \
  --encoder-model $ENCODER \
  --decoder-model label_decoder \
- --thought-vector-size 64 \
+ --thought-vector-size 128 \
  --freeze-encoder True \
  --enable-gan False \
  --epochs 10 \
@@ -57,7 +57,7 @@ python main.py \
  --decoder-datatype lab \
  --encoder-model $ENCODER \
  --decoder-model label_decoder \
- --thought-vector-size 64 \
+ --thought-vector-size 128 \
  --enable-gan False \
  --img-width 128 \
  --stdout-filename evaluate_classifier.txt \
@@ -102,7 +102,7 @@ python main.py \
  --discriminator-model $ENCODER \
  --classifier-model label_decoder \
  --img-width 128 \
- --thought-vector-size 64 \
+ --thought-vector-size 128 \
  --enable-classifier True \
  --mode counterfactual
 

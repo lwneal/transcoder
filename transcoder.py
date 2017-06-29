@@ -193,7 +193,7 @@ def demonstrate(transcoder, encoder_dataset, decoder_dataset, **params):
         y_truth = decoder_dataset.unformat_output(y_true)
         print('{} --> {} ({})'.format(x_input, y_generated, y_truth))
     fig_filename = '{}_demo.jpg'.format(int(time.time()))
-    imutil.show_figure(filename=fig_filename)
+    imutil.show_figure(filename=fig_filename, resize_to=None)
 
 
 def hallucinate(decoder, decoder_dataset, dist='gaussian', **params):
@@ -206,7 +206,7 @@ def hallucinate(decoder, decoder_dataset, dist='gaussian', **params):
     for j in range(len(X_generated)):
         print(' ' + decoder_dataset.unformat_output(X_generated[j]))
     fig_filename = '{}_halluc_{}.jpg'.format(int(time.time()), dist)
-    imutil.show_figure(filename=fig_filename)
+    imutil.show_figure(filename=fig_filename, resize_to=None)
 
 
 def dream(encoder, decoder, encoder_dataset, decoder_dataset, **params):

@@ -269,9 +269,65 @@ def dream(encoder, decoder, encoder_dataset, decoder_dataset, **params):
             #decoder_dataset.unformat_output(img)
             imutil.show(img, video_filename=video_filename, resize_to=(512,512))
         print("Done")
-
         img_idx += 1
 
+
+def counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_dataset, classifier_dataset, **params):
+    thought_vector_size = params['thought_vector_size']
+
+    training_gen = train_generator(encoder_dataset, decoder_dataset, **params)
+    X, _ = next(training_gen)
+    X = X[:1]
+    imutil.show(X)
+
+    # TODO: Convert this encoder input to a latent vector
+    Z = encoder.predict(X)
+
+    # TODO: Get the classifier output of this latent vector
+    classification = classifier.predict(Z)
+    print("Classification: {}".format(np.argmax(classification, axis=1)))
+
+    # This will contain our latent vector
+    from keras import backend as K
+    latent_value = K.placeholder((1, thought_vector_size))
+
+    # TODO: Define a loss function that goes down as the classification moves to where we want it
+    loss = K.variable(0.)
+    loss += K.sum(classifier.outputs[0][0])
+    selected_class = 3  # Make every digit classify as a 3
+    loss -= K.sum(classifier.outputs[0][0][selected_class])
+
+    # TODO: Compute the gradient of that loss wrt. the latent vector
+    grads = K.gradients(loss, classifier.inputs[0])
+
+    compute_gradient = K.function(classifier.inputs, grads)
+
+    # TODO: Perform gradient descent on the classification loss
+
+    step_size = 1
+    momentum = 0
+    classification = np.argmax(classifier.predict(Z), axis=1)
+    original_class = classification
+    momentum = None
+    for i in range(10 * 1000):
+        gradient = compute_gradient([Z])[0]
+        if momentum is None:
+            momentum = gradient
+        momentum += gradient
+        momentum *= .99
+        Z -= momentum * step_size
+        classification = np.argmax(classifier.predict(Z), axis=1)
+        if i % 100 == 0:
+            imutil.show(decoder.predict(Z), save=False)
+            print("Classification: {}".format(classification))
+        if not np.array_equal(classification, original_class):
+            break
+    print("Original Image:")
+    imutil.show(decoder.predict(encoder.predict(X)), filename='{}_counterfactual_orig'.format(int(time.time())))
+
+    print("Counterfactual Image:")
+    imutil.show(decoder.predict(Z), filename='{}_counterfactual_{}'.format(int(time.time()), selected_class))
+    print("Classification: {}".format(classification))
 
 def find_dataset(input_filename, dataset_type=None, **params):
     types = {
@@ -409,3 +465,5 @@ def main(**params):
             hallucinate(decoder, decoder_dataset, **params)
     elif mode == 'dream':
         dream(encoder, decoder, encoder_dataset, decoder_dataset, **params)
+    elif mode == 'counterfactual':
+        counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_dataset, classifier_dataset, **params)

@@ -323,11 +323,11 @@ def counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_datase
             break
     print('\n')
     print("Original Image:")
-    imutil.show(decoder.predict(encoder.predict(X)), filename='{}_counterfactual_orig'.format(int(time.time())))
+    imutil.show(decoder.predict(encoder.predict(X)), filename='{}_counterfactual_orig.jpg'.format(int(time.time())))
     print("Original Classification: {}".format(classifier_dataset.unformat_output(original_class)))
 
     print("Counterfactual Image:")
-    imutil.show(decoder.predict(Z), filename='{}_counterfactual_{}'.format(int(time.time()), selected_class))
+    imutil.show(decoder.predict(Z), filename='{}_counterfactual_{}.jpg'.format(int(time.time()), selected_class))
     print("Counterfactual Classification: {}".format(classifier_dataset.unformat_output(classification)))
 
 def find_dataset(input_filename, dataset_type=None, **params):

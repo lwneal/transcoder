@@ -87,7 +87,7 @@ def show(data, save=True, filename=None, box=None, video_filename=None, resize_t
         filename = tempfile.NamedTemporaryFile(suffix='.jpg').name
 
     with open(filename, 'w') as fp:
-        print("Pixel value range {}-{}".format(pixels.min(), pixels.max()))
+        #print("Pixel value range {}-{}".format(pixels.min(), pixels.max()))
         pixels = (pixels - pixels.min()) * 255. / (pixels.max() - pixels.min())
         fp.write(encode_jpg(pixels, resize_to=resize_to))
         fp.flush()

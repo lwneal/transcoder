@@ -5,16 +5,20 @@ Usage:
 Options:
       --experiment-name=<n>             Name of the experiment [Required]
       --stdout-filename=<f>             Filename for copy of stdout [default: stdout.txt]
-      --encoder-input-filename=<txt>    Dataset or text file for encoder
-      --decoder-input-filename=<txt>    Dataset or text file for decoder
+      --encoder-input-filename=<f>      Dataset or text file for encoder
+      --decoder-input-filename=<f>      Dataset or text file for decoder
+      --classifier-input-filename=<f>   Optional dataset or text file for classifier [default: None]
       --encoder-datatype=<type>         One of: img, bbox, vq, txt, lab [default: None]
       --decoder-datatype=<type>         One of: img, bbox, vq, txt, lab [default: None]
+      --classifier-datatype=<type>      One of: img, bbox, vq, txt, lab [default: None]
       --encoder-weights=<name>          Filename for saved model [default: None]
       --decoder-weights=<name>          Filename for saved model [default: None]
       --discriminator-weights=<name>    Filename for saved model [default: None]
+      --classifier-weights=<name>       Filename for saved model [default: None]
       --encoder-model=<m>               Model name for encoder (see models.py) [default: None]
       --decoder-model=<m>               Model name for decoder (see models.py) [default: None]
       --discriminator-model=<m>         Model name for discriminator (see models.py) [default: None]
+      --classifier-model=<m>            Model name for classifier (see models.py) [default: None]
       --epochs=<epochs>                 Number of epochs to train [default: 2000].
       --batches-per-epoch=<b>           Number of batches per epoch [default: 1000].
       --batch-size=<size>               Batch size for training [default: 16]
@@ -37,6 +41,7 @@ Options:
       --freeze-encoder=<freeze>         Freeze weights for the encoder [default: False]
       --freeze-decoder=<freeze>         Freeze weights for the decoder [default: False]
       --enable-gan=<bool>               If False, no GAN training will be applied [default: True]
+      --enable-classifier=<bool>        If True, train with a classifier for counterfactuals [default: False]
       --video-filename=<fn>             Output video filename for dream mode [default: output.mjpeg]
       --dream-fps=<n>                   Integer, number of frames between dream examples [default: 30]
       --vocabulary-filename=<n>         Filename to draw vocabulary from, to match label indices in test/train folds [default: None]
@@ -112,6 +117,8 @@ if __name__ == '__main__':
         params['decoder_weights'] = 'decoder_{}.h5'.format(params['decoder_model'])
     if params['discriminator_weights'] is None:
         params['discriminator_weights'] = 'disc_{}.h5'.format(params['discriminator_model'])
+    if params['classifier_weights'] is None:
+        params['classifier_weights'] = 'classifier_{}.h5'.format(params['classifier_model'])
 
     if params['stdout_filename']:
         sys.stdout = Logger(params['stdout_filename'])

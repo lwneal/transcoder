@@ -9,7 +9,7 @@ CLASSIFIER=$4
 THOUGHT_VECTOR_SIZE=$5
 EPOCHS=$6
 
-EXPERIMENT_NAME=${DATASET}_${THOUGHT_VECTOR_SIZE}_${ENCODER}_${DECODER}_`date +%s`
+EXPERIMENT_NAME=${DATASET}_${THOUGHT_VECTOR_SIZE}_${ENCODER}_${DECODER}_${CLASSIFIER}_`date +%s`
 
 if [[ $# -lt 6 ]]; then
     echo "Usage: $0 <dataset> <encoder> <decoder> <classifier> <latent_size> <epochs>"

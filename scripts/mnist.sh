@@ -27,7 +27,7 @@ python main.py \
  --classifier-model $CLASSIFIER_MODEL \
  --discriminator-model $ENCODER_MODEL \
  --thought-vector-size $THOUGHT_VECTOR_SIZE \
- --epochs 10 \
+ --epochs 30 \
  --batches-per-epoch 200 \
  --stdout-filename train_aae.txt \
  --mode train

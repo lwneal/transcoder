@@ -162,7 +162,7 @@ def csrnn_deconv_a(**params):
     return models.Model(inputs=[x_input], outputs=x)
 
 
-def label_encoder(dataset, **params):
+def linear_tanh(dataset, **params):
     thought_vector_size = params['thought_vector_size']
     label_count = len(dataset.name_to_idx)
 
@@ -173,7 +173,7 @@ def label_encoder(dataset, **params):
     return models.Model(inputs=x_in, outputs=x, name='label_encoder')
 
 
-def label_decoder(dataset, **params):
+def linear_softmax(dataset, **params):
     thought_vector_size = params['thought_vector_size']
     label_count = len(dataset.name_to_idx)
 

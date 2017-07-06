@@ -96,5 +96,12 @@ for i in `seq 10`; do
      --enable-gan False \
      --enable-classifier True \
      --stdout-filename counterfactual.txt \
+     --video-filename counterfactual_output.mjpeg \
      --mode counterfactual
 done
+
+# Re-encode the video to mp4 for storage
+pushd ~/results/$EXPERIMENT_NAME
+ffmpeg -i counterfactual_output.mjpeg counterfactuals.mp4
+rm counterfactual_output.mjpeg 
+popd

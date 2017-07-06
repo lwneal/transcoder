@@ -102,10 +102,12 @@ class Logger(object):
 if __name__ == '__main__':
     params = get_params()
 
-    name = params['experiment_name']
-    if not name:
-        raise ValueError("Empty value for required option --experiment-name")
-    name = slugify(unicode(name))
+    for var in ['experiment_name', 'encoder_input_filename', 'decoder_input_filename']:
+        if not params[var]:
+            print(__doc__)
+            raise ValueError("Empty value for required option {}".format(var))
+
+    name = slugify(unicode(params['experiment_name']))
     os.chdir(os.path.expanduser('~/results'))
     if not os.path.exists(name):
         os.mkdir(name)

@@ -63,22 +63,35 @@ def show_figure(**kwargs):
 # Swiss-army knife for putting an image on the screen
 # Accepts numpy arrays, PIL Image objects, or jpgs
 # Numpy arrays can consist of multiple images, which will be collated
-def show(data, save=True, filename=None, box=None, video_filename=None, resize_to=(224,224)):
+def show(data, save=True, filename=None, box=None, video_filename=None, resize_to=(224,224), caption=None):
+    # Munge data to allow input filenames, pixels, PIL images, etc
     if type(data) == type(np.array([])):
         pixels = data
     elif type(data) == Image.Image:
         pixels = np.array(data)
     else:
         pixels = decode_jpg(data)
-    if box is not None:
-        draw_box(pixels, box)
 
+    # Reduce lists of images to a single image; expand monochrome to RGB
     if pixels.shape[-1] > 3:
         pixels = np.expand_dims(pixels, axis=-1)
     while len(pixels.shape) < 3:
         pixels = np.expand_dims(pixels, axis=-1)
     while len(pixels.shape) > 3:
         pixels = combine_images(pixels)
+
+    # Draw a bounding box onto the image
+    if box is not None:
+        draw_box(pixels, box)
+
+    # Draw text into the image
+    if caption is not None:
+        from PIL import Image, ImageFont, ImageDraw
+        img = Image.fromarray((pixels * 255).astype('uint8'))
+        font = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSerif.ttf', 12)
+        draw = ImageDraw.Draw(img)
+        draw.text((0,0), caption, (225,225,225), font=font)
+        pixels = np.array(img)
 
     if save and filename is None and video_filename is None:
         filename = '{}.jpg'.format(int(time.time() * 1000))
@@ -91,7 +104,7 @@ def show(data, save=True, filename=None, box=None, video_filename=None, resize_t
         pixels = (pixels - pixels.min()) * 255. / (pixels.max() - pixels.min())
         fp.write(encode_jpg(pixels, resize_to=resize_to))
         fp.flush()
-        # Display image in the terminal if an appropriate program is available
+        # Display the image directly in the terminal, if supported
         for prog in ['imgcat', 'catimg', 'feh', 'display']:
             if spawn.find_executable(prog):
                 # Tmux hack

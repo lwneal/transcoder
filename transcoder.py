@@ -277,6 +277,7 @@ def dream(encoder, decoder, encoder_dataset, decoder_dataset, **params):
 
 def counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_dataset, classifier_dataset, **params):
     thought_vector_size = params['thought_vector_size']
+    video_filename = params['video_filename']
 
     # Randomly choose a class to mutate toward
     selected_class = np.random.randint(0, len(classifier_dataset.idx_to_name))
@@ -310,7 +311,8 @@ def counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_datase
     momentum = 0
     classification = classifier.predict(Z)[0]
     momentum = None
-    for i in range(10 * 1000):
+    NUM_FRAMES = 30
+    for i in range(10 * NUM_FRAMES):
         gradient = compute_gradient([Z])[0]
         if momentum is None:
             momentum = gradient
@@ -318,12 +320,10 @@ def counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_datase
         momentum *= .99
         Z -= momentum * step_size
         classification = classifier.predict(Z)[0]
-        if i % 1000 == 0:
-            imutil.show(decoder.predict(Z), save=False)
+        if i % 10 == 0:
+            caption = 'Class: {}'.format(classifier_dataset.unformat_output(classification))
+            imutil.show(decoder.predict(Z), resize_to=(512, 512), video_filename=video_filename, caption=caption)
             print("Classification: {}".format(classifier_dataset.unformat_output(classification)))
-        if np.argmax(classification) == selected_class:
-            print("Success")
-            break
     print('\n')
     print("Original Image:")
     img = decoder.predict(encoder.predict(X))[0]

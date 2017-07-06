@@ -5,9 +5,11 @@ import time
 import subprocess
 from distutils import spawn
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFont, ImageDraw
 from StringIO import StringIO
 
+# Should be available on Ubuntu 14.04+
+FONT_FILE = '/usr/share/fonts/truetype/freefont/FreeMonoBold.ttf'
 
 # Input: Numpy array containing one or more images
 # Output: JPG encoded image bytes
@@ -63,7 +65,15 @@ def show_figure(**kwargs):
 # Swiss-army knife for putting an image on the screen
 # Accepts numpy arrays, PIL Image objects, or jpgs
 # Numpy arrays can consist of multiple images, which will be collated
-def show(data, save=True, filename=None, box=None, video_filename=None, resize_to=(224,224), caption=None):
+def show(
+        data,
+        save=True,
+        filename=None,
+        box=None,
+        video_filename=None,
+        resize_to=(224,224),
+        caption=None,
+        font_size=18):
     # Munge data to allow input filenames, pixels, PIL images, etc
     if type(data) == type(np.array([])):
         pixels = data
@@ -80,45 +90,55 @@ def show(data, save=True, filename=None, box=None, video_filename=None, resize_t
     while len(pixels.shape) > 3:
         pixels = combine_images(pixels)
 
+    # Normalize pixel intensities
+    pixels = (pixels - pixels.min()) * 255. / (pixels.max() - pixels.min())
+
+    # Resize image to desired shape
+    if resize_to:
+        img = Image.fromarray(pixels.astype('uint8'))
+        img = img.resize(resize_to)
+        pixels = np.array(img)
+
     # Draw a bounding box onto the image
     if box is not None:
         draw_box(pixels, box)
 
     # Draw text into the image
     if caption is not None:
-        from PIL import Image, ImageFont, ImageDraw
-        img = Image.fromarray((pixels * 255).astype('uint8'))
-        font = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSerif.ttf', 12)
+        img = Image.fromarray(pixels.astype('uint8'))
+        font = ImageFont.truetype(FONT_FILE, font_size)
         draw = ImageDraw.Draw(img)
-        draw.text((0,0), caption, (225,225,225), font=font)
+        draw.multiline_text((0,0), caption, font=font, fill=(255,255,255,128))
         pixels = np.array(img)
 
+    # Set a default filename if one does not exist
     if save and filename is None and video_filename is None:
         filename = '{}.jpg'.format(int(time.time() * 1000))
-
-    if filename is None:
+    elif filename is None:
         filename = tempfile.NamedTemporaryFile(suffix='.jpg').name
 
+    # Write the file itself
     with open(filename, 'w') as fp:
-        #print("Pixel value range {}-{}".format(pixels.min(), pixels.max()))
-        pixels = (pixels - pixels.min()) * 255. / (pixels.max() - pixels.min())
-        fp.write(encode_jpg(pixels, resize_to=resize_to))
+        fp.write(encode_jpg(pixels))
         fp.flush()
-        # Display the image directly in the terminal, if supported
-        for prog in ['imgcat', 'catimg', 'feh', 'display']:
-            if spawn.find_executable(prog):
-                # Tmux hack
-                #print('\n' * 14)
-                #print('\033[14F')
-                subprocess.check_call([prog, filename])
-                #print('\033[14B')
-                break
-        else:
-            print("Saved image size {} as {}".format(pixels.shape, filename))
+
+    # Display the image directly in the terminal, if supported
+    for prog in ['imgcat', 'catimg', 'feh', 'display']:
+        if spawn.find_executable(prog):
+            tmux_hack = 'TMUX' in os.environ
+            if tmux_hack:
+                print('\n' * 4)
+                print('\033[4F')
+            subprocess.check_call([prog, filename])
+            if tmux_hack:
+                print('\033[4B')
+            break
+    else:
+        print("Saved image size {} as {}".format(pixels.shape, filename))
 
     # Output JPG files can be collected into a video with ffmpeg -i *.jpg
     if video_filename:
-        open(video_filename, 'a').write(encode_jpg(pixels, resize_to=resize_to))
+        open(video_filename, 'a').write(encode_jpg(pixels))
 
 
 def combine_images(generated_images):

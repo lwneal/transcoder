@@ -18,7 +18,7 @@ class ImageDataset(object):
             raise ValueError("No input filename supplied. See options with --help")
         lines = open(input_filename).readlines()
 
-        self.regions = map(json.loads, lines)
+        self.regions = [json.loads(l) for l in lines]
         print("Input file {} contains {} image regions".format(input_filename, len(self.regions)))
 
     def random_idx(self):

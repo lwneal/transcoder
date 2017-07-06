@@ -168,7 +168,7 @@ def linear_tanh(dataset, **params):
 
     # Just an embedding from each label to a point in latent space
     x_in = layers.Input(shape=(label_count,))
-    x = layers.Dense(thought_vector_size)(x)
+    x = layers.Dense(thought_vector_size)(x_in)
     x = layers.Activation('tanh')(x)
     return models.Model(inputs=x_in, outputs=x, name='label_encoder')
 
@@ -180,5 +180,21 @@ def linear_softmax(dataset, **params):
     # Linear mapping from thought vector to labels
     x_in = layers.Input(shape=(thought_vector_size,))
     x = layers.Dense(label_count)(x_in)
+    x = layers.Activation('softmax')(x)
+    return models.Model(inputs=x_in, outputs=x, name='label_decoder')
+
+
+def mlp_2a(dataset, **params):
+    thought_vector_size = params['thought_vector_size']
+    label_count = len(dataset.name_to_idx)
+
+    # MLP with single hidden layer
+    x_in = layers.Input(shape=(thought_vector_size,))
+
+    hidden_units = label_count + thought_vector_size
+    x = layers.Dense(hidden_units)(x_in)
+    x = layers.BatchNormalization()(x)
+    x = layers.LeakyReLU()(x)
+    x = layers.Dense(label_count)(x)
     x = layers.Activation('softmax')(x)
     return models.Model(inputs=x_in, outputs=x, name='label_decoder')

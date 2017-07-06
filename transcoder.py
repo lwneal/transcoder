@@ -310,7 +310,7 @@ def counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_datase
     step_size = .01
     classification = classifier.predict(Z)[0]
     momentum = None
-    NUM_FRAMES = 100
+    NUM_FRAMES = 60
     for i in range(10 * NUM_FRAMES):
         gradient = compute_gradient([Z])[0]
         if momentum is None:

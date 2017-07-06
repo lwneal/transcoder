@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-set -x
 
 DATASET=$1
 ENCODER=$2
@@ -18,6 +17,7 @@ fi
 
 scripts/download_${DATASET}.py
 
+set -x
 # First train a manifold
 python main.py \
  --experiment-name $EXPERIMENT_NAME \

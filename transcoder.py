@@ -308,7 +308,6 @@ def counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_datase
 
     # Perform gradient descent on the classification loss
     step_size = .1
-    momentum = 0
     classification = classifier.predict(Z)[0]
     momentum = None
     NUM_FRAMES = 30

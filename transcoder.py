@@ -325,8 +325,10 @@ def counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_datase
         # L2 regularization?
         #Z *= 0.99
         if i % 10 == 0:
-            caption = 'Class: {}'.format(classifier_dataset.unformat_output(classification))
-            imutil.show(decoder.predict(Z), resize_to=(512, 512), video_filename=video_filename, caption=caption)
+            caption = 'Label: {} (confidence {:.2f})'.format(
+                    classifier_dataset.unformat_output(classification),
+                    classification.max())
+            imutil.show(decoder.predict(Z), resize_to=(512, 512), video_filename=video_filename, caption=caption, font_size=20)
             print("Classification: {}".format(classifier_dataset.unformat_output(classification)))
     print('\n')
     print("Original Image:")

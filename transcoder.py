@@ -307,18 +307,23 @@ def counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_datase
     compute_gradient = K.function(classifier.inputs, grads)
 
     # Perform gradient descent on the classification loss
-    step_size = .1
+    step_size = .01
     classification = classifier.predict(Z)[0]
     momentum = None
-    NUM_FRAMES = 30
+    NUM_FRAMES = 100
     for i in range(10 * NUM_FRAMES):
         gradient = compute_gradient([Z])[0]
         if momentum is None:
             momentum = gradient
         momentum += gradient
-        momentum *= .99
+        momentum *= .98
+        # Clip magnitude to 1.0
+        if np.linalg.norm(momentum) > 1.0:
+            momentum /= np.linalg.norm(momentum)
         Z -= momentum * step_size
         classification = classifier.predict(Z)[0]
+        # L2 regularization?
+        #Z *= 0.99
         if i % 10 == 0:
             caption = 'Class: {}'.format(classifier_dataset.unformat_output(classification))
             imutil.show(decoder.predict(Z), resize_to=(512, 512), video_filename=video_filename, caption=caption)

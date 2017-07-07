@@ -425,7 +425,8 @@ def build_model(encoder_dataset, decoder_dataset, classifier_dataset, **params):
             texture.add(vgg.layers[i])
         def perceptual_loss(y_true, y_pred):
             return K.mean(K.square(texture(y_true) - texture(y_pred)))
-        transcoder_loss = lambda x, y: losses.mean_squared_error(x, y) + perceptual_loss(x, y)
+        alpha = 0.05
+        transcoder_loss = lambda x, y: alpha * losses.mean_squared_error(x, y) + (1 - alpha) * perceptual_loss(x, y)
     if type(decoder_dataset) is ImageDataset:
         transcoder_loss = losses.mean_squared_error
     else:

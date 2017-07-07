@@ -193,7 +193,6 @@ def mlp_2a(dataset, **params):
 
     hidden_units = label_count + thought_vector_size
     x = layers.Dense(hidden_units)(x_in)
-    x = layers.BatchNormalization()(x)
     x = layers.LeakyReLU()(x)
     x = layers.Dense(label_count)(x)
     x = layers.Activation('softmax')(x)

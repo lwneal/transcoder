@@ -310,13 +310,22 @@ def counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_datase
     step_size = .01
     classification = classifier.predict(Z)[0]
     momentum = None
-    NUM_FRAMES = 60
+    NUM_FRAMES = 120
+    def output_frame():
+        caption = 'Label: {} (confidence {:.2f})'.format(
+                classifier_dataset.unformat_output(classification),
+                classification.max())
+        imutil.show(decoder.predict(Z), resize_to=(512, 512), video_filename=video_filename, caption=caption, font_size=20)
+        print("Classification: {}".format(classifier_dataset.unformat_output(classification)))
+
+    for _ in range(5):
+        output_frame()
     for i in range(10 * NUM_FRAMES):
         gradient = compute_gradient([Z])[0]
         if momentum is None:
             momentum = gradient
         momentum += gradient
-        momentum *= .98
+        momentum *= .99
         # Clip magnitude to 1.0
         if np.linalg.norm(momentum) > 1.0:
             momentum /= np.linalg.norm(momentum)
@@ -325,11 +334,9 @@ def counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_datase
         # L2 regularization?
         #Z *= 0.99
         if i % 10 == 0:
-            caption = 'Label: {} (confidence {:.2f})'.format(
-                    classifier_dataset.unformat_output(classification),
-                    classification.max())
-            imutil.show(decoder.predict(Z), resize_to=(512, 512), video_filename=video_filename, caption=caption, font_size=20)
-            print("Classification: {}".format(classifier_dataset.unformat_output(classification)))
+            output_frame()
+    for _ in range(5):
+        output_frame()
     print('\n')
     print("Original Image:")
     img = decoder.predict(encoder.predict(X))[0]

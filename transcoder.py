@@ -373,10 +373,10 @@ def build_model(encoder_dataset, decoder_dataset, classifier_dataset, **params):
     classifier_model = params['classifier_model']
     enable_gan = params['enable_gan']
     enable_classifier = params['enable_classifier']
+    enable_perceptual_loss = params['enable_perceptual_loss']
 
     metrics = ['accuracy']
     optimizer = 'adam'
-    transcoder_loss = 'mse' if type(decoder_dataset) is ImageDataset else 'categorical_crossentropy'
     classifier_loss = 'categorical_crossentropy'
 
     # HACK: Keras Bug https://github.com/fchollet/keras/issues/5221
@@ -415,6 +415,21 @@ def build_model(encoder_dataset, decoder_dataset, classifier_dataset, **params):
     else:
         classifier = models.Sequential()
         transclassifier = models.Sequential()
+
+    from keras import losses
+    if enable_perceptual_loss:
+        from keras import applications
+        vgg = applications.vgg16.VGG16(include_top=False)
+        texture = models.Sequential()
+        for i in range(4):
+            texture.add(vgg.layers[i])
+        def perceptual_loss(y_true, y_pred):
+            return K.mean(K.square(texture(y_true) - texture(y_pred)))
+        transcoder_loss = lambda x, y: losses.mean_squared_error(x, y) + perceptual_loss(x, y)
+    if type(decoder_dataset) is ImageDataset:
+        transcoder_loss = losses.mean_squared_error
+    else:
+        transcoder_loss = losses.categorical_crossentropy
 
     transcoder = models.Model(inputs=encoder.inputs, outputs=decoder(encoder.output))
     transcoder.compile(loss=transcoder_loss, optimizer=optimizer, metrics=metrics)

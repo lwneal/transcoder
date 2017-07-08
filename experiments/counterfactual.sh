@@ -105,3 +105,5 @@ pushd ~/results/$EXPERIMENT_NAME
 ffmpeg -i counterfactual_output.mjpeg counterfactuals.mp4
 rm counterfactual_output.mjpeg 
 popd
+
+touch ~/results/$EXPERIMENT_NAME/finished

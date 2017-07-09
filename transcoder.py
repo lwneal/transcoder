@@ -333,6 +333,11 @@ def counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_datase
         classification = classifier.predict(Z)[0]
         # L2 regularization?
         #Z *= 0.99
+
+        # Inspired by Michael Jordan's talk on saddle points
+        # https://arxiv.org/pdf/1703.00887.pdf
+        Z += np.random.normal(scale=.0001, size=Z.shape)
+
         if i % 10 == 0:
             output_frame()
     for _ in range(5):

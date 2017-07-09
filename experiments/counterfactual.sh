@@ -17,9 +17,10 @@ fi
 
 if [[ -z $TIMESTAMP ]]; then
     TIMESTAMP=`date +%s`
+    echo "No experiment ID provided, starting new experiment $TIMESTAMP"
 fi
 
-EXPERIMENT_NAME=${DATASET}_${THOUGHT_VECTOR_SIZE}_${ENCODER}_${DECODER}_${CLASSIFIER}_`date +%s`
+EXPERIMENT_NAME=${DATASET}_${THOUGHT_VECTOR_SIZE}_${ENCODER}_${DECODER}_${CLASSIFIER}_${TIMESTAMP}
 
 scripts/download_${DATASET}.py
 

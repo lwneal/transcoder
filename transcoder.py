@@ -380,6 +380,7 @@ def build_model(encoder_dataset, decoder_dataset, classifier_dataset, **params):
     enable_classifier = params['enable_classifier']
     enable_perceptual_loss = params['enable_perceptual_loss']
     alpha = params['perceptual_loss_alpha']
+    perceptual_layers = params['perceptual_loss_layers']
 
     metrics = ['accuracy']
     optimizer = 'adam'
@@ -428,7 +429,7 @@ def build_model(encoder_dataset, decoder_dataset, classifier_dataset, **params):
             from keras import applications
             vgg = applications.vgg16.VGG16(include_top=False)
             texture = models.Sequential()
-            for i in range(4):
+            for i in range(perceptual_layers):
                 texture.add(vgg.layers[i])
             def perceptual_loss(y_true, y_pred):
                 return K.mean(K.square(texture(y_true) - texture(y_pred)))

@@ -9,19 +9,21 @@ Options:
     --decoder=<n>           Name of the decoder model [default: simpledeconv_a]
     --classifier=<n>        Name of the classifier model [default: linear_softmax]
     --epochs=<n>            Number of epochs [default: 10]
+    --timestamp=<n>         Timestamp of previously-trained network (new ts if left default) [default: None]
 """
 
 if __name__ == '__main__':
     import docopt
     arguments = docopt.docopt(__doc__)
     # TODO: Instead of calling the old bash script, convert it all to Python
-    cmd = "experiments/counterfactual.sh {} {} {} {} {} {}".format(
+    cmd = "experiments/counterfactual.sh {} {} {} {} {} {} {}".format(
             arguments['--dataset'],
             arguments['--encoder'],
             arguments['--decoder'],
             arguments['--classifier'],
             arguments['--thought-vector'],
-            arguments['--epochs'])
+            arguments['--epochs'],
+            arguments['--timestamp'] or '')
     import subprocess
     print(cmd)
     subprocess.check_call(cmd, shell=True)

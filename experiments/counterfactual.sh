@@ -7,13 +7,19 @@ DECODER=$3
 CLASSIFIER=$4
 THOUGHT_VECTOR_SIZE=$5
 EPOCHS=$6
-
-EXPERIMENT_NAME=${DATASET}_${THOUGHT_VECTOR_SIZE}_${ENCODER}_${DECODER}_${CLASSIFIER}_`date +%s`
+TIMESTAMP=$7
+EVALUATE_MODE=$8
 
 if [[ $# -lt 6 ]]; then
-    echo "Usage: $0 <dataset> <encoder> <decoder> <classifier> <latent_size> <epochs>"
+    echo "Usage: $0 <dataset> <encoder> <decoder> <classifier> <latent_size> <epochs> [timestamp] [evaluate_mode]"
     exit
 fi
+
+if [[ -z $TIMESTAMP ]]; then
+    TIMESTAMP=`date +%s`
+fi
+
+EXPERIMENT_NAME=${DATASET}_${THOUGHT_VECTOR_SIZE}_${ENCODER}_${DECODER}_${CLASSIFIER}_`date +%s`
 
 scripts/download_${DATASET}.py
 
@@ -37,6 +43,7 @@ python main.py \
  --stdout-filename train_aae.txt \
  --enable-classifier True \
  --mode train
+
 
 # Evaluate the classifier
 # Uses classifier.h5 as the decoder, then disables the classifier

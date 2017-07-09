@@ -108,7 +108,8 @@ def show(
         img = Image.fromarray(pixels.astype('uint8'))
         font = ImageFont.truetype(FONT_FILE, font_size)
         draw = ImageDraw.Draw(img)
-        draw.multiline_text((0,0), caption, font=font, fill=(255,128,0,128))
+        GREEN = (255,128,128,0)
+        draw.multiline_text((0,0), caption, font=font, fill=GREEN)
         pixels = np.array(img)
 
     # Set a default filename if one does not exist

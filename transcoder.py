@@ -418,17 +418,18 @@ def build_model(encoder_dataset, decoder_dataset, classifier_dataset, **params):
         transclassifier = models.Sequential()
 
     from keras import losses
-    if enable_perceptual_loss:
-        from keras import applications
-        vgg = applications.vgg16.VGG16(include_top=False)
-        texture = models.Sequential()
-        for i in range(4):
-            texture.add(vgg.layers[i])
-        def perceptual_loss(y_true, y_pred):
-            return K.mean(K.square(texture(y_true) - texture(y_pred)))
-        transcoder_loss = lambda x, y: alpha * losses.mean_squared_error(x, y) + (1 - alpha) * perceptual_loss(x, y)
-    elif type(decoder_dataset) is ImageDataset:
-        transcoder_loss = losses.mean_squared_error
+    if type(decoder_dataset) is ImageDataset:
+        if enable_perceptual_loss:
+            from keras import applications
+            vgg = applications.vgg16.VGG16(include_top=False)
+            texture = models.Sequential()
+            for i in range(4):
+                texture.add(vgg.layers[i])
+            def perceptual_loss(y_true, y_pred):
+                return K.mean(K.square(texture(y_true) - texture(y_pred)))
+            transcoder_loss = lambda x, y: alpha * losses.mean_squared_error(x, y) + (1 - alpha) * perceptual_loss(x, y)
+        else:
+            transcoder_loss = losses.mean_squared_error
     else:
         transcoder_loss = losses.categorical_crossentropy
 

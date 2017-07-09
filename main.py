@@ -28,6 +28,7 @@ Options:
       --thought-vector-size=<size>      Size of encoder output (decoder input) vector [default: 2048]
       --img-width=<width>               Resize images to this width in pixels [default: 64]
       --enable-perceptual-loss=<n>      Enable VGG16 3-layer perceptual loss [default: True]
+      --perceptual-loss-alpha=<n>       Value [0,1] modulating perceptual loss [default: .025]
       --wordvec-size=<size>             Number of units in word embedding [default: 1024]
       --rnn-type=<type>                 One of LSTM, GRU [default: GRU]
       --rnn-size=<size>                 Number of output units in RNN [default: 1024]

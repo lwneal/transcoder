@@ -310,15 +310,15 @@ def counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_datase
     step_size = .01
     classification = classifier.predict(Z)[0]
     momentum = None
-    NUM_FRAMES = 120
+    NUM_FRAMES = 240
     def output_frame():
-        caption = 'Label: {} (confidence {:.2f})'.format(
-                classifier_dataset.unformat_output(classification),
-                classification.max())
+        caption = '{:.02f} {}'.format(
+                classification.max(),
+                classifier_dataset.unformat_output(classification))
         imutil.show(decoder.predict(Z), resize_to=(512, 512), video_filename=video_filename, caption=caption, font_size=20)
         print("Classification: {}".format(classifier_dataset.unformat_output(classification)))
 
-    for _ in range(5):
+    for _ in range(10):
         output_frame()
     for i in range(10 * NUM_FRAMES):
         gradient = compute_gradient([Z])[0]

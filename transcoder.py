@@ -374,6 +374,7 @@ def build_model(encoder_dataset, decoder_dataset, classifier_dataset, **params):
     enable_gan = params['enable_gan']
     enable_classifier = params['enable_classifier']
     enable_perceptual_loss = params['enable_perceptual_loss']
+    alpha = params['perceptual_loss_alpha']
 
     metrics = ['accuracy']
     optimizer = 'adam'
@@ -425,9 +426,8 @@ def build_model(encoder_dataset, decoder_dataset, classifier_dataset, **params):
             texture.add(vgg.layers[i])
         def perceptual_loss(y_true, y_pred):
             return K.mean(K.square(texture(y_true) - texture(y_pred)))
-        alpha = 0.05
         transcoder_loss = lambda x, y: alpha * losses.mean_squared_error(x, y) + (1 - alpha) * perceptual_loss(x, y)
-    if type(decoder_dataset) is ImageDataset:
+    elif type(decoder_dataset) is ImageDataset:
         transcoder_loss = losses.mean_squared_error
     else:
         transcoder_loss = losses.categorical_crossentropy

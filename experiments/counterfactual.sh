@@ -7,11 +7,12 @@ DECODER=$3
 CLASSIFIER=$4
 THOUGHT_VECTOR_SIZE=$5
 EPOCHS=$6
-TIMESTAMP=$7
-EVALUATE_MODE=$8
+P_LAYERS=$7
+TIMESTAMP=$8
+EVALUATE_MODE=$9
 
-if [[ $# -lt 6 ]]; then
-    echo "Usage: $0 <dataset> <encoder> <decoder> <classifier> <latent_size> <epochs> [timestamp] [evaluate_mode]"
+if [[ $# -lt 7 ]]; then
+    echo "Usage: $0 <dataset> <encoder> <decoder> <classifier> <latent_size> <epochs> <p_layers> [timestamp] [evaluate_mode]"
     exit
 fi
 
@@ -40,6 +41,7 @@ python main.py \
  --discriminator-model $ENCODER \
  --thought-vector-size $THOUGHT_VECTOR_SIZE \
  --epochs $EPOCHS \
+ --perceptual-loss-layers $P_LAYERS \
  --batches-per-epoch 200 \
  --stdout-filename train_aae.txt \
  --enable-classifier True \

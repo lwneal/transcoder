@@ -334,12 +334,12 @@ def counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_datase
             if np.linalg.norm(momentum) > 1.0:
                 momentum /= np.linalg.norm(momentum)
                 continue
-            Z -= momentum * step_size
-            # L2 regularization? may be unnecessary after gradient clipping
-            #Z *= 0.99
-            # Inspired by Michael Jordan's talk on saddle points
-            # https://arxiv.org/pdf/1703.00887.pdf
-            Z += np.random.normal(scale=.001, size=Z.shape)
+        Z -= momentum * step_size
+        # L2 regularization? may be unnecessary after gradient clipping
+        #Z *= 0.99
+        # Inspired by Michael Jordan's talk on saddle points
+        # https://arxiv.org/pdf/1703.00887.pdf
+        Z += np.random.normal(scale=.001, size=Z.shape)
 
         classification = classifier.predict(Z)[0]
 

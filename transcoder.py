@@ -438,6 +438,8 @@ def build_model(encoder_dataset, decoder_dataset, classifier_dataset, **params):
             for i in range(perceptual_layers):
                 vgg.layers[i].trainable = False
                 texture.add(vgg.layers[i])
+            for layer in texture.layers:
+                layer.trainable = False
             def perceptual_loss(y_true, y_pred):
                 return K.mean(K.square(texture(y_true) - texture(y_pred)))
             transcoder_loss = lambda x, y: alpha * losses.mean_squared_error(x, y) + (1 - alpha) * perceptual_loss(x, y)

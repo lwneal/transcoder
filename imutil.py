@@ -67,6 +67,7 @@ def show_figure(**kwargs):
 # Numpy arrays can consist of multiple images, which will be collated
 def show(
         data,
+        display=True,
         save=True,
         filename=None,
         box=None,
@@ -124,16 +125,17 @@ def show(
         fp.flush()
 
     # Display the image directly in the terminal, if supported
-    for prog in ['imgcat', 'catimg', 'feh', 'display']:
-        if spawn.find_executable(prog):
-            tmux_hack = 'TMUX' in os.environ
-            if tmux_hack:
-                print('\n' * 4)
-                print('\033[4F')
-            subprocess.check_call([prog, filename])
-            if tmux_hack:
-                print('\033[4B')
-            break
+    if display:
+        for prog in ['imgcat', 'catimg', 'feh', 'display']:
+            if spawn.find_executable(prog):
+                tmux_hack = 'TMUX' in os.environ
+                if tmux_hack:
+                    print('\n' * 4)
+                    print('\033[4F')
+                subprocess.check_call([prog, filename])
+                if tmux_hack:
+                    print('\033[4B')
+                break
     else:
         print("Saved image size {} as {}".format(pixels.shape, filename))
 

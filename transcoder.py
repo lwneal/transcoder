@@ -315,28 +315,31 @@ def counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_datase
         caption = '{:.02f} {}'.format(
                 classification.max(),
                 classifier_dataset.unformat_output(classification))
-        imutil.show(decoder.predict(Z), resize_to=(512, 512), video_filename=video_filename, caption=caption, font_size=20)
+        imutil.show(decoder.predict(Z), resize_to=(512, 512), video_filename=video_filename, caption=caption, font_size=20, display=False)
         print("Classification: {}".format(classifier_dataset.unformat_output(classification)))
 
     for _ in range(10):
         output_frame()
     for i in range(10 * NUM_FRAMES):
-        gradient = compute_gradient([Z])[0]
-        if momentum is None:
-            momentum = gradient
-        momentum += gradient
-        momentum *= .99
-        # Clip magnitude to 1.0
-        if np.linalg.norm(momentum) > 1.0:
-            momentum /= np.linalg.norm(momentum)
-        Z -= momentum * step_size
-        classification = classifier.predict(Z)[0]
-        # L2 regularization?
-        #Z *= 0.99
+        # Hack: take 10x steps until gradient gets large enough
+        for _ in range(10):
+            gradient = compute_gradient([Z])[0]
+            if momentum is None:
+                momentum = gradient
+            momentum += gradient
+            momentum *= .99
+            # Clip magnitude to 1.0
+            if np.linalg.norm(momentum) > 1.0:
+                momentum /= np.linalg.norm(momentum)
+                continue
+            Z -= momentum * step_size
+            # L2 regularization? may be unnecessary after gradient clipping
+            #Z *= 0.99
+            # Inspired by Michael Jordan's talk on saddle points
+            # https://arxiv.org/pdf/1703.00887.pdf
+            Z += np.random.normal(scale=.001, size=Z.shape)
 
-        # Inspired by Michael Jordan's talk on saddle points
-        # https://arxiv.org/pdf/1703.00887.pdf
-        Z += np.random.normal(scale=.0001, size=Z.shape)
+        classification = classifier.predict(Z)[0]
 
         if i % 10 == 0:
             output_frame()
@@ -345,6 +348,7 @@ def counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_datase
     print('\n')
     print("Original Image:")
     img = decoder.predict(encoder.predict(X))[0]
+    # Hack: don't show
     imutil.show(img, filename='{}_counterfactual_orig.jpg'.format(int(time.time())))
     imutil.add_to_figure(img)
     print("Original Classification: {}".format(classifier_dataset.unformat_output(original_class)))

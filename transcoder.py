@@ -270,7 +270,8 @@ def dream(encoder, decoder, encoder_dataset, decoder_dataset, **params):
             v = c * latent_end + (1 - c) * latent_start
             img = decoder.predict(np.expand_dims(v, axis=0))[0]
             #decoder_dataset.unformat_output(img)
-            imutil.show(img, video_filename=video_filename, resize_to=(512,512))
+            caption = '{} {}'.format(img_idx, i)
+            imutil.show(img, video_filename=video_filename, resize_to=(512,512), display=(i % 100 == 0), caption=caption)
         print("Done")
         img_idx += 1
 
@@ -307,15 +308,16 @@ def counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_datase
     compute_gradient = K.function(classifier.inputs, grads)
 
     # Perform gradient descent on the classification loss
-    step_size = .01
+    step_size = .02
     classification = classifier.predict(Z)[0]
     momentum = None
     NUM_FRAMES = 240
-    def output_frame():
+    def output_frame(display=False):
         caption = '{:.02f} {}'.format(
                 classification.max(),
                 classifier_dataset.unformat_output(classification))
-        imutil.show(decoder.predict(Z), resize_to=(512, 512), video_filename=video_filename, caption=caption, font_size=20, display=False)
+        imutil.show(decoder.predict(Z), resize_to=(512, 512), video_filename=video_filename, 
+                caption=caption, font_size=20, display=display)
         print("Classification: {}".format(classifier_dataset.unformat_output(classification)))
 
     for _ in range(10):
@@ -342,7 +344,7 @@ def counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_datase
         classification = classifier.predict(Z)[0]
 
         if i % 10 == 0:
-            output_frame()
+            output_frame(display=(i % 200 == 0))
     for _ in range(5):
         output_frame()
     print('\n')

@@ -74,7 +74,7 @@ def show(
         video_filename=None,
         resize_to=(224,224),
         caption=None,
-        font_size=18):
+        font_size=16):
     # Munge data to allow input filenames, pixels, PIL images, etc
     if type(data) == type(np.array([])):
         pixels = data

@@ -16,6 +16,9 @@ if __name__ == '__main__':
     import docopt
     arguments = docopt.docopt(__doc__)
     # TODO: Instead of calling the old bash script, convert it all to Python
+    timestamp = arguments['--timestamp']
+    if timestamp == 'None':
+        timestamp = int(time.time())
     cmd = "experiments/counterfactual.sh {} {} {} {} {} {} {}".format(
             arguments['--dataset'],
             arguments['--encoder'],
@@ -23,7 +26,7 @@ if __name__ == '__main__':
             arguments['--classifier'],
             arguments['--thought-vector'],
             arguments['--epochs'],
-            arguments['--timestamp'] or '')
+            timestamp)
     import subprocess
     print(cmd)
     subprocess.check_call(cmd, shell=True)

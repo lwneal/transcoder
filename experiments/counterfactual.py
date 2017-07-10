@@ -11,6 +11,7 @@ Options:
     --epochs=<n>            Number of epochs [default: 10]
     --timestamp=<n>         Timestamp of previously-trained network (new ts if left default) [default: None]
 """
+import time
 
 if __name__ == '__main__':
     import docopt

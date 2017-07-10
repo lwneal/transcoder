@@ -47,7 +47,7 @@ Options:
       --enable-gan=<bool>               If False, no GAN training will be applied [default: True]
       --enable-classifier=<bool>        If True, train with a classifier for counterfactuals [default: False]
       --video-filename=<fn>             Output video filename for dream mode [default: output.mjpeg]
-      --dream-fps=<n>                   Integer, number of frames between dream examples [default: 30]
+      --dream-fps=<n>                   Integer, number of frames between dream examples [default: 90]
       --vocabulary-filename=<n>         Filename to draw vocabulary from, to match label indices in test/train folds [default: None]
 """
 import sys

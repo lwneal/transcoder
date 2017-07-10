@@ -22,7 +22,7 @@ Options:
       --epochs=<epochs>                 Number of epochs to train [default: 2000].
       --batches-per-epoch=<b>           Number of batches per epoch [default: 1000].
       --batch-size=<size>               Batch size for training [default: 16]
-      --training-iters-per-gan=<iters>  Iterations of normal training per iteration of GAN [default: 5.0]
+      --training-iters-per-gan=<iters>  Iterations of normal training per iteration of GAN [default: 3.0]
       --max-words-encoder=<ewords>      Number of words of context (the N in N-gram) [default: 12]
       --max-words-decoder=<dwords>      Number of words of context (the N in N-gram) [default: 12]
       --thought-vector-size=<size>      Size of encoder output (decoder input) vector [default: 2048]

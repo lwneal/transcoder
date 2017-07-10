@@ -23,7 +23,7 @@ Options:
       --batches-per-epoch=<b>           Number of batches per epoch [default: 1000].
       --batch-size=<size>               Batch size for training [default: 16]
       --training-iters-per-gan=<iters>  Iterations of normal training per iteration of GAN [default: 3.0]
-      --discriminator-per-generator=<n> Iterations of D updates per G update [default: 3]
+      --discriminator-iters=<n>         Iterations of D updates per G update [default: 3]
       --max-words-encoder=<ewords>      Number of words of context (the N in N-gram) [default: 12]
       --max-words-decoder=<dwords>      Number of words of context (the N in N-gram) [default: 12]
       --thought-vector-size=<size>      Size of encoder output (decoder input) vector [default: 2048]
@@ -130,4 +130,5 @@ if __name__ == '__main__':
         sys.stdout = Logger(params['stdout_filename'])
 
     import transcoder
+    print(params)
     transcoder.main(**params)

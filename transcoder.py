@@ -93,7 +93,7 @@ def train(encoder, decoder, transcoder, discriminator, cgan, classifier, transcl
     freeze_encoder = params['freeze_encoder']
     freeze_decoder = params['freeze_decoder']
     enable_transcoder = not (freeze_encoder and freeze_decoder)
-    discriminator_per_generator = params['discriminator_per_generator']
+    discriminator_iters = params['discriminator_iters']
 
     training_gen = train_generator(encoder_dataset, decoder_dataset, **params)
     if enable_classifier:
@@ -138,7 +138,7 @@ def train(encoder, decoder, transcoder, discriminator, cgan, classifier, transcl
                 t_avg_accuracy = .95 * t_avg_accuracy + .05 * accuracy
 
         if enable_gan:
-            for _ in range(discriminator_per_generator):
+            for _ in range(discriminator_iters):
                 # Get some real decoding targets
                 _, Y_decoder = next(training_gen)
 

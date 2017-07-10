@@ -430,6 +430,7 @@ def build_model(encoder_dataset, decoder_dataset, classifier_dataset, **params):
             vgg = applications.vgg16.VGG16(include_top=False)
             texture = models.Sequential()
             for i in range(perceptual_layers):
+                vgg.layers[i].trainable = False
                 texture.add(vgg.layers[i])
             def perceptual_loss(y_true, y_pred):
                 return K.mean(K.square(texture(y_true) - texture(y_pred)))

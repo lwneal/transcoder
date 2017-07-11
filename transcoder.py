@@ -299,9 +299,7 @@ def counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_datase
     latent_value = K.placeholder((1, thought_vector_size))
 
     loss = K.variable(0.)
-    loss += K.sum(classifier.outputs[0][0])
-
-    loss -= K.sum(classifier.outputs[0][0][selected_class])
+    loss -= K.log(classifier.outputs[0][0][selected_class])
 
     grads = K.gradients(loss, classifier.inputs[0])
 

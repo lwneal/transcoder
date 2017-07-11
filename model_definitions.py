@@ -71,7 +71,7 @@ def stridecnn_10a(is_discriminator=False, **params):
     if not is_discriminator:
         x = layers.BatchNormalization()(x)
     x = layers.LeakyReLU()(x)
-    x = layers.Conv2D(128, strides=(2,2), padding='same')(x)
+    x = layers.Conv2D(128, (3,3), strides=(2,2), padding='same')(x)
 
     x = layers.Conv2D(128, (3,3), padding='same')(x)
     if not is_discriminator:
@@ -81,7 +81,7 @@ def stridecnn_10a(is_discriminator=False, **params):
     x = layers.Conv2D(384, (3,3), padding='same')(x)
     x = layers.LeakyReLU()(x)
 
-    x = layers.Conv2D(256, strides=(2,2), padding='same')(x)
+    x = layers.Conv2D(256, (3,3), strides=(2,2), padding='same')(x)
     x = layers.LeakyReLU()(x)
 
     x = layers.Conv2D(256, (3,3), padding='same')(x)
@@ -89,7 +89,7 @@ def stridecnn_10a(is_discriminator=False, **params):
         x = layers.BatchNormalization()(x)
     x = layers.LeakyReLU()(x)
 
-    x = layers.Conv2D(256, strides=(2,2), padding='same')(x)
+    x = layers.Conv2D(256, (3,3), strides=(2,2), padding='same')(x)
     x = layers.LeakyReLU()(x)
 
     x = layers.Conv2D(384, (3,3), padding='same')(x)
@@ -102,7 +102,7 @@ def stridecnn_10a(is_discriminator=False, **params):
         x = layers.BatchNormalization()(x)
     x = layers.LeakyReLU()(x)
 
-    x = layers.Conv2D(384, strides=(2,2), padding='same')(x)
+    x = layers.Conv2D(384, (3,3), strides=(2,2), padding='same')(x)
     x = layers.LeakyReLU()(x)
 
     x = layers.Flatten()(x)

@@ -1,2 +1,0 @@
-#!/bin/bash
-python main.py  --encoder-input-filename ~/data/cub200_test.dataset  --decoder-input-filename ~/data/cub200_test.dataset  --encoder-datatype img  --decoder-datatype lab  --encoder-weights cub200_auto_enc.h5  --freeze-encoder True  --decoder-weights cub200_classifier_dec.h5  --discriminator-weights /dev/null  --pretrained-encoder vgg16  --enable-gan False  --img-width 128  --batches-per-epoch 100  --epochs 1  --thought-vector-size 512 --vocabulary-filename ~/data/cub200_train.dataset  --mode demo

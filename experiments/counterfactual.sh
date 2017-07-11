@@ -84,7 +84,7 @@ python main.py \
 
 # Re-encode the video to mp4 for storage
 pushd ~/results/$EXPERIMENT_NAME
-ffmpeg -i dream_output.mjpeg dream.mp4
+ffmpeg -y -i dream_output.mjpeg dream.mp4
 rm dream_output.mjpeg
 popd
 
@@ -112,7 +112,7 @@ done
 
 # Re-encode the video to mp4 for storage
 pushd ~/results/$EXPERIMENT_NAME
-ffmpeg -i counterfactual_output.mjpeg counterfactuals.mp4
+ffmpeg -y -i counterfactual_output.mjpeg counterfactuals.mp4
 rm counterfactual_output.mjpeg 
 popd
 

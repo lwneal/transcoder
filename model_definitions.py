@@ -15,7 +15,7 @@ IMG_CHANNELS = 3
 
 def simplecnn_7a(is_discriminator=False, **params):
     thought_vector_size = params['thought_vector_size']
-    img_width = params['img_width']
+    img_width = params['img_width_encoder']
 
     input_shape = (img_width, img_width, IMG_CHANNELS)
     input_img = layers.Input(shape=input_shape)
@@ -62,7 +62,7 @@ def simplecnn_7a(is_discriminator=False, **params):
 
 def stridecnn_10a(is_discriminator=False, **params):
     thought_vector_size = params['thought_vector_size']
-    img_width = params['img_width']
+    img_width = params['img_width_encoder']
 
     input_shape = (img_width, img_width, IMG_CHANNELS)
     input_img = layers.Input(shape=input_shape)
@@ -117,7 +117,7 @@ def stridecnn_10a(is_discriminator=False, **params):
 
 def csrnn_7a(is_discriminator=False, **params):
     thought_vector_size = params['thought_vector_size']
-    img_width = params['img_width']
+    img_width = params['img_width_encoder']
 
     input_shape = (img_width, img_width, IMG_CHANNELS)
     input_img = layers.Input(shape=input_shape)
@@ -165,7 +165,7 @@ def csrnn_7a(is_discriminator=False, **params):
 
 def simpledeconv_a(**params):
     thought_vector_size = params['thought_vector_size']
-    img_width = params['img_width']
+    img_width = params['img_width_decoder']
 
     x_input = layers.Input(shape=(thought_vector_size,))
 
@@ -193,7 +193,7 @@ def simpledeconv_a(**params):
 
 def csrnn_deconv_a(**params):
     thought_vector_size = params['thought_vector_size']
-    img_width = params['img_width']
+    img_width = params['img_width_decoder']
 
     x_input = layers.Input(shape=(thought_vector_size,))
 

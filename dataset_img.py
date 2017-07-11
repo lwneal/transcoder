@@ -13,10 +13,11 @@ DATA_DIR = os.path.expanduser('~/data/')
 
 
 class ImageDataset(object):
-    def __init__(self, input_filename=None, **params):
+    def __init__(self, input_filename=None, is_encoder=False, **params):
         if not input_filename:
             raise ValueError("No input filename supplied. See options with --help")
         lines = open(input_filename).readlines()
+        self.is_encoder = is_encoder
 
         self.regions = [json.loads(l) for l in lines]
         print("Input file {} contains {} image regions".format(input_filename, len(self.regions)))
@@ -36,7 +37,7 @@ class ImageDataset(object):
         return len(self.regions)
 
     def format_input(self, region, **params):
-        img_width = params['img_width']
+        img_width = params['img_width_encoder'] if self.is_encoder else params['img_width_decoder']
         filename = os.path.join(DATA_DIR, str(region['filename']))
         img = imutil.decode_jpg(filename, resize_to=(img_width, img_width))
         img = img * 1.0 / 255
@@ -52,7 +53,7 @@ class ImageDataset(object):
         return 'Output image shape: {}'.format(Y.shape)
 
     def empty_batch(self, **params):
-        img_width = params['img_width']
+        img_width = params['img_width_encoder'] if self.is_encoder else params['img_width_decoder']
         batch_size = params['batch_size']
         return [np.zeros((batch_size, img_width, img_width, 3), dtype=float)]
 

@@ -60,6 +60,61 @@ def simplecnn_7a(is_discriminator=False, **params):
     return models.Model(inputs=[input_img], outputs=x)
 
 
+def stridecnn_10a(is_discriminator=False, **params):
+    thought_vector_size = params['thought_vector_size']
+    img_width = params['img_width']
+
+    input_shape = (img_width, img_width, IMG_CHANNELS)
+    input_img = layers.Input(shape=input_shape)
+
+    x = layers.Conv2D(64, (3,3), padding='same')(input_img)
+    if not is_discriminator:
+        x = layers.BatchNormalization()(x)
+    x = layers.LeakyReLU()(x)
+    x = layers.Conv2D(128, strides=(2,2), padding='same')(x)
+
+    x = layers.Conv2D(128, (3,3), padding='same')(x)
+    if not is_discriminator:
+        x = layers.BatchNormalization()(x)
+    x = layers.LeakyReLU()(x)
+
+    x = layers.Conv2D(384, (3,3), padding='same')(x)
+    x = layers.LeakyReLU()(x)
+
+    x = layers.Conv2D(256, strides=(2,2), padding='same')(x)
+    x = layers.LeakyReLU()(x)
+
+    x = layers.Conv2D(256, (3,3), padding='same')(x)
+    if not is_discriminator:
+        x = layers.BatchNormalization()(x)
+    x = layers.LeakyReLU()(x)
+
+    x = layers.Conv2D(256, strides=(2,2), padding='same')(x)
+    x = layers.LeakyReLU()(x)
+
+    x = layers.Conv2D(384, (3,3), padding='same')(x)
+    if not is_discriminator:
+        x = layers.BatchNormalization()(x)
+    x = layers.LeakyReLU()(x)
+
+    x = layers.Conv2D(384, (3,3), padding='same')(x)
+    if not is_discriminator:
+        x = layers.BatchNormalization()(x)
+    x = layers.LeakyReLU()(x)
+
+    x = layers.Conv2D(384, strides=(2,2), padding='same')(x)
+    x = layers.LeakyReLU()(x)
+
+    x = layers.Flatten()(x)
+    if is_discriminator:
+        x = layers.Dense(1)(x)
+        x = layers.Activation('tanh')(x)
+    else:
+        x = layers.Dense(thought_vector_size)(x)
+        x = layers.BatchNormalization()(x)
+    return models.Model(inputs=[input_img], outputs=x)
+
+
 def csrnn_7a(is_discriminator=False, **params):
     thought_vector_size = params['thought_vector_size']
     img_width = params['img_width']

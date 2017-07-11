@@ -4,7 +4,7 @@ import random
 import numpy as np
 import tensorflow as tf
 import time
-from keras import layers, models
+from keras import layers, models, optimizers
 
 import model_definitions
 import model_words

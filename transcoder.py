@@ -385,9 +385,10 @@ def build_model(encoder_dataset, decoder_dataset, classifier_dataset, **params):
     enable_perceptual_loss = params['enable_perceptual_loss']
     alpha = params['perceptual_loss_alpha']
     perceptual_layers = params['perceptual_loss_layers']
+    decay = params['decay']
 
     metrics = ['accuracy']
-    optimizer = 'adam'
+    optimizer = optimizers.Adam(decay=decay)
     classifier_loss = 'categorical_crossentropy'
 
     # HACK: Keras Bug https://github.com/fchollet/keras/issues/5221

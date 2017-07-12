@@ -295,6 +295,7 @@ def run_counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_da
                 **params)
         # There and back again
         trajectory_path.extend(trajectory)
+        trajectory_path.extend([trajectory[-1]] * 12)
         trajectory_path.extend(reversed(trajectory))
         trajectory_path.extend([trajectory[0]] * 12)
 

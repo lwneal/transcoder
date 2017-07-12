@@ -8,11 +8,12 @@ CLASSIFIER=$4
 THOUGHT_VECTOR_SIZE=$5
 EPOCHS=$6
 P_LAYERS=$7
-TIMESTAMP=$8
-EVALUATE_MODE=$9
+IMG_WIDTH=$8
+TIMESTAMP=$9
+EVALUATE_MODE=$10
 
 if [[ $# -lt 7 ]]; then
-    echo "Usage: $0 <dataset> <encoder> <decoder> <classifier> <latent_size> <epochs> <p_layers> [timestamp] [evaluate_mode]"
+    echo "Usage: $0 <dataset> <encoder> <decoder> <classifier> <latent_size> <epochs> <p_layers> <img_width> [timestamp] [evaluate_mode]"
     exit
 fi
 
@@ -40,6 +41,8 @@ python main.py \
  --classifier-model $CLASSIFIER \
  --discriminator-model $ENCODER \
  --thought-vector-size $THOUGHT_VECTOR_SIZE \
+ --img-width-encoder $IMG_WIDTH \
+ --img-width-decoder $IMG_WIDTH \
  --epochs $EPOCHS \
  --perceptual-loss-layers $P_LAYERS \
  --batches-per-epoch 200 \
@@ -61,6 +64,8 @@ python main.py \
  --encoder-model $ENCODER \
  --decoder-model $CLASSIFIER \
  --thought-vector-size $THOUGHT_VECTOR_SIZE \
+ --img-width-encoder $IMG_WIDTH \
+ --img-width-decoder $IMG_WIDTH \
  --enable-gan False \
  --enable-classifier False \
  --stdout-filename evaluate_classifier.txt \
@@ -77,6 +82,8 @@ python main.py \
  --encoder-model $ENCODER \
  --decoder-model $DECODER \
  --thought-vector-size $THOUGHT_VECTOR_SIZE \
+ --img-width-encoder $IMG_WIDTH \
+ --img-width-decoder $IMG_WIDTH \
  --enable-gan False \
  --stdout-filename dream.txt \
  --video-filename dream_output.mjpeg \
@@ -103,6 +110,8 @@ for i in `seq 10`; do
      --decoder-model $DECODER \
      --classifier-model $CLASSIFIER \
      --thought-vector-size $THOUGHT_VECTOR_SIZE \
+     --img-width-encoder $IMG_WIDTH \
+     --img-width-decoder $IMG_WIDTH \
      --enable-gan False \
      --enable-classifier True \
      --stdout-filename counterfactual.txt \

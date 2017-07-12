@@ -11,6 +11,7 @@ Options:
     --classifier=<n>         Name of the classifier model [default: linear_softmax]
     --epochs=<n>             Number of epochs [default: 10]
     --perceptual-layers=<n>  Perceptual loss depth [default: 4]
+    --img-width=<n>          Width of images through transcoder [default: 64]
     --timestamp=<n>          Timestamp of previously-trained network (new ts if left default) [default: None]
 """
 import time
@@ -30,6 +31,7 @@ if __name__ == '__main__':
             arguments['--thought-vector'],
             arguments['--epochs'],
             arguments['--perceptual-layers'],
+            arguments['--img-width'],
             timestamp)
     import subprocess
     print(cmd)

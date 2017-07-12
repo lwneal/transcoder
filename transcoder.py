@@ -278,13 +278,30 @@ def dream(encoder, decoder, encoder_dataset, decoder_dataset, **params):
 
 
 def run_counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_dataset, classifier_dataset, **params):
-    # TODO: split up trajectory calculation (with the encoder and classifier)
-    # from visualization (using the decoder and classifier)
+    video_filename = params['video_filename']
+
     training_gen = train_generator(encoder_dataset, decoder_dataset, **params)
+    X, _ = next(training_gen)
+    X = X[:1]
+    imutil.show(X)
+    Z = encoder.predict(X)
+
     trajectory = counterfactual.compute_trajectory(
             encoder, decoder, classifier,
-            training_gen, classifier_dataset,
+            Z, classifier_dataset,
             **params)
+
+    def output_frame(Z, display=False):
+        classification = classifier.predict(Z)[0]
+        caption = '{:.02f} {}'.format(
+                classification.max(),
+                classifier_dataset.unformat_output(classification))
+        imutil.show(decoder.predict(Z), resize_to=(512, 512), video_filename=video_filename,
+                caption=caption, font_size=20, display=display)
+        print("Classification: {}".format(classifier_dataset.unformat_output(classification)))
+
+    for z in trajectory:
+        output_frame(z, display=False)
 
 
 def find_dataset(input_filename, dataset_type=None, **params):

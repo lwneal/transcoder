@@ -5,19 +5,15 @@ import imutil
 
 def compute_trajectory(
         encoder, decoder, classifier,
-        training_gen, classifier_dataset,
+        Z, classifier_dataset,
         **params):
     thought_vector_size = params['thought_vector_size']
     video_filename = params['video_filename']
 
+    trajectory = []
+
     # Randomly choose a class to mutate toward
     selected_class = np.random.randint(0, len(classifier_dataset.idx_to_name))
-
-    X, _ = next(training_gen)
-    X = X[:1]
-    imutil.show(X)
-
-    Z = encoder.predict(X)
 
     classification = classifier.predict(Z)[0]
     print("Classification: {}".format(classification))
@@ -40,16 +36,8 @@ def compute_trajectory(
     momentum = None
     NUM_FRAMES = 240
 
-    def output_frame(display=False):
-        caption = '{:.02f} {}'.format(
-                classification.max(),
-                classifier_dataset.unformat_output(classification))
-        imutil.show(decoder.predict(Z), resize_to=(512, 512), video_filename=video_filename,
-                caption=caption, font_size=20, display=display)
-        print("Classification: {}".format(classifier_dataset.unformat_output(classification)))
-
     for _ in range(10):
-        output_frame()
+        trajectory.append(Z)
     for i in range(10 * NUM_FRAMES):
         # Hack: take 10x steps until gradient gets large enough
         for _ in range(10):
@@ -72,12 +60,13 @@ def compute_trajectory(
         classification = classifier.predict(Z)[0]
 
         if i % 10 == 0:
-            output_frame(display=(i % 200 == 0))
+            trajectory.append(Z)
     for _ in range(5):
-        output_frame()
+        trajectory.append(Z)
+
     print('\n')
     print("Original Image:")
-    img = decoder.predict(encoder.predict(X))[0]
+    img = decoder.predict(Z)[0]
     # Hack: don't show
     imutil.show(img, filename='{}_counterfactual_orig.jpg'.format(int(time.time())))
     imutil.add_to_figure(img)
@@ -89,3 +78,5 @@ def compute_trajectory(
     imutil.add_to_figure(img)
     print("Counterfactual Classification: {}".format(classifier_dataset.unformat_output(classification)))
     imutil.show_figure(filename='{}_counterfactual.jpg'.format(int(time.time())), resize_to=None)
+
+    return trajectory

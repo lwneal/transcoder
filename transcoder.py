@@ -286,21 +286,28 @@ def run_counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_da
     imutil.show(X)
     Z = encoder.predict(X)
 
-    trajectory = counterfactual.compute_trajectory(
-            encoder, decoder, classifier,
-            Z, classifier_dataset,
-            **params)
+    trajectory_path = []
 
-    def output_frame(Z, display=False):
-        classification = classifier.predict(Z)[0]
+    for _ in range(3):
+        trajectory = counterfactual.compute_trajectory(
+                encoder, decoder, classifier,
+                Z, classifier_dataset,
+                **params)
+        # There and back again
+        trajectory_path.extend(trajectory)
+        trajectory_path.extend(reversed(trajectory))
+        trajectory_path.extend([trajectory[0]] * 12)
+
+    def output_frame(z, display=False):
+        classification = classifier.predict(z)[0]
         caption = '{:.02f} {}'.format(
                 classification.max(),
                 classifier_dataset.unformat_output(classification))
-        imutil.show(decoder.predict(Z), resize_to=(512, 512), video_filename=video_filename,
+        imutil.show(decoder.predict(z), resize_to=(512, 512), video_filename=video_filename,
                 caption=caption, font_size=20, display=display)
         print("Classification: {}".format(classifier_dataset.unformat_output(classification)))
 
-    for z in trajectory:
+    for z in trajectory_path:
         output_frame(z, display=False)
 
 

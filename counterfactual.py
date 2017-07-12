@@ -16,7 +16,8 @@ def compute_trajectory(
     selected_class = np.random.randint(0, len(classifier_dataset.idx_to_name))
 
     classification = classifier.predict(Z)[0]
-    print("Classification: {}".format(classification))
+    print("Starting class: {}  Counterfactual target class: {}".format(
+        np.argmax(classification), selected_class))
     original_class = np.copy(classification)
 
     # This will contain our latent vector
@@ -31,13 +32,14 @@ def compute_trajectory(
 
     # Perform gradient descent on the classification loss
     # Save each point in the latent space trajectory
-    step_size = .02
+    Z = np.copy(Z)  # Hack to avoid unexpected surprise
+    step_size = .01
     classification = classifier.predict(Z)[0]
     momentum = None
     NUM_FRAMES = 240
 
     for _ in range(10):
-        trajectory.append(Z)
+        trajectory.append(np.copy(Z))
     for i in range(10 * NUM_FRAMES):
         # Hack: take 10x steps until gradient gets large enough
         for _ in range(10):
@@ -60,14 +62,19 @@ def compute_trajectory(
         classification = classifier.predict(Z)[0]
 
         if i % 10 == 0:
-            trajectory.append(Z)
+            trajectory.append(np.copy(Z))
+
+        # Early stop if we've completed the transition
+        if K.get_session().run(loss, {classifier.inputs[0]: Z}) < .01:
+            print("Counterfactual optimization ending after {} iterations".format(i))
+            break
+
     for _ in range(5):
-        trajectory.append(Z)
+        trajectory.append(np.copy(Z))
 
     print('\n')
     print("Original Image:")
     img = decoder.predict(Z)[0]
-    # Hack: don't show
     imutil.show(img, filename='{}_counterfactual_orig.jpg'.format(int(time.time())))
     imutil.add_to_figure(img)
     print("Original Classification: {}".format(classifier_dataset.unformat_output(original_class)))

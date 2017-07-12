@@ -23,7 +23,7 @@ if __name__ == '__main__':
     timestamp = arguments['--timestamp']
     if timestamp == 'None':
         timestamp = int(time.time())
-    cmd = "experiments/counterfactual.sh {} {} {} {} {} {} {} {}".format(
+    cmd = "experiments/counterfactual.sh {} {} {} {} {} {} {} {} {}".format(
             arguments['--dataset'],
             arguments['--encoder'],
             arguments['--decoder'],

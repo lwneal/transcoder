@@ -308,6 +308,11 @@ def run_counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_da
                 caption=caption, font_size=20, display=display)
         print("Classification: {}".format(classifier_dataset.unformat_output(classification)))
 
+    # First show the original image for reference
+    for _ in range(24):
+        imutil.show(X, resize_to=(512, 512), video_filename=video_filename, display=False)
+
+    # Then the GAN trajectory
     for z in trajectory_path:
         output_frame(z, display=False)
 

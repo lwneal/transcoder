@@ -72,6 +72,7 @@ python main.py \
  --mode evaluate
 
 # Generate a "dream" video
+TMP_ID=`date +%s`
 python main.py \
  --experiment-name $EXPERIMENT_NAME \
  --encoder-input-filename ~/data/${DATASET}_test.dataset \
@@ -86,13 +87,13 @@ python main.py \
  --img-width-decoder $IMG_WIDTH \
  --enable-gan False \
  --stdout-filename dream.txt \
- --video-filename dream_output.mjpeg \
+ --video-filename dream_output_${TMP_ID}.mjpeg \
  --mode dream
 
 # Re-encode the video to mp4 for storage
 pushd ~/results/$EXPERIMENT_NAME
-ffmpeg -y -i dream_output.mjpeg dream.mp4
-rm dream_output.mjpeg
+ffmpeg -y -i dream_output_${TMP_ID}.mjpeg dream_${TMP_ID}.mp4
+rm dream_output_${TMP_ID}.mjpeg
 popd
 
 # Add counterfactuals
@@ -115,14 +116,14 @@ for i in `seq 10`; do
      --enable-gan False \
      --enable-classifier True \
      --stdout-filename counterfactual.txt \
-     --video-filename counterfactual_output.mjpeg \
+     --video-filename counterfactual_output_${TMP_ID}.mjpeg \
      --mode counterfactual
 done
 
 # Re-encode the video to mp4 for storage
 pushd ~/results/$EXPERIMENT_NAME
-ffmpeg -y -i counterfactual_output.mjpeg counterfactuals.mp4
-rm counterfactual_output.mjpeg 
+ffmpeg -y -i counterfactual_output_${TMP_ID}.mjpeg counterfactuals_${TMP_ID}.mp4
+rm counterfactual_output_${TMP_ID}.mjpeg 
 popd
 
 touch ~/results/$EXPERIMENT_NAME/finished

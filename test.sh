@@ -27,7 +27,6 @@ function test1() {
      --encoder-model simplecnn_7a \
      --decoder-model simpledeconv_a \
      --discriminator-model simplecnn_7a \
-     --img-width 32 \
      --batches-per-epoch 10 \
      --batch-size 1 \
      --epochs 1 \
@@ -46,7 +45,8 @@ function test2() {
      --decoder-datatype lab \
      --enable-gan False \
      --encoder-model simplecnn_7a \
-     --decoder-model label_decoder \
+     --decoder-model simpledeconv_a \
+     --classifier-model mlp_2a \
      --batch-size 16 \
      --thought-vector-size 512 \
      --mode test

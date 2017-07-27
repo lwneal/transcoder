@@ -244,10 +244,11 @@ def dream(encoder, decoder, encoder_dataset, decoder_dataset, **params):
     thought_vector_size = params['thought_vector_size']
     video_filename = params['video_filename']
     dream_fps = params['dream_fps']
+    dream_examples = params['dream_examples']
 
     # Select two inputs in the dataset
-    img_idx = 41
-    for _ in range(10):
+    img_idx = 41  # TODO: random?
+    for _ in range(dream_examples):
         input_start = encoder_dataset.get_example(img_idx, **params)
         input_end = encoder_dataset.get_example(img_idx + 1, **params)
         #encoder_dataset.unformat_input(input_start)

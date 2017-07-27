@@ -1,0 +1,75 @@
+<html>
+<title>Interpolation</title>
+
+<style>
+body {
+  color: white;
+  font-size: 30px;
+  font-family: sans-serif;
+  background-color: black;
+}
+#slider {
+  width: 100%
+}
+input[type=range] {
+  -webkit-appearance: none;
+  overflow: hidden;
+  height: 40px;
+  background-color: #000000;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 36px;
+  width: 24px;
+  margin-top: -12px;
+  border-radius: 5px;
+  border: 1px solid #000000;
+  background: #eeffee;
+}
+input[type=range]::-webkit-slider-runnable-track {
+  -webkit-appearance: none;
+  height: 18px;
+  background: #55ee55;
+  border-radius: 5px;
+}
+</style>
+
+<body>
+<center>
+  <video id="vid" tabindex="0" autobuffer="autobuffer" preload="preload" height=512px width=512px>
+    <source src="/static/numbers.mp4"></source>
+    <p>Error loading video</p>
+  </video>
+  <p>
+    Move the slider until the number <b>no longer looks like an 8</b>
+  </p>
+  <form action="/submit" method=post>
+    <input id="slider" name=frame type="range" />
+    <input id="submit" type=submit />
+  </form>
+</center>
+</body>
+
+<script>
+FPS = 24;
+vid = document.getElementById('vid'); 
+slider = document.getElementById('slider');
+
+// On load, set the slider range
+vid.addEventListener('loadedmetadata', function() {
+  var duration_frames = vid.duration * FPS;
+  slider.min = 0;
+  slider.max = duration_frames;
+  slider.value = 0;
+});
+
+// Use requestAnimationFrame for smooth playback
+function playFrame(){  
+  var frameNumber  = slider.value / FPS;
+  vid.currentTime  = frameNumber;
+  window.requestAnimationFrame(playFrame);
+}
+
+window.requestAnimationFrame(playFrame);
+</script>
+</html>

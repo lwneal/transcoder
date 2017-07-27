@@ -243,14 +243,15 @@ def dream(encoder, decoder, encoder_dataset, decoder_dataset, **params):
     batch_size = params['batch_size']
     thought_vector_size = params['thought_vector_size']
     video_filename = params['video_filename']
-    dream_fps = params['dream_fps']
+    dream_frames_per_example = params['dream_fps']
     dream_examples = params['dream_examples']
 
     # Select two inputs in the dataset
-    img_idx = 41  # TODO: random?
+    start_idx = np.random.randint(encoder_dataset.count())
+    end_idx = np.random.randint(encoder_dataset.count())
     for _ in range(dream_examples):
-        input_start = encoder_dataset.get_example(img_idx, **params)
-        input_end = encoder_dataset.get_example(img_idx + 1, **params)
+        input_start = encoder_dataset.get_example(start_idx, **params)
+        input_end = encoder_dataset.get_example(end_idx, **params)
         #encoder_dataset.unformat_input(input_start)
         #encoder_dataset.unformat_input(input_end)
 
@@ -267,16 +268,17 @@ def dream(encoder, decoder, encoder_dataset, decoder_dataset, **params):
         # Interpolate between the two latent vectors, and output
         # the result of the decoder at each step
         # TODO: Something other than linear interpolation?
-        for i in range(dream_fps):
-            print("Writing img {} frame {}".format(img_idx, i))
-            c = float(i) / dream_fps
+        for i in range(dream_frames_per_example):
+            print("Writing img {} frame {}".format(start_idx, i))
+            c = float(i) / dream_frames_per_example
             v = c * latent_end + (1 - c) * latent_start
             img = decoder.predict(np.expand_dims(v, axis=0))[0]
             #decoder_dataset.unformat_output(img)
-            caption = '{} {}'.format(img_idx, i)
+            caption = '{} {}'.format(start_idx, i)
             imutil.show(img, video_filename=video_filename, resize_to=(512,512), display=(i % 100 == 0), caption=caption)
         print("Done")
-        img_idx += 1
+        start_idx = end_idx
+        end_idx = np.random.randint(encoder_dataset.count())
 
 
 def run_counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_dataset, classifier_dataset, **params):

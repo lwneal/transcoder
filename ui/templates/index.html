@@ -37,15 +37,16 @@ input[type=range]::-webkit-slider-runnable-track {
 <body>
 <center>
   <video id="vid" tabindex="0" autobuffer="autobuffer" preload="preload" height=512px width=512px>
-    <source src="/static/numbers.mp4"></source>
+    <source src="/static/{{filename}}"></source>
     <p>Error loading video</p>
   </video>
   <p>
-    Move the slider until the number <b>no longer looks like an 8</b>
+    Move the slider until the image no longer looks like <b>{{class}}</b>
   </p>
   <form action="/submit" method=post>
     <input id="slider" name=frame type="range" />
     <input id="submit" type=submit />
+    <input name="maxframes" hidden=true />
   </form>
 </center>
 </body>
@@ -61,6 +62,8 @@ vid.addEventListener('loadedmetadata', function() {
   slider.min = 0;
   slider.max = duration_frames;
   slider.value = 0;
+
+  var maxframes = document.getElementByName('maxframes')
 });
 
 // Use requestAnimationFrame for smooth playback

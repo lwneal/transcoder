@@ -245,6 +245,8 @@ def dream(encoder, decoder, encoder_dataset, decoder_dataset, **params):
     video_filename = params['video_filename']
     dream_frames_per_example = params['dream_fps']
     dream_examples = params['dream_examples']
+    if params['batch_size'] < 2:
+        raise ValueError("--batch-size of {} is too low, dream() requires a larger batch size".format(params['batch_size']))
 
     # Select two inputs in the dataset
     start_idx = np.random.randint(encoder_dataset.count())

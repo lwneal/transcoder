@@ -52,6 +52,24 @@ function test2() {
      --mode test
 }
 
+function test3() {
+    # Test that we can generate some "dream" output from a decoder
+    python main.py \
+     --experiment-name unittest123 \
+     --encoder-input-filename ~/data/mnist_train.dataset \
+     --decoder-input-filename ~/data/mnist_train.dataset \
+     --encoder-datatype img \
+     --decoder-datatype img \
+     --thought-vector-size 2 \
+     --encoder-model simplecnn_7a \
+     --decoder-model simpledeconv_a \
+     --batch-size 2 \
+     --enable-gan False \
+     --dream-fps 1 \
+     --video-filename dream_output_123.mjpeg \
+     --mode dream
+}
+
 cleanup
 
 for i in `seq 2`; do

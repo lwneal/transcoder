@@ -72,7 +72,7 @@ function test3() {
 
 cleanup
 
-for i in `seq 2`; do
+for i in `seq 3`; do
     test$i && pass || fail
     cleanup
 done

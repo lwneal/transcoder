@@ -56,12 +56,3 @@ class ImageDataset(object):
         img_width = params['img_width_encoder'] if self.is_encoder else params['img_width_decoder']
         batch_size = params['batch_size']
         return [np.zeros((batch_size, img_width, img_width, 3), dtype=float)]
-
-    def build_encoder(self, **params):
-        return model_img.build_encoder(**params)
-
-    def build_decoder(self, **params):
-        return model_img.build_decoder(**params)
-
-    def build_discriminator(self, **params):
-        return model_img.build_discriminator(**params)

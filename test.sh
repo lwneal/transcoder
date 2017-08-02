@@ -98,7 +98,6 @@ function test5() {
      --classifier-datatype lab \
      --thought-vector-size 2 \
      --encoder-model simplecnn_7a \
-
      --decoder-model simpledeconv_a \
      --enable-classifier True \
      --classifier-model mlp_2a \

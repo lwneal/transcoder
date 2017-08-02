@@ -21,8 +21,11 @@ import train
 import counterfactual
 
 
-def evaluate(transcoder, encoder_dataset, decoder_dataset, **params):
+def evaluate(transcoder, datasets, **params):
     batch_size = params['batch_size']
+    encoder_dataset = datasets['encoder']
+    decoder_dataset = datasets['decoder']
+
     input_count, output_count = encoder_dataset.count(), decoder_dataset.count()
     assert input_count == output_count
 
@@ -53,8 +56,11 @@ def run_train(*args, **kwargs):
     train.train(*args, **kwargs)
 
 
-def demonstrate(transcoder, encoder_dataset, decoder_dataset, **params):
+def demonstrate(transcoder, datasets, **params):
     batch_size = params['batch_size']
+
+    encoder_dataset = datasets['encoder']
+    decoder_dataset = datasets['decoder']
 
     X_list = encoder_dataset.empty_batch(**params)
     Y_list = decoder_dataset.empty_batch(**params)
@@ -78,9 +84,11 @@ def demonstrate(transcoder, encoder_dataset, decoder_dataset, **params):
     imutil.show_figure(filename=fig_filename, resize_to=None)
 
 
-def hallucinate(decoder, decoder_dataset, dist='gaussian', **params):
+def hallucinate(decoder, datasets, dist='gaussian', **params):
     batch_size = params['batch_size']
     thought_vector_size = params['thought_vector_size']
+
+    decoder_dataset = datasets['decoder']
 
     X_decoder = np.random.normal(0, 1, size=(batch_size, thought_vector_size))
     X_generated = decoder.predict(X_decoder)
@@ -91,7 +99,7 @@ def hallucinate(decoder, decoder_dataset, dist='gaussian', **params):
     imutil.show_figure(filename=fig_filename, resize_to=None)
 
 
-def dream(encoder, decoder, encoder_dataset, decoder_dataset, **params):
+def dream(encoder, decoder, datasets, **params):
     batch_size = params['batch_size']
     thought_vector_size = params['thought_vector_size']
     video_filename = params['video_filename']
@@ -99,6 +107,9 @@ def dream(encoder, decoder, encoder_dataset, decoder_dataset, **params):
     dream_examples = params['dream_examples']
     if params['batch_size'] < 2:
         raise ValueError("--batch-size of {} is too low, dream() requires a larger batch size".format(params['batch_size']))
+
+    encoder_dataset = datasets['encoder']
+    decoder_dataset = datasets['decoder']
 
     # Select two inputs in the dataset
     start_idx = np.random.randint(encoder_dataset.count())
@@ -135,8 +146,12 @@ def dream(encoder, decoder, encoder_dataset, decoder_dataset, **params):
         end_idx = np.random.randint(encoder_dataset.count())
 
 
-def run_counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_dataset, classifier_dataset, **params):
+def run_counterfactual(encoder, decoder, classifier, datasets, **params):
     video_filename = params['video_filename']
+
+    encoder_dataset = datasets['encoder']
+    decoder_dataset = datasets['decoder']
+    classifier_dataset = datasets.get('classifier')
 
     training_gen = train.train_generator(encoder_dataset, decoder_dataset, **params)
     X, _ = next(training_gen)
@@ -190,7 +205,7 @@ def find_dataset(input_filename, dataset_type=None, **params):
     return types.get(ext, WordDataset)
 
 
-def build_model(encoder_dataset, decoder_dataset, classifier_dataset, **params):
+def build_model(datasets, **params):
     encoder_model = params['encoder_model']
     decoder_model = params['decoder_model']
     discriminator_model = params['discriminator_model']
@@ -201,6 +216,10 @@ def build_model(encoder_dataset, decoder_dataset, classifier_dataset, **params):
     alpha = params['perceptual_loss_alpha']
     perceptual_layers = params['perceptual_loss_layers']
     decay = params['decay']
+
+    encoder_dataset = datasets['encoder']
+    decoder_dataset = datasets['decoder']
+    classifier_dataset = datasets.get('classifier')
 
     metrics = ['accuracy']
     optimizer = optimizers.Adam(decay=decay)
@@ -288,12 +307,6 @@ def build_model(encoder_dataset, decoder_dataset, classifier_dataset, **params):
 def main(**params):
     mode = params['mode']
     epochs = params['epochs']
-    encoder_input_filename = params['encoder_input_filename']
-    encoder_datatype = params['encoder_datatype']
-    decoder_input_filename = params['decoder_input_filename']
-    decoder_datatype = params['decoder_datatype']
-    classifier_input_filename = params['classifier_input_filename']
-    classifier_datatype = params['classifier_datatype']
     encoder_weights = params['encoder_weights']
     decoder_weights = params['decoder_weights']
     discriminator_weights = params['discriminator_weights']
@@ -301,15 +314,10 @@ def main(**params):
     enable_discriminator = params['enable_discriminator']
     enable_classifier = params['enable_classifier']
 
-    print("Loading datasets...")
-    encoder_dataset = find_dataset(encoder_input_filename, encoder_datatype)(encoder_input_filename, is_encoder=True, **params)
-    decoder_dataset = find_dataset(decoder_input_filename, decoder_datatype)(decoder_input_filename, is_encoder=False, **params)
-    classifier_dataset = None
-    if enable_classifier:
-        classifier_dataset = find_dataset(classifier_input_filename, classifier_datatype)(decoder_input_filename, is_encoder=False, **params)
+    datasets = get_datasets(**params)
 
     print("Building models...")
-    encoder, decoder, transcoder, discriminator, cgan, classifier, transclassifier = build_model(encoder_dataset, decoder_dataset, classifier_dataset, **params)
+    encoder, decoder, transcoder, discriminator, cgan, classifier, transclassifier = build_model(datasets, **params)
 
     print("Loading weights...")
     if os.path.exists(encoder_weights):
@@ -324,23 +332,41 @@ def main(**params):
     print("Starting mode {}".format(mode))
     if mode == 'train':
         for epoch in range(epochs):
-            run_train(encoder, decoder, transcoder, discriminator, cgan, classifier, transclassifier, encoder_dataset, decoder_dataset, classifier_dataset, **params)
+            run_train(encoder, decoder, transcoder, discriminator, cgan, classifier, transclassifier, datasets, **params)
             encoder.save_weights(encoder_weights)
             decoder.save_weights(decoder_weights)
             if enable_discriminator:
                 discriminator.save_weights(discriminator_weights)
             if enable_classifier:
                 classifier.save_weights(classifier_weights)
-            demonstrate(transcoder, encoder_dataset, decoder_dataset, **params)
+            demonstrate(transcoder, datasets, **params)
             if enable_discriminator:
-                hallucinate(decoder, decoder_dataset, **params)
+                hallucinate(decoder, datasets, **params)
     elif mode == 'evaluate':
-        evaluate(transcoder, encoder_dataset, decoder_dataset, **params)
+        evaluate(transcoder, datasets, **params)
     elif mode == 'demo':
-        demonstrate(transcoder, encoder_dataset, decoder_dataset, **params)
+        demonstrate(transcoder, datasets, **params)
         if enable_discriminator:
-            hallucinate(decoder, decoder_dataset, **params)
+            hallucinate(decoder, datasets, **params)
     elif mode == 'dream':
-        dream(encoder, decoder, encoder_dataset, decoder_dataset, **params)
+        dream(encoder, decoder, datasets, **params)
     elif mode == 'counterfactual':
-        run_counterfactual(encoder, decoder, classifier, encoder_dataset, decoder_dataset, classifier_dataset, **params)
+        run_counterfactual(encoder, decoder, classifier, datasets, **params)
+
+
+def get_datasets(**params):
+    encoder_input_filename = params['encoder_input_filename']
+    decoder_input_filename = params['decoder_input_filename']
+    classifier_input_filename = params['classifier_input_filename']
+    encoder_datatype = params['encoder_datatype']
+    decoder_datatype = params['decoder_datatype']
+    classifier_datatype = params['classifier_datatype']
+    enable_classifier = params['enable_classifier']
+
+    print("Loading datasets...")
+    datasets = {}
+    datasets['encoder'] = find_dataset(encoder_input_filename, encoder_datatype)(encoder_input_filename, is_encoder=True, **params)
+    datasets['decoder'] = find_dataset(decoder_input_filename, decoder_datatype)(decoder_input_filename, is_encoder=False, **params)
+    if enable_classifier:
+        datasets['classifier'] = find_dataset(classifier_input_filename, classifier_datatype)(decoder_input_filename, is_encoder=False, **params)
+    return datasets

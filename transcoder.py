@@ -395,12 +395,22 @@ def build_model(encoder_dataset, decoder_dataset, classifier_dataset, **params):
         if enable_perceptual_loss:
             from keras import applications
             P = applications.mobilenet.MobileNet(include_top=False)
-            texture = models.Sequential()
-            for i in range(perceptual_layers):
-                P.layers[i].trainable = False
-                texture.add(P.layers[i])
+            perceptual_outputs = []
+            for layer in P.layers:
+                if layer.name.startswith('conv') and len(perceptual_outputs) < perceptual_layers:
+                    perceptual_outputs.append(layer.output)
+            print("Perceptual Loss: Using {} convolutional layers".format(len(perceptual_outputs)))
+
+            texture = models.Model(inputs=P.inputs, outputs=perceptual_outputs)
+
+            # A scalar value that measures the perceptual difference between two images wrt. a pretrained convnet
             def perceptual_loss(y_true, y_pred):
-                return K.mean(K.abs(texture(y_true) - texture(y_pred)))
+                T_a, T_b = texture(y_true), texture(y_pred)
+                p_loss = K.mean(K.abs(T_a[0] - T_b[0]))
+                for a, b in zip(T_a, T_b)[1:]:
+                    p_loss += K.mean(K.abs(a - b))
+                return p_loss
+
             transcoder_loss = lambda x, y: alpha * losses.mean_absolute_error(x, y) + (1 - alpha) * perceptual_loss(x, y)
         else:
             transcoder_loss = losses.mean_absolute_error

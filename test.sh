@@ -87,8 +87,29 @@ function test4() {
      --mode demo
 }
 
+function test5() {
+    # Test that the 'counterfactual' command works
+    python main.py \
+     --experiment-name unittest123 \
+     --encoder-input-filename ~/data/mnist_train.dataset \
+     --decoder-input-filename ~/data/mnist_train.dataset \
+     --classifier-input-filename ~/data/mnist_train.dataset \
+     --encoder-datatype img \
+     --decoder-datatype img \
+     --classifier-datatype lab \
+     --thought-vector-size 2 \
+     --encoder-model simplecnn_7a \
+     --decoder-model simpledeconv_a \
+     --enable-classifier True \
+     --classifier-model mlp_2a \
+     --enable-discriminator True \
+     --discriminator-model simplecnn_7a \
+     --batch-size 2 \
+     --mode counterfactual
+}
+
 cleanup
-for i in `seq 4`; do
+for i in `seq 5`; do
     test$i && pass || fail
     cleanup
 done

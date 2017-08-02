@@ -30,7 +30,7 @@ function test1() {
      --batches-per-epoch 10 \
      --batch-size 1 \
      --epochs 1 \
-     --enable-gan True \
+     --enable-discriminator True \
      --mode train
 }
 
@@ -43,7 +43,7 @@ function test2() {
      --decoder-input-filename ~/data/cub200_test.dataset \
      --encoder-datatype img \
      --decoder-datatype lab \
-     --enable-gan False \
+     --enable-discriminator False \
      --encoder-model simplecnn_7a \
      --decoder-model simpledeconv_a \
      --classifier-model mlp_2a \
@@ -64,7 +64,7 @@ function test3() {
      --encoder-model simplecnn_7a \
      --decoder-model simpledeconv_a \
      --batch-size 2 \
-     --enable-gan False \
+     --enable-discriminator False \
      --dream-fps 1 \
      --video-filename dream_output_123.mjpeg \
      --mode dream
@@ -83,7 +83,7 @@ function test4() {
      --decoder-model simpledeconv_a \
      --discriminator-model simplecnn_7a \
      --batch-size 2 \
-     --enable-gan True \
+     --enable-discriminator True \
      --mode demo
 }
 

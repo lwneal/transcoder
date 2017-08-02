@@ -46,7 +46,7 @@ Options:
       --max-temperature=<temp>          Sampling temperature for log-Boltzmann distribution [default: 1.0]
       --freeze-encoder=<freeze>         Freeze weights for the encoder [default: False]
       --freeze-decoder=<freeze>         Freeze weights for the decoder [default: False]
-      --enable-gan=<bool>               If False, no GAN training will be applied [default: True]
+      --enable-discriminator=<bool>     If False, no GAN training will be applied [default: True]
       --enable-classifier=<bool>        If True, train with a classifier for counterfactuals [default: False]
       --video-filename=<fn>             Output video filename for dream mode [default: output.mjpeg]
       --dream-fps=<n>                   Integer, number of frames between dream examples [default: 90]

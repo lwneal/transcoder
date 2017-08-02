@@ -66,7 +66,7 @@ python main.py \
  --thought-vector-size $THOUGHT_VECTOR_SIZE \
  --img-width-encoder $IMG_WIDTH \
  --img-width-decoder $IMG_WIDTH \
- --enable-gan False \
+ --enable-discriminator False \
  --enable-classifier False \
  --stdout-filename evaluate_classifier.txt \
  --mode evaluate
@@ -85,7 +85,7 @@ python main.py \
  --thought-vector-size $THOUGHT_VECTOR_SIZE \
  --img-width-encoder $IMG_WIDTH \
  --img-width-decoder $IMG_WIDTH \
- --enable-gan False \
+ --enable-discriminator False \
  --stdout-filename dream.txt \
  --video-filename dream_output_${TMP_ID}.mjpeg \
  --mode dream
@@ -113,7 +113,7 @@ for i in `seq 10`; do
      --thought-vector-size $THOUGHT_VECTOR_SIZE \
      --img-width-encoder $IMG_WIDTH \
      --img-width-decoder $IMG_WIDTH \
-     --enable-gan False \
+     --enable-discriminator False \
      --enable-classifier True \
      --stdout-filename counterfactual.txt \
      --video-filename counterfactual_output_${TMP_ID}.mjpeg \

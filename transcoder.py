@@ -88,7 +88,7 @@ def train(encoder, decoder, transcoder, discriminator, cgan, classifier, transcl
     batch_size = params['batch_size']
     batches_per_epoch = params['batches_per_epoch']
     thought_vector_size = params['thought_vector_size']
-    enable_gan = params['enable_gan']
+    enable_discriminator = params['enable_discriminator']
     enable_classifier = params['enable_classifier']
     batches_per_iter = int(params['training_iters_per_gan'])
     freeze_encoder = params['freeze_encoder']
@@ -138,7 +138,7 @@ def train(encoder, decoder, transcoder, discriminator, cgan, classifier, transcl
                 t_avg_loss = .95 * t_avg_loss + .05 * loss
                 t_avg_accuracy = .95 * t_avg_accuracy + .05 * accuracy
 
-        if enable_gan:
+        if enable_discriminator:
             for _ in range(discriminator_iters):
                 # Get some real decoding targets
                 _, Y_decoder = next(training_gen)
@@ -185,7 +185,7 @@ def train(encoder, decoder, transcoder, discriminator, cgan, classifier, transcl
             c_avg_loss = .95 * c_avg_loss + .05 * loss
             c_avg_accuracy = .95 * c_avg_accuracy + .05 * accuracy
 
-        if enable_gan:
+        if enable_discriminator:
             # Update generator based on a random thought vector
             X_encoder = np.random.uniform(-1, 1, size=(batch_size, thought_vector_size))
             for layer in discriminator.layers:
@@ -342,7 +342,7 @@ def build_model(encoder_dataset, decoder_dataset, classifier_dataset, **params):
     decoder_model = params['decoder_model']
     discriminator_model = params['discriminator_model']
     classifier_model = params['classifier_model']
-    enable_gan = params['enable_gan']
+    enable_discriminator = params['enable_discriminator']
     enable_classifier = params['enable_classifier']
     enable_perceptual_loss = params['enable_perceptual_loss']
     alpha = params['perceptual_loss_alpha']
@@ -367,7 +367,7 @@ def build_model(encoder_dataset, decoder_dataset, classifier_dataset, **params):
     build_decoder = getattr(model_definitions, decoder_model)
     decoder = build_decoder(dataset=decoder_dataset, **params)
 
-    if enable_gan:
+    if enable_discriminator:
         build_discriminator = getattr(model_definitions, discriminator_model)
         discriminator = build_discriminator(is_discriminator=True, dataset=decoder_dataset, **params)
         discriminator.compile(loss=wgan_loss, optimizer=optimizer, metrics=metrics)
@@ -435,7 +435,7 @@ def main(**params):
     decoder_weights = params['decoder_weights']
     discriminator_weights = params['discriminator_weights']
     classifier_weights = params['classifier_weights']
-    enable_gan = params['enable_gan']
+    enable_discriminator = params['enable_discriminator']
     enable_classifier = params['enable_classifier']
 
     print("Loading datasets...")
@@ -453,7 +453,7 @@ def main(**params):
         encoder.load_weights(encoder_weights)
     if os.path.exists(decoder_weights):
         decoder.load_weights(decoder_weights)
-    if enable_gan and os.path.exists(discriminator_weights):
+    if enable_discriminator and os.path.exists(discriminator_weights):
         discriminator.load_weights(discriminator_weights)
     if enable_classifier and os.path.exists(classifier_weights):
         classifier.load_weights(classifier_weights)
@@ -464,18 +464,18 @@ def main(**params):
             train(encoder, decoder, transcoder, discriminator, cgan, classifier, transclassifier, encoder_dataset, decoder_dataset, classifier_dataset, **params)
             encoder.save_weights(encoder_weights)
             decoder.save_weights(decoder_weights)
-            if enable_gan:
+            if enable_discriminator:
                 discriminator.save_weights(discriminator_weights)
             if enable_classifier:
                 classifier.save_weights(classifier_weights)
             demonstrate(transcoder, encoder_dataset, decoder_dataset, **params)
-            if enable_gan:
+            if enable_discriminator:
                 hallucinate(decoder, decoder_dataset, **params)
     elif mode == 'evaluate':
         evaluate(transcoder, encoder_dataset, decoder_dataset, **params)
     elif mode == 'demo':
         demonstrate(transcoder, encoder_dataset, decoder_dataset, **params)
-        if enable_gan:
+        if enable_discriminator:
             hallucinate(decoder, decoder_dataset, **params)
     elif mode == 'dream':
         dream(encoder, decoder, encoder_dataset, decoder_dataset, **params)

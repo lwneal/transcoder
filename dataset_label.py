@@ -58,12 +58,3 @@ class LabelDataset(object):
         batch_size = params['batch_size']
         num_classes = len(self.name_to_idx)
         return [np.zeros((batch_size, num_classes))]
-
-    def build_encoder(self, **params):
-        return model_labels.build_encoder(self, **params)
-
-    def build_decoder(self, **params):
-        return model_labels.build_decoder(self, **params)
-
-    def build_discriminator(self, **params):
-        return model_labels.build_discriminator(self, **params)

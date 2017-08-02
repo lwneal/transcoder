@@ -59,9 +59,37 @@ from docopt import docopt
 from pprint import pprint
 
 
+def main():
+    params = get_params()
+    chdir_to_experiment(params['experiment_name'])
+    redirect_stdout_stderr(params['stdout_filename'])
+
+    # Importing Keras et al. takes a few seconds; only do it if params parsed correctly
+    import transcoder
+    transcoder.main(**params)
+
+
 def get_params():
+    # Parse this file's docstring to list parameters
     args = docopt(__doc__)
-    return {argname(k): argval(args[k]) for k in args}
+    params = {argname(k): argval(args[k]) for k in args}
+
+    # Produce a useful error message if critical parameters are missing
+    for var in ['experiment_name', 'encoder_input_filename', 'decoder_input_filename']:
+        if not params[var]:
+            print(__doc__)
+            raise ValueError("Empty value for required option {}".format(var))
+
+    # Some parameters have defaults that are dynamic (depend on the value of another parameter)
+    if params['encoder_weights'] is None:
+        params['encoder_weights'] = 'encoder_{}.h5'.format(params['encoder_model'])
+    if params['decoder_weights'] is None:
+        params['decoder_weights'] = 'decoder_{}.h5'.format(params['decoder_model'])
+    if params['discriminator_weights'] is None:
+        params['discriminator_weights'] = 'disc_{}.h5'.format(params['discriminator_model'])
+    if params['classifier_weights'] is None:
+        params['classifier_weights'] = 'classifier_{}.h5'.format(params['classifier_model'])
+    return params
 
 
 def argname(k):
@@ -84,6 +112,14 @@ def argval(val):
     return val
 
 
+def chdir_to_experiment(experiment_name):
+    name = slugify(unicode(experiment_name))
+    os.chdir(os.path.expanduser('~/results'))
+    if not os.path.exists(name):
+        os.mkdir(name)
+    os.chdir(name)
+
+
 def slugify(value):
     """
     Normalizes string, converts to lowercase, removes non-alpha characters,
@@ -96,42 +132,20 @@ def slugify(value):
     return unicode(re.sub('[-\s]+', '-', value))
 
 
-class Logger(object):
-    def __init__(self, name='stdout.log'):
-        self.terminal = sys.stdout
-        self.log = open(name, "a")
+def redirect_stdout_stderr(name):
+    import sys
+    class Logger(object):
+        def __init__(self, name='stdout.log'):
+            self.terminal = sys.stdout
+            self.log = open(name, "a")
 
-    def write(self, message):
-        self.terminal.write(message)
-        self.log.write(message)
+        def write(self, message):
+            self.terminal.write(message)
+            self.log.write(message)
+
+    if name:
+        sys.stdout = Logger(name)
 
 
 if __name__ == '__main__':
-    params = get_params()
-
-    for var in ['experiment_name', 'encoder_input_filename', 'decoder_input_filename']:
-        if not params[var]:
-            print(__doc__)
-            raise ValueError("Empty value for required option {}".format(var))
-
-    name = slugify(unicode(params['experiment_name']))
-    os.chdir(os.path.expanduser('~/results'))
-    if not os.path.exists(name):
-        os.mkdir(name)
-    os.chdir(name)
-
-    if params['encoder_weights'] is None:
-        params['encoder_weights'] = 'encoder_{}.h5'.format(params['encoder_model'])
-    if params['decoder_weights'] is None:
-        params['decoder_weights'] = 'decoder_{}.h5'.format(params['decoder_model'])
-    if params['discriminator_weights'] is None:
-        params['discriminator_weights'] = 'disc_{}.h5'.format(params['discriminator_model'])
-    if params['classifier_weights'] is None:
-        params['classifier_weights'] = 'classifier_{}.h5'.format(params['classifier_model'])
-
-    if params['stdout_filename']:
-        sys.stdout = Logger(params['stdout_filename'])
-
-    import transcoder
-    print(params)
-    transcoder.main(**params)
+    main()

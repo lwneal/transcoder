@@ -1,27 +1,117 @@
 import os
 import sys
-import random
 import numpy as np
-import tensorflow as tf
 import time
-from keras import layers, models, optimizers
 
-import model_definitions
-import model_words
-import model_img
-import model_img_region
+import imutil
+import model_builder
+import train
+import counterfactual
 from dataset_word import WordDataset
 from dataset_label import LabelDataset
 from dataset_img import ImageDataset
 from dataset_img_region import ImageRegionDataset
 from dataset_visual_question import VisualQuestionDataset
-import imutil
-
-import train
-import counterfactual
 
 
-def evaluate(transcoder, datasets, **params):
+def main(**params):
+    mode = params['mode']
+    epochs = params['epochs']
+    encoder_weights = params['encoder_weights']
+    decoder_weights = params['decoder_weights']
+    discriminator_weights = params['discriminator_weights']
+    classifier_weights = params['classifier_weights']
+    enable_discriminator = params['enable_discriminator']
+    enable_classifier = params['enable_classifier']
+
+    datasets = get_datasets(**params)
+
+    models = build_models(datasets, **params)
+    encoder = models['encoder']
+    decoder = models['decoder']
+    transcoder = models['transcoder']
+    discriminator = models['discriminator']
+    cgan = models['cgan']
+    classifier = models['classifier']
+    transclassifier = models['transclassifier']
+
+    print("Loading weights...")
+    if os.path.exists(encoder_weights):
+        encoder.load_weights(encoder_weights)
+    if os.path.exists(decoder_weights):
+        decoder.load_weights(decoder_weights)
+    if enable_discriminator and os.path.exists(discriminator_weights):
+        discriminator.load_weights(discriminator_weights)
+    if enable_classifier and os.path.exists(classifier_weights):
+        classifier.load_weights(classifier_weights)
+
+    print("Starting mode {}".format(mode))
+    if mode == 'train':
+        for epoch in range(epochs):
+            run_train(encoder, decoder, transcoder, discriminator, cgan, classifier, transclassifier, datasets, **params)
+            encoder.save_weights(encoder_weights)
+            decoder.save_weights(decoder_weights)
+            if enable_discriminator:
+                discriminator.save_weights(discriminator_weights)
+            if enable_classifier:
+                classifier.save_weights(classifier_weights)
+            demonstrate(transcoder, datasets, **params)
+            if enable_discriminator:
+                hallucinate(decoder, datasets, **params)
+    elif mode == 'evaluate':
+        run_evaluate(transcoder, datasets, **params)
+    elif mode == 'demo':
+        demonstrate(transcoder, datasets, **params)
+        if enable_discriminator:
+            hallucinate(decoder, datasets, **params)
+    elif mode == 'dream':
+        run_dream(encoder, decoder, datasets, **params)
+    elif mode == 'counterfactual':
+        run_counterfactual(encoder, decoder, classifier, datasets, **params)
+
+
+def get_datasets(**params):
+    encoder_input_filename = params['encoder_input_filename']
+    decoder_input_filename = params['decoder_input_filename']
+    classifier_input_filename = params['classifier_input_filename']
+    encoder_datatype = params['encoder_datatype']
+    decoder_datatype = params['decoder_datatype']
+    classifier_datatype = params['classifier_datatype']
+    enable_classifier = params['enable_classifier']
+
+    print("Loading datasets...")
+    datasets = {}
+    datasets['encoder'] = find_dataset(encoder_input_filename, encoder_datatype)(encoder_input_filename, is_encoder=True, **params)
+    datasets['decoder'] = find_dataset(decoder_input_filename, decoder_datatype)(decoder_input_filename, is_encoder=False, **params)
+    if enable_classifier:
+        datasets['classifier'] = find_dataset(classifier_input_filename, classifier_datatype)(decoder_input_filename, is_encoder=False, **params)
+    return datasets
+
+
+def find_dataset(input_filename, dataset_type=None, **params):
+    types = {
+        'img': ImageDataset,
+        'bbox': ImageRegionDataset,
+        'vq': VisualQuestionDataset,
+        'txt': WordDataset,
+        'lab': LabelDataset,
+    }
+    if dataset_type:
+        return types[dataset_type]
+    # If no dataset type is specified, infer based on file extension
+    ext = input_filename.split('.')[-1]
+    return types.get(ext, WordDataset)
+
+
+def build_models(datasets, **params):
+    return model_builder.build_models(datasets, **params)
+
+
+def run_train(*args, **kwargs):
+    train.train(*args, **kwargs)
+
+
+def run_evaluate(transcoder, datasets, **params):
     batch_size = params['batch_size']
     encoder_dataset = datasets['encoder']
     decoder_dataset = datasets['decoder']
@@ -50,10 +140,6 @@ def evaluate(transcoder, datasets, **params):
     print("decoder: {}".format(params['decoder_weights']))
     for name, val in zip(['loss'] + transcoder.metrics, scores):
         print("{}: {:.5f}".format(name, val))
-
-
-def run_train(*args, **kwargs):
-    train.train(*args, **kwargs)
 
 
 def demonstrate(transcoder, datasets, **params):
@@ -99,7 +185,7 @@ def hallucinate(decoder, datasets, dist='gaussian', **params):
     imutil.show_figure(filename=fig_filename, resize_to=None)
 
 
-def dream(encoder, decoder, datasets, **params):
+def run_dream(encoder, decoder, datasets, **params):
     batch_size = params['batch_size']
     thought_vector_size = params['thought_vector_size']
     video_filename = params['video_filename']
@@ -190,183 +276,3 @@ def run_counterfactual(encoder, decoder, classifier, datasets, **params):
         output_frame(z, display=False)
 
 
-def find_dataset(input_filename, dataset_type=None, **params):
-    types = {
-        'img': ImageDataset,
-        'bbox': ImageRegionDataset,
-        'vq': VisualQuestionDataset,
-        'txt': WordDataset,
-        'lab': LabelDataset,
-    }
-    if dataset_type:
-        return types[dataset_type]
-    # If no dataset type is specified, infer based on file extension
-    ext = input_filename.split('.')[-1]
-    return types.get(ext, WordDataset)
-
-
-def build_model(datasets, **params):
-    encoder_model = params['encoder_model']
-    decoder_model = params['decoder_model']
-    discriminator_model = params['discriminator_model']
-    classifier_model = params['classifier_model']
-    enable_discriminator = params['enable_discriminator']
-    enable_classifier = params['enable_classifier']
-    enable_perceptual_loss = params['enable_perceptual_loss']
-    alpha = params['perceptual_loss_alpha']
-    perceptual_layers = params['perceptual_loss_layers']
-    decay = params['decay']
-
-    encoder_dataset = datasets['encoder']
-    decoder_dataset = datasets['decoder']
-    classifier_dataset = datasets.get('classifier')
-
-    metrics = ['accuracy']
-    optimizer = optimizers.Adam(decay=decay)
-    classifier_loss = 'categorical_crossentropy'
-
-    # HACK: Keras Bug https://github.com/fchollet/keras/issues/5221
-    # Sharing a BatchNormalization layer corrupts the graph
-    # Workaround: carefully call _make_train_function
-
-    from keras import backend as K
-    def wgan_loss(y_true, y_pred):
-        return K.mean(y_true * y_pred)
-
-    build_encoder = getattr(model_definitions, encoder_model)
-    encoder = build_encoder(dataset=encoder_dataset, **params)
-
-    build_decoder = getattr(model_definitions, decoder_model)
-    decoder = build_decoder(dataset=decoder_dataset, **params)
-
-    if enable_discriminator:
-        build_discriminator = getattr(model_definitions, discriminator_model)
-        discriminator = build_discriminator(is_discriminator=True, dataset=decoder_dataset, **params)
-        discriminator.compile(loss=wgan_loss, optimizer=optimizer, metrics=metrics)
-        discriminator._make_train_function()
-
-        cgan = models.Model(inputs=decoder.inputs, outputs=discriminator(decoder.output))
-        cgan.compile(loss=wgan_loss, optimizer=optimizer, metrics=metrics)
-        cgan._make_train_function()
-    else:
-        discriminator = models.Sequential()
-        cgan = models.Sequential()
-
-    if enable_classifier:
-        build_classifier = getattr(model_definitions, classifier_model)
-        classifier = build_classifier(dataset=classifier_dataset, **params)
-
-        transclassifier = models.Model(inputs=encoder.inputs, outputs=classifier(encoder.output))
-        transclassifier.compile(loss=classifier_loss, optimizer=optimizer, metrics=metrics)
-    else:
-        classifier = models.Sequential()
-        transclassifier = models.Sequential()
-
-    from keras import losses
-    if type(decoder_dataset) is ImageDataset:
-        if enable_perceptual_loss:
-            from keras import applications
-            P = applications.mobilenet.MobileNet(include_top=False)
-            perceptual_outputs = []
-            for layer in P.layers:
-                if layer.name.startswith('conv') and len(perceptual_outputs) < perceptual_layers:
-                    perceptual_outputs.append(layer.output)
-            print("Perceptual Loss: Using {} convolutional layers".format(len(perceptual_outputs)))
-
-            texture = models.Model(inputs=P.inputs, outputs=perceptual_outputs)
-
-            # A scalar value that measures the perceptual difference between two images wrt. a pretrained convnet
-            def perceptual_loss(y_true, y_pred):
-                T_a, T_b = texture(y_true), texture(y_pred)
-                p_loss = K.mean(K.abs(T_a[0] - T_b[0]))
-                for a, b in zip(T_a, T_b)[1:]:
-                    p_loss += K.mean(K.abs(a - b))
-                return p_loss
-
-            transcoder_loss = lambda x, y: alpha * losses.mean_absolute_error(x, y) + (1 - alpha) * perceptual_loss(x, y)
-        else:
-            transcoder_loss = losses.mean_absolute_error
-    else:
-        transcoder_loss = losses.categorical_crossentropy
-
-    transcoder = models.Model(inputs=encoder.inputs, outputs=decoder(encoder.output))
-    transcoder.compile(loss=transcoder_loss, optimizer=optimizer, metrics=metrics)
-    transcoder._make_train_function()
-
-    print("\nEncoder")
-    encoder.summary()
-    print("\nDecoder")
-    decoder.summary()
-    print("\nDiscriminator")
-    discriminator.summary()
-    print('\nClassifier:')
-    classifier.summary()
-    return encoder, decoder, transcoder, discriminator, cgan, classifier, transclassifier
-
-
-def main(**params):
-    mode = params['mode']
-    epochs = params['epochs']
-    encoder_weights = params['encoder_weights']
-    decoder_weights = params['decoder_weights']
-    discriminator_weights = params['discriminator_weights']
-    classifier_weights = params['classifier_weights']
-    enable_discriminator = params['enable_discriminator']
-    enable_classifier = params['enable_classifier']
-
-    datasets = get_datasets(**params)
-
-    print("Building models...")
-    encoder, decoder, transcoder, discriminator, cgan, classifier, transclassifier = build_model(datasets, **params)
-
-    print("Loading weights...")
-    if os.path.exists(encoder_weights):
-        encoder.load_weights(encoder_weights)
-    if os.path.exists(decoder_weights):
-        decoder.load_weights(decoder_weights)
-    if enable_discriminator and os.path.exists(discriminator_weights):
-        discriminator.load_weights(discriminator_weights)
-    if enable_classifier and os.path.exists(classifier_weights):
-        classifier.load_weights(classifier_weights)
-
-    print("Starting mode {}".format(mode))
-    if mode == 'train':
-        for epoch in range(epochs):
-            run_train(encoder, decoder, transcoder, discriminator, cgan, classifier, transclassifier, datasets, **params)
-            encoder.save_weights(encoder_weights)
-            decoder.save_weights(decoder_weights)
-            if enable_discriminator:
-                discriminator.save_weights(discriminator_weights)
-            if enable_classifier:
-                classifier.save_weights(classifier_weights)
-            demonstrate(transcoder, datasets, **params)
-            if enable_discriminator:
-                hallucinate(decoder, datasets, **params)
-    elif mode == 'evaluate':
-        evaluate(transcoder, datasets, **params)
-    elif mode == 'demo':
-        demonstrate(transcoder, datasets, **params)
-        if enable_discriminator:
-            hallucinate(decoder, datasets, **params)
-    elif mode == 'dream':
-        dream(encoder, decoder, datasets, **params)
-    elif mode == 'counterfactual':
-        run_counterfactual(encoder, decoder, classifier, datasets, **params)
-
-
-def get_datasets(**params):
-    encoder_input_filename = params['encoder_input_filename']
-    decoder_input_filename = params['decoder_input_filename']
-    classifier_input_filename = params['classifier_input_filename']
-    encoder_datatype = params['encoder_datatype']
-    decoder_datatype = params['decoder_datatype']
-    classifier_datatype = params['classifier_datatype']
-    enable_classifier = params['enable_classifier']
-
-    print("Loading datasets...")
-    datasets = {}
-    datasets['encoder'] = find_dataset(encoder_input_filename, encoder_datatype)(encoder_input_filename, is_encoder=True, **params)
-    datasets['decoder'] = find_dataset(decoder_input_filename, decoder_datatype)(decoder_input_filename, is_encoder=False, **params)
-    if enable_classifier:
-        datasets['classifier'] = find_dataset(classifier_input_filename, classifier_datatype)(decoder_input_filename, is_encoder=False, **params)
-    return datasets

@@ -70,9 +70,25 @@ function test3() {
      --mode dream
 }
 
-cleanup
+function test4() {
+    # Test that the 'demo' command works
+    python main.py \
+     --experiment-name unittest123 \
+     --encoder-input-filename ~/data/mnist_train.dataset \
+     --decoder-input-filename ~/data/mnist_train.dataset \
+     --encoder-datatype img \
+     --decoder-datatype img \
+     --thought-vector-size 2 \
+     --encoder-model simplecnn_7a \
+     --decoder-model simpledeconv_a \
+     --discriminator-model simplecnn_7a \
+     --batch-size 2 \
+     --enable-gan True \
+     --mode demo
+}
 
-for i in `seq 3`; do
+cleanup
+for i in `seq 4`; do
     test$i && pass || fail
     cleanup
 done

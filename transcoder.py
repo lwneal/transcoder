@@ -163,8 +163,7 @@ def train(encoder, decoder, transcoder, discriminator, cgan, classifier, transcl
                 for layer in decoder.layers:
                     layer.trainable = True
 
-                # TODO: Replace with gradient magnitude penalty
-                # Clip discriminator weights
+                # WGAN: Clip discriminator weights
                 start_time = time.time()
                 for layer in discriminator.layers:
                     weights = layer.get_weights()
@@ -369,22 +368,9 @@ def build_model(encoder_dataset, decoder_dataset, classifier_dataset, **params):
     decoder = build_decoder(dataset=decoder_dataset, **params)
 
     if enable_gan:
-
         build_discriminator = getattr(model_definitions, discriminator_model)
         discriminator = build_discriminator(is_discriminator=True, dataset=decoder_dataset, **params)
-
-        # TODO: Improved WGAN: Add the magnitude of the gradient dD(x)/dx as a term to the loss
-        """
-        grads = tf.gradients(discriminator.output, discriminator.input)
-        slopes = tf.sqrt(tf.reduce_sum(tf.square(grads), reduction_indices=[1]))
-        grad_penalty = tf.reduce_mean(tf.square(slopes - 1))
-        def discriminator_loss(y_true, y_pred):
-            LAMBDA = 1.0
-            return wgan_loss(y_true, y_pred) + LAMBDA * grad_penalty
-        discriminator.compile(loss=discriminator_loss, optimizer=optimizer, metrics=metrics)
-        """
         discriminator.compile(loss=wgan_loss, optimizer=optimizer, metrics=metrics)
-
         discriminator._make_train_function()
 
         cgan = models.Model(inputs=decoder.inputs, outputs=discriminator(decoder.output))

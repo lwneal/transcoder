@@ -1,4 +1,3 @@
-import os
 import sys
 import numpy as np
 import time
@@ -16,58 +15,27 @@ from dataset_visual_question import VisualQuestionDataset
 
 def main(**params):
     mode = params['mode']
-    epochs = params['epochs']
-    encoder_weights = params['encoder_weights']
-    decoder_weights = params['decoder_weights']
-    discriminator_weights = params['discriminator_weights']
-    classifier_weights = params['classifier_weights']
     enable_discriminator = params['enable_discriminator']
-    enable_classifier = params['enable_classifier']
 
     datasets = get_datasets(**params)
 
-    models = build_models(datasets, **params)
-    encoder = models['encoder']
-    decoder = models['decoder']
-    transcoder = models['transcoder']
-    discriminator = models['discriminator']
-    cgan = models['cgan']
-    classifier = models['classifier']
-    transclassifier = models['transclassifier']
+    models = model_builder.build_models(datasets, **params)
 
-    print("Loading weights...")
-    if os.path.exists(encoder_weights):
-        encoder.load_weights(encoder_weights)
-    if os.path.exists(decoder_weights):
-        decoder.load_weights(decoder_weights)
-    if enable_discriminator and os.path.exists(discriminator_weights):
-        discriminator.load_weights(discriminator_weights)
-    if enable_classifier and os.path.exists(classifier_weights):
-        classifier.load_weights(classifier_weights)
+    model_builder.load_weights(models, **params)
 
     print("Starting mode {}".format(mode))
     if mode == 'train':
-        for epoch in range(epochs):
-            run_train(encoder, decoder, transcoder, discriminator, cgan, classifier, transclassifier, datasets, **params)
-            encoder.save_weights(encoder_weights)
-            decoder.save_weights(decoder_weights)
-            if enable_discriminator:
-                discriminator.save_weights(discriminator_weights)
-            if enable_classifier:
-                classifier.save_weights(classifier_weights)
-            demonstrate(transcoder, datasets, **params)
-            if enable_discriminator:
-                hallucinate(decoder, datasets, **params)
+        run_train(models, datasets, **params)
     elif mode == 'evaluate':
-        run_evaluate(transcoder, datasets, **params)
+        run_evaluate(models, datasets, **params)
     elif mode == 'demo':
-        demonstrate(transcoder, datasets, **params)
+        demonstrate(models, datasets, **params)
         if enable_discriminator:
-            hallucinate(decoder, datasets, **params)
+            hallucinate(models, datasets, **params)
     elif mode == 'dream':
-        run_dream(encoder, decoder, datasets, **params)
+        run_dream(models, datasets, **params)
     elif mode == 'counterfactual':
-        run_counterfactual(encoder, decoder, classifier, datasets, **params)
+        run_counterfactual(models, datasets, **params)
 
 
 def get_datasets(**params):
@@ -103,16 +71,38 @@ def find_dataset(input_filename, dataset_type=None, **params):
     return types.get(ext, WordDataset)
 
 
-def build_models(datasets, **params):
-    return model_builder.build_models(datasets, **params)
+def run_train(models, datasets, **params):
+    epochs = params['epochs']
+    encoder_weights = params['encoder_weights']
+    decoder_weights = params['decoder_weights']
+    discriminator_weights = params['discriminator_weights']
+    classifier_weights = params['classifier_weights']
+    enable_discriminator = params['enable_discriminator']
+    enable_classifier = params['enable_classifier']
+
+    encoder = models['encoder']
+    decoder = models['decoder']
+    discriminator = models['discriminator']
+    classifier = models['classifier']
+
+    for epoch in range(epochs):
+        train.train(models, datasets, **params)
+        encoder.save_weights(encoder_weights)
+        decoder.save_weights(decoder_weights)
+        if enable_discriminator:
+            discriminator.save_weights(discriminator_weights)
+        if enable_classifier:
+            classifier.save_weights(classifier_weights)
+        demonstrate(models, datasets, **params)
+        if enable_discriminator:
+            hallucinate(models, datasets, **params)
 
 
-def run_train(*args, **kwargs):
-    train.train(*args, **kwargs)
-
-
-def run_evaluate(transcoder, datasets, **params):
+def run_evaluate(models, datasets, **params):
     batch_size = params['batch_size']
+
+    transcoder = models['transcoder']
+
     encoder_dataset = datasets['encoder']
     decoder_dataset = datasets['decoder']
 
@@ -120,7 +110,6 @@ def run_evaluate(transcoder, datasets, **params):
     assert input_count == output_count
 
     def eval_generator():
-        X_list = encoder_dataset.empty_batch(**params)
         for i in range(0, input_count, batch_size):
             sys.stderr.write("\r[K{} / {}".format(i, input_count))
             yield train.get_batch(encoder_dataset, decoder_dataset, base_idx=i, **params)
@@ -142,8 +131,10 @@ def run_evaluate(transcoder, datasets, **params):
         print("{}: {:.5f}".format(name, val))
 
 
-def demonstrate(transcoder, datasets, **params):
+def demonstrate(models, datasets, **params):
     batch_size = params['batch_size']
+
+    transcoder = models['transcoder']
 
     encoder_dataset = datasets['encoder']
     decoder_dataset = datasets['decoder']
@@ -170,9 +161,11 @@ def demonstrate(transcoder, datasets, **params):
     imutil.show_figure(filename=fig_filename, resize_to=None)
 
 
-def hallucinate(decoder, datasets, dist='gaussian', **params):
+def hallucinate(models, datasets, dist='gaussian', **params):
     batch_size = params['batch_size']
     thought_vector_size = params['thought_vector_size']
+
+    decoder = models['decoder']
 
     decoder_dataset = datasets['decoder']
 
@@ -185,17 +178,17 @@ def hallucinate(decoder, datasets, dist='gaussian', **params):
     imutil.show_figure(filename=fig_filename, resize_to=None)
 
 
-def run_dream(encoder, decoder, datasets, **params):
-    batch_size = params['batch_size']
-    thought_vector_size = params['thought_vector_size']
+def run_dream(models, datasets, **params):
     video_filename = params['video_filename']
     dream_frames_per_example = params['dream_fps']
     dream_examples = params['dream_examples']
     if params['batch_size'] < 2:
         raise ValueError("--batch-size of {} is too low, dream() requires a larger batch size".format(params['batch_size']))
 
+    encoder = models['encoder']
+    decoder = models['decoder']
+
     encoder_dataset = datasets['encoder']
-    decoder_dataset = datasets['decoder']
 
     # Select two inputs in the dataset
     start_idx = np.random.randint(encoder_dataset.count())
@@ -232,8 +225,12 @@ def run_dream(encoder, decoder, datasets, **params):
         end_idx = np.random.randint(encoder_dataset.count())
 
 
-def run_counterfactual(encoder, decoder, classifier, datasets, **params):
+def run_counterfactual(models, datasets, **params):
     video_filename = params['video_filename']
+
+    encoder = models['encoder']
+    decoder = models['decoder']
+    classifier = models['classifier']
 
     encoder_dataset = datasets['encoder']
     decoder_dataset = datasets['decoder']

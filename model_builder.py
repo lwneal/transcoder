@@ -1,3 +1,4 @@
+import os
 from keras import models
 from keras import optimizers
 from keras import applications
@@ -111,3 +112,21 @@ def build_models(datasets, **params):
         'classifier': classifier,
         'transclassifier': transclassifier,
     }
+
+
+def load_weights(models, **params):
+    encoder_weights = params['encoder_weights']
+    decoder_weights = params['decoder_weights']
+    discriminator_weights = params['discriminator_weights']
+    classifier_weights = params['classifier_weights']
+    enable_discriminator = params['enable_discriminator']
+    enable_classifier = params['enable_classifier']
+
+    if os.path.exists(encoder_weights):
+        models['encoder'].load_weights(encoder_weights)
+    if os.path.exists(decoder_weights):
+        models['decoder'].load_weights(decoder_weights)
+    if enable_discriminator and os.path.exists(discriminator_weights):
+        models['discriminator'].load_weights(discriminator_weights)
+    if enable_classifier and os.path.exists(classifier_weights):
+        models['classifier'].load_weights(classifier_weights)

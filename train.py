@@ -38,7 +38,7 @@ def get_batch(encoder_dataset, decoder_dataset, base_idx=None, **params):
     return X_list, Y_list
 
 
-def train(encoder, decoder, transcoder, discriminator, cgan, classifier, transclassifier, datasets, **params):
+def train(models, datasets, **params):
     batch_size = params['batch_size']
     batches_per_epoch = params['batches_per_epoch']
     thought_vector_size = params['thought_vector_size']
@@ -49,6 +49,13 @@ def train(encoder, decoder, transcoder, discriminator, cgan, classifier, transcl
     freeze_decoder = params['freeze_decoder']
     enable_transcoder = not (freeze_encoder and freeze_decoder)
     discriminator_iters = params['discriminator_iters']
+
+    encoder = models['encoder']
+    decoder = models['decoder']
+    discriminator = models['discriminator']
+    transcoder = models['transcoder']
+    cgan = models['cgan']
+    transclassifier = models['transclassifier']
 
     encoder_dataset = datasets['encoder']
     decoder_dataset = datasets['decoder']

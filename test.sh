@@ -45,11 +45,10 @@ function test2() {
      --decoder-datatype lab \
      --enable-discriminator False \
      --encoder-model simplecnn_7a \
-     --decoder-model simpledeconv_a \
-     --classifier-model mlp_2a \
+     --decoder-model mlp_2a \
      --batch-size 16 \
-     --thought-vector-size 512 \
-     --mode test
+     --thought-vector-size 2 \
+     --mode evaluate
 }
 
 function test3() {
@@ -84,7 +83,7 @@ function test4() {
      --discriminator-model simplecnn_7a \
      --batch-size 2 \
      --enable-discriminator True \
-     --mode demo
+     --mode demonstrate
 }
 
 function test5() {
@@ -99,6 +98,7 @@ function test5() {
      --classifier-datatype lab \
      --thought-vector-size 2 \
      --encoder-model simplecnn_7a \
+
      --decoder-model simpledeconv_a \
      --enable-classifier True \
      --classifier-model mlp_2a \

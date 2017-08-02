@@ -1,12 +1,12 @@
 import sys
 import numpy as np
 import time
-
 import imutil
+
 import dataset_builder
 import model_builder
-import train
-import counterfactual
+import training
+import latent_space
 
 
 def main(**params):
@@ -16,20 +16,13 @@ def main(**params):
     models = model_builder.build_models(datasets, **params)
     model_builder.load_weights(models, **params)
 
-    print("Starting mode {}".format(mode))
-    if mode == 'train':
-        run_train(models, datasets, **params)
-    elif mode == 'evaluate':
-        run_evaluate(models, datasets, **params)
-    elif mode == 'demo':
-        demonstrate(models, datasets, **params)
-    elif mode == 'dream':
-        run_dream(models, datasets, **params)
-    elif mode == 'counterfactual':
-        run_counterfactual(models, datasets, **params)
+    func = globals().get(mode)
+    if not func:
+        raise ValueError("Mode {} is not implemented in {}".format(mode, __name__))
+    func(models, datasets, **params)
 
 
-def run_train(models, datasets, **params):
+def train(models, datasets, **params):
     epochs = params['epochs']
     encoder_weights = params['encoder_weights']
     decoder_weights = params['decoder_weights']
@@ -44,7 +37,7 @@ def run_train(models, datasets, **params):
     classifier = models['classifier']
 
     for epoch in range(epochs):
-        train.train(models, datasets, **params)
+        training.train(models, datasets, **params)
         encoder.save_weights(encoder_weights)
         decoder.save_weights(decoder_weights)
         if enable_discriminator:
@@ -54,7 +47,7 @@ def run_train(models, datasets, **params):
         demonstrate(models, datasets, **params)
 
 
-def run_evaluate(models, datasets, **params):
+def evaluate(models, datasets, **params):
     batch_size = params['batch_size']
 
     transcoder = models['transcoder']
@@ -68,12 +61,12 @@ def run_evaluate(models, datasets, **params):
     def eval_generator():
         for i in range(0, input_count, batch_size):
             sys.stderr.write("\r[K{} / {}".format(i, input_count))
-            yield train.get_batch(encoder_dataset, decoder_dataset, base_idx=i, **params)
+            yield training.get_batch(encoder_dataset, decoder_dataset, base_idx=i, **params)
         sys.stderr.write("\n")
         # HACK: Keras is dumb and asynchronously queues up batches beyond the last one
         # Could be solved if evaluate_generator() workers used an atomic counter
         while True:
-            yield train.get_batch(encoder_dataset, decoder_dataset, base_idx=i, **params)
+            yield training.get_batch(encoder_dataset, decoder_dataset, base_idx=i, **params)
 
     batch_count = input_count / batch_size
     scores = transcoder.evaluate_generator(eval_generator(), steps=batch_count)
@@ -138,7 +131,7 @@ def hallucinate(models, datasets, dist='gaussian', **params):
     imutil.show_figure(filename=fig_filename, resize_to=None)
 
 
-def run_dream(models, datasets, **params):
+def dream(models, datasets, **params):
     video_filename = params['video_filename']
     dream_frames_per_example = params['dream_fps']
     dream_examples = params['dream_examples']
@@ -185,7 +178,7 @@ def run_dream(models, datasets, **params):
         end_idx = np.random.randint(encoder_dataset.count())
 
 
-def run_counterfactual(models, datasets, **params):
+def counterfactual(models, datasets, **params):
     video_filename = params['video_filename']
 
     encoder = models['encoder']
@@ -196,7 +189,7 @@ def run_counterfactual(models, datasets, **params):
     decoder_dataset = datasets['decoder']
     classifier_dataset = datasets.get('classifier')
 
-    training_gen = train.train_generator(encoder_dataset, decoder_dataset, **params)
+    training_gen = training.train_generator(encoder_dataset, decoder_dataset, **params)
     X, _ = next(training_gen)
     X = X[:1]
     imutil.show(X)
@@ -205,7 +198,7 @@ def run_counterfactual(models, datasets, **params):
     trajectory_path = []
 
     for _ in range(3):
-        trajectory = counterfactual.compute_trajectory(
+        trajectory = latent_space.compute_trajectory(
                 encoder, decoder, classifier,
                 Z, classifier_dataset,
                 **params)

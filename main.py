@@ -42,7 +42,7 @@ Options:
       --vocab-rarity=<v>                Minimum number of occurrences of a word [default: 1]
       --load-encoder-vocab=<vocab>      Filename, save/load vocabulary from this file [default: None]
       --load-decoder-vocab=<vocab>      Filename, save/load vocabulary from this file [default: None]
-      --mode=<mode>                     One of train, evaluate, demo, dream, counterfactual [default: train]
+      --mode=<mode>                     One of train, evaluate, demonstrate, dream, counterfactual [default: train]
       --max-temperature=<temp>          Sampling temperature for log-Boltzmann distribution [default: 1.0]
       --freeze-encoder=<freeze>         Freeze weights for the encoder [default: False]
       --freeze-decoder=<freeze>         Freeze weights for the decoder [default: False]

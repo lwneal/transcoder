@@ -15,12 +15,9 @@ from dataset_visual_question import VisualQuestionDataset
 
 def main(**params):
     mode = params['mode']
-    enable_discriminator = params['enable_discriminator']
 
     datasets = get_datasets(**params)
-
     models = model_builder.build_models(datasets, **params)
-
     model_builder.load_weights(models, **params)
 
     print("Starting mode {}".format(mode))
@@ -30,8 +27,6 @@ def main(**params):
         run_evaluate(models, datasets, **params)
     elif mode == 'demo':
         demonstrate(models, datasets, **params)
-        if enable_discriminator:
-            hallucinate(models, datasets, **params)
     elif mode == 'dream':
         run_dream(models, datasets, **params)
     elif mode == 'counterfactual':
@@ -94,8 +89,6 @@ def run_train(models, datasets, **params):
         if enable_classifier:
             classifier.save_weights(classifier_weights)
         demonstrate(models, datasets, **params)
-        if enable_discriminator:
-            hallucinate(models, datasets, **params)
 
 
 def run_evaluate(models, datasets, **params):
@@ -132,6 +125,7 @@ def run_evaluate(models, datasets, **params):
 
 
 def demonstrate(models, datasets, **params):
+    enable_discriminator = params['enable_discriminator']
     batch_size = params['batch_size']
 
     transcoder = models['transcoder']
@@ -159,6 +153,9 @@ def demonstrate(models, datasets, **params):
         print('{} --> {} ({})'.format(x_input, y_generated, y_truth))
     fig_filename = '{}_demo.jpg'.format(int(time.time()))
     imutil.show_figure(filename=fig_filename, resize_to=None)
+
+    if enable_discriminator:
+        hallucinate(models, datasets, **params)
 
 
 def hallucinate(models, datasets, dist='gaussian', **params):

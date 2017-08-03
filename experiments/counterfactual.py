@@ -22,6 +22,7 @@ import docopt
 import os
 import time
 from main import get_params
+from util import pushd
 
 
 def counterfactual():
@@ -50,7 +51,7 @@ def counterfactual():
         timestamp,
     ])
 
-    # Download the dataset if it doesn't already exist
+    #Download the dataset if it doesn't already exist
     # TODO: security lol
     os.system('scripts/download_{}.py'.format(dataset))
 
@@ -114,7 +115,7 @@ def counterfactual():
     dream_params['stdout_filename'] = 'stdout_dream_{}.txt'.format(timestamp)
     dream_params['enable_discriminator'] = False
     dream_params['mode'] = 'dream'
-    transcoder.main(**params)
+    transcoder.main(**dream_params)
 
     # Re-encode the video to mp4 for storage
     encode_video(experiment_name, dream_params['video_filename'])
@@ -126,7 +127,7 @@ def counterfactual():
     counter_params['enable_discriminator'] = False
     counter_params['mode'] = 'counterfactual'
     for _ in range(3):
-        transcoder.main(**params)
+        transcoder.main(**counter_params)
 
     # Re-encode the video to mp4 for storage
     encode_video(experiment_name, counter_params['video_filename'])
@@ -138,12 +139,12 @@ def counterfactual():
 
 def encode_video(experiment_name, video_name):
     # TODO: security lol
-    from util import pushd
-    output_name = video_name.replace('.mjpeg', '.mp4')
     dirname = '~/results/{}'.format(experiment_name)
+    input_name = os.path.join(dirname, video_name)
+    output_name = input_name.replace('.mjpeg', '.mp4')
     with pushd(dirname):
-        os.system('ffmpeg -y -i {} {}'.format(video_name, output_name))
-        os.system('rm {}.mjpeg'.format(video_name))
+        os.system('ffmpeg -y -i {} {}'.format(input_name, output_name))
+        os.system('rm {}'.format(input_name))
 
 
 if __name__ == '__main__':

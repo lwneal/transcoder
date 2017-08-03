@@ -17,7 +17,11 @@ class ImageDataset(object):
         if not input_filename:
             raise ValueError("No input filename supplied. See options with --help")
         lines = open(input_filename).readlines()
-        self.is_encoder = is_encoder
+
+        if is_encoder:
+            self.img_shape = (params['img_width_encoder'], params['img_width_encoder'])
+        else:
+            self.img_shape = (params['img_width_decoder'], params['img_width_decoder'])
 
         self.regions = [json.loads(l) for l in lines]
         print("Input file {} contains {} image regions".format(input_filename, len(self.regions)))
@@ -36,10 +40,10 @@ class ImageDataset(object):
     def count(self):
         return len(self.regions)
 
-    def format_input(self, region, **params):
-        img_width = params['img_width_encoder'] if self.is_encoder else params['img_width_decoder']
+    def format_input(self, region, use_box=True, **params):
         filename = os.path.join(DATA_DIR, str(region['filename']))
-        img = imutil.decode_jpg(filename, resize_to=(img_width, img_width))
+        box = region.get('box') if use_box else None
+        img = imutil.decode_jpg(filename, resize_to=self.img_shape, crop_to_box=box)
         img = img * 1.0 / 255
         return [img]
 
@@ -53,7 +57,6 @@ class ImageDataset(object):
         return 'Output image shape: {}'.format(Y.shape)
 
     def empty_batch(self, **params):
-        img_width = params['img_width_encoder'] if self.is_encoder else params['img_width_decoder']
         batch_size = params['batch_size']
-        return [np.zeros((batch_size, img_width, img_width, 3), dtype=float)]
+        return [np.zeros((batch_size, self.img_shape[0], self.img_shape[1], 3), dtype=float)]
 

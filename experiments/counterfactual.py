@@ -111,7 +111,7 @@ def counterfactual():
 
     # Generate a "dream" video
     dream_params = params.copy()
-    dream_params['video_filename'] = 'dream_output_{}'.format(timestamp)
+    dream_params['video_filename'] = 'dream_output_{}.mjpeg'.format(timestamp)
     dream_params['stdout_filename'] = 'stdout_dream_{}.txt'.format(timestamp)
     dream_params['enable_discriminator'] = False
     dream_params['mode'] = 'dream'
@@ -122,7 +122,7 @@ def counterfactual():
 
     # Add counterfactuals
     counter_params = params.copy()
-    counter_params['video_filename'] = 'counterfactual_output_{}'.format(timestamp)
+    counter_params['video_filename'] = 'counterfactual_output_{}.mjpeg'.format(timestamp)
     counter_params['stdout_filename'] = 'stdout_counterfactual_{}.txt'.format(timestamp)
     counter_params['enable_discriminator'] = False
     counter_params['mode'] = 'counterfactual'

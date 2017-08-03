@@ -24,7 +24,7 @@ import time
 from main import get_params
 
 
-def main():
+def counterfactual():
     import transcoder
     arguments = docopt.docopt(__doc__)
 
@@ -58,7 +58,10 @@ def main():
     test_dataset = os.path.expanduser('~/data/{}_test.dataset'.format(dataset))
 
     # Fill params with defaults
-    params = get_params()
+    import main
+    defaults = {opt.long: opt.value for opt in docopt.parse_defaults(main.__doc__)}
+    params = {main.argname(k): main.argval(defaults[k]) for k in defaults}
+
     params['experiment_name'] = experiment_name
     params['encoder_input_filename'] = test_dataset
     params['decoder_input_filename'] = test_dataset
@@ -144,4 +147,4 @@ def encode_video(experiment_name, video_name):
 
 
 if __name__ == '__main__':
-    main()
+    counterfactual()

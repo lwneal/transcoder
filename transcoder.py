@@ -1,3 +1,4 @@
+import os
 import sys
 import numpy as np
 import time
@@ -11,6 +12,8 @@ import latent_space
 
 def main(**params):
     mode = params['mode']
+    chdir_to_experiment(params['experiment_name'])
+    redirect_stdout_stderr(params['stdout_filename'])
 
     datasets = dataset_builder.build_datasets(**params)
     models = model_builder.build_models(datasets, **params)
@@ -20,6 +23,41 @@ def main(**params):
     if not func:
         raise ValueError("Mode {} is not implemented in {}".format(mode, __name__))
     func(models, datasets, **params)
+
+
+def chdir_to_experiment(experiment_name):
+    name = slugify(unicode(experiment_name))
+    os.chdir(os.path.expanduser('~/results'))
+    if not os.path.exists(name):
+        os.mkdir(name)
+    os.chdir(name)
+
+
+def slugify(value):
+    """
+    Normalizes string, converts to lowercase, removes non-alpha characters,
+    and converts spaces to hyphens.
+    """
+    import unicodedata
+    import re
+    value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore')
+    value = unicode(re.sub('[^\w\s-]', '', value).strip().lower())
+    return unicode(re.sub('[-\s]+', '-', value))
+
+
+def redirect_stdout_stderr(name):
+    import sys
+    class Logger(object):
+        def __init__(self, name='stdout.log'):
+            self.terminal = sys.stdout
+            self.log = open(name, "a")
+
+        def write(self, message):
+            self.terminal.write(message)
+            self.log.write(message)
+
+    if name:
+        sys.stdout = Logger(name)
 
 
 def train(models, datasets, **params):

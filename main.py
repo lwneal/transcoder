@@ -60,9 +60,7 @@ from pprint import pprint
 
 
 def main():
-    params = get_params()
-    chdir_to_experiment(params['experiment_name'])
-    redirect_stdout_stderr(params['stdout_filename'])
+    params = check_params(get_params())
 
     # Importing Keras et al. takes a few seconds; only do it if params parsed correctly
     import transcoder
@@ -72,8 +70,10 @@ def main():
 def get_params():
     # Parse this file's docstring to list parameters
     args = docopt(__doc__)
-    params = {argname(k): argval(args[k]) for k in args}
+    return {argname(k): argval(args[k]) for k in args}
 
+
+def check_params(params):
     # Produce a useful error message if critical parameters are missing
     for var in ['experiment_name', 'encoder_input_filename', 'decoder_input_filename']:
         if not params[var]:
@@ -110,41 +110,6 @@ def argval(val):
     if val == 'None':
         return None
     return val
-
-
-def chdir_to_experiment(experiment_name):
-    name = slugify(unicode(experiment_name))
-    os.chdir(os.path.expanduser('~/results'))
-    if not os.path.exists(name):
-        os.mkdir(name)
-    os.chdir(name)
-
-
-def slugify(value):
-    """
-    Normalizes string, converts to lowercase, removes non-alpha characters,
-    and converts spaces to hyphens.
-    """
-    import unicodedata
-    import re
-    value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore')
-    value = unicode(re.sub('[^\w\s-]', '', value).strip().lower())
-    return unicode(re.sub('[-\s]+', '-', value))
-
-
-def redirect_stdout_stderr(name):
-    import sys
-    class Logger(object):
-        def __init__(self, name='stdout.log'):
-            self.terminal = sys.stdout
-            self.log = open(name, "a")
-
-        def write(self, message):
-            self.terminal.write(message)
-            self.log.write(message)
-
-    if name:
-        sys.stdout = Logger(name)
 
 
 if __name__ == '__main__':

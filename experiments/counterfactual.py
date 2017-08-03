@@ -5,13 +5,13 @@ Usage:
 
 Options:
     --dataset=<n>            Dataset with images and labels eg. mnist, cub200 [default: mnist]
-    --thought-vector=<n>     Size of the latent space [default: 32]
-    --encoder=<n>            Name of the encoder model [default: simplecnn_7a]
+    --thought-vector=<n>     Size of the latent space [default: 16]
+    --encoder=<n>            Name of the encoder model [default: stridecnn_10a]
     --decoder=<n>            Name of the decoder model [default: simpledeconv_a]
-    --classifier=<n>         Name of the classifier model [default: linear_softmax]
-    --epochs=<n>             Number of epochs [default: 10]
-    --perceptual-layers=<n>  Perceptual loss depth [default: 4]
-    --img-width=<n>          Width of images through transcoder [default: 64]
+    --classifier=<n>         Name of the classifier model [default: mlp_2a]
+    --epochs=<n>             Number of epochs [default: 100]
+    --perceptual-layers=<n>  Perceptual loss depth [default: 3]
+    --img-width=<n>          Width of images through transcoder [default: 32]
     --timestamp=<n>          Timestamp of previously-trained network (new ts if left default) [default: None]
 """
 import os

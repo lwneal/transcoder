@@ -11,6 +11,7 @@ Options:
     --classifier=<n>         Name of the classifier model [default: mlp_2a]
     --epochs=<n>             Number of epochs [default: 100]
     --decay=<n>              Training rate decay [default: .0001]
+    --gan-weight=<n>         GAN training per autoencoder training [default: 3.0]
     --perceptual-layers=<n>  Perceptual loss depth [default: 3]
     --img-width=<n>          Width of images through transcoder [default: 32]
     --timestamp=<n>          Timestamp of previously-trained network (new ts if left default) [default: None]
@@ -37,6 +38,7 @@ def counterfactual():
     classifier_model = arguments['--classifier']
     epochs = int(arguments['--epochs'])
     decay = float(arguments['--decay'])
+    gan_weight = float(arguments['--gan-weight'])
     perceptual_layers = int(arguments['--perceptual-layers'])
     img_width = int(arguments['--img-width'])
     try:
@@ -91,6 +93,7 @@ def counterfactual():
     params['decoder_weights'] = 'decoder_{}.h5'.format(decoder_model)
     params['classifier_weights'] = 'classifier_{}.h5'.format(classifier_model)
     params['discriminator_weights'] = 'discriminator_{}.h5'.format(encoder_model)
+    params['training_iters_per_gan'] = gan_weight
 
     # First train a manifold
     train_params = params.copy()

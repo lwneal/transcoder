@@ -10,6 +10,7 @@ Options:
     --decoder=<n>            Name of the decoder model [default: simpledeconv_a]
     --classifier=<n>         Name of the classifier model [default: mlp_2a]
     --epochs=<n>             Number of epochs [default: 100]
+    --decay=<n>              Training rate decay [default: .0001]
     --perceptual-layers=<n>  Perceptual loss depth [default: 3]
     --img-width=<n>          Width of images through transcoder [default: 32]
     --timestamp=<n>          Timestamp of previously-trained network (new ts if left default) [default: None]
@@ -35,6 +36,7 @@ def counterfactual():
     decoder_model = arguments['--decoder']
     classifier_model = arguments['--classifier']
     epochs = int(arguments['--epochs'])
+    decay = float(arguments['--decay'])
     perceptual_layers = int(arguments['--perceptual-layers'])
     img_width = int(arguments['--img-width'])
     try:
@@ -79,6 +81,7 @@ def counterfactual():
     params['img_width_encoder'] = img_width
     params['img_width_decoder'] = img_width
     params['epochs'] = epochs
+    params['decay'] = decay
     params['perceptual_loss_layers'] = perceptual_layers
     params['batches_per_epoch'] = 200
     params['enable_classifier'] = True

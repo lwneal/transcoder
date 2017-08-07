@@ -106,8 +106,9 @@ def counterfactual():
 
     # Evaluate the classifier
     eval_params = params.copy()
-    eval_params['decoder_model'] = classifier_model
-    eval_params['decoder_datatype'] = 'lab'
+    eval_params['decoder_model'] = params['classifier_model']
+    eval_params['decoder_datatype'] = params['classifier_datatype']
+    eval_params['decoder_weights'] = params['classifier_weights']
     eval_params['enable_classifier'] = False
     eval_params['enable_discriminator'] = False
     eval_params['stdout_filename'] = 'stdout_eval_{}.txt'.format(timestamp)

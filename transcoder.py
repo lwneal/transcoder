@@ -204,7 +204,6 @@ def dream(models, datasets, **params):
         # the result of the decoder at each step
         # TODO: Something other than linear interpolation?
         for i in range(dream_frames_per_example):
-            print("Writing img {} frame {}".format(start_idx, i))
             c = float(i) / dream_frames_per_example
             v = c * latent_end + (1 - c) * latent_start
             img = decoder.predict(np.expand_dims(v, axis=0))[0]

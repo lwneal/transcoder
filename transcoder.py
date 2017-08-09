@@ -109,7 +109,7 @@ def evaluate(models, datasets, **params):
     batch_count = input_count / batch_size
     scores = transcoder.evaluate_generator(eval_generator(), steps=batch_count)
     print("")
-    print("Completed evaluation on {} items".format(batch_count))
+    print("Completed evaluation on {} input items ({} batches)".format(input_count, batch_count))
     print("input: {}".format(params['encoder_input_filename']))
     print("output: {}".format(params['decoder_input_filename']))
     print("encoder: {}".format(params['encoder_weights']))

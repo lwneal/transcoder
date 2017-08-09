@@ -24,8 +24,16 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import docopt
 import os
 import time
+import json
 from main import get_params
 from util import pushd
+
+
+def save_params(params, filename=None):
+    if not filename:
+        filename = os.path.expanduser('~/results/{}'.format(filename))
+    with open(filename, 'w') as fp:
+        fp.write(json.dumps(params, indent=2))
 
 
 def counterfactual():
@@ -56,6 +64,8 @@ def counterfactual():
         classifier_model,
         experiment_timestamp,
     ])
+
+    save_params(arguments)
 
     timestamp = int(time.time())
 

@@ -20,13 +20,14 @@ def build_models(datasets, **params):
     perceptual_layers = params['perceptual_loss_layers']
     decay = params['decay']
     decoder_datatype = params['decoder_datatype']
+    learning_rate = params['learning_rate']
 
     encoder_dataset = datasets['encoder']
     decoder_dataset = datasets['decoder']
     classifier_dataset = datasets.get('classifier')
 
     metrics = ['accuracy']
-    optimizer = optimizers.Adam(decay=decay)
+    optimizer = optimizers.RMSprop(lr=learning_rate, decay=decay)
     classifier_loss = 'categorical_crossentropy'
 
     # HACK: Keras Bug https://github.com/fchollet/keras/issues/5221
@@ -81,7 +82,9 @@ def build_models(datasets, **params):
                 T_a, T_b = texture(y_true), texture(y_pred)
                 p_loss = K.mean(K.abs(T_a[0] - T_b[0]))
                 for a, b in zip(T_a, T_b)[1:]:
-                    p_loss += K.mean(K.abs(a - b))
+                    G_a = K.mean(K.mean(a, axis=1), axis=1)
+                    G_b = K.mean(K.mean(b, axis=1), axis=1)
+                    p_loss += K.mean(K.abs(G_a - G_b))
                 return p_loss
 
             transcoder_loss = lambda x, y: alpha * losses.mean_absolute_error(x, y) + (1 - alpha) * perceptual_loss(x, y)

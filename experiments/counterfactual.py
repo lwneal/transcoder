@@ -11,6 +11,7 @@ Options:
     --classifier=<n>         Name of the classifier model [default: mlp_2a]
     --epochs=<n>             Number of epochs [default: 100]
     --decay=<n>              Training rate decay [default: .0001]
+    --learning-rate=<n>      Initial training rate [default: .001]
     --gan-weight=<n>         GAN training per autoencoder training [default: 3.0]
     --perceptual-layers=<n>  Perceptual loss depth [default: 3]
     --img-width=<n>          Width of images through transcoder [default: 32]
@@ -38,6 +39,7 @@ def counterfactual():
     classifier_model = arguments['--classifier']
     epochs = int(arguments['--epochs'])
     decay = float(arguments['--decay'])
+    learning_rate = float(arguments['--learning-rate'])
     gan_weight = float(arguments['--gan-weight'])
     perceptual_layers = int(arguments['--perceptual-layers'])
     img_width = int(arguments['--img-width'])
@@ -83,6 +85,7 @@ def counterfactual():
     params['img_width_encoder'] = img_width
     params['img_width_decoder'] = img_width
     params['epochs'] = epochs
+    params['learning_rate'] = learning_rate
     params['decay'] = decay
     params['perceptual_loss_layers'] = perceptual_layers
     params['batches_per_epoch'] = 200

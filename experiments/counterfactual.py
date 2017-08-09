@@ -107,7 +107,8 @@ def counterfactual():
     train_params['decoder_input_filename'] = train_dataset
     train_params['classifier_input_filename'] = train_dataset
     train_params['mode'] = 'train'
-    transcoder.main(**train_params)
+    if train_params['epochs'] > 0:
+        transcoder.main(**train_params)
 
     # Evaluate the classifier
     eval_params = params.copy()
@@ -118,7 +119,6 @@ def counterfactual():
     eval_params['enable_discriminator'] = False
     eval_params['stdout_filename'] = 'stdout_eval_{}.txt'.format(timestamp)
     eval_params['mode'] = 'evaluate'
-    eval_params['decoder_weights'] = 'classifier_{}.h5'.format(decoder_model)
     transcoder.main(**eval_params)
 
     # Generate a "dream" video

@@ -44,9 +44,9 @@ def counterfactual():
     perceptual_layers = int(arguments['--perceptual-layers'])
     img_width = int(arguments['--img-width'])
     try:
-        timestamp = int(arguments['--timestamp'])
+        experiment_timestamp = int(arguments['--timestamp'])
     except ValueError:
-        timestamp = int(time.time())
+        experiment_timestamp = int(time.time())
 
     experiment_name = '-'.join(str(x) for x in [
         dataset,
@@ -54,8 +54,10 @@ def counterfactual():
         encoder_model,
         decoder_model,
         classifier_model,
-        timestamp,
+        experiment_timestamp,
     ])
+
+    timestamp = int(time.time())
 
     #Download the dataset if it doesn't already exist
     # TODO: security lol

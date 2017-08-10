@@ -130,7 +130,9 @@ def demonstrate(models, datasets, **params):
     X_list = encoder_dataset.empty_batch(**params)
     Y_list = decoder_dataset.empty_batch(**params)
     for i in range(batch_size):
+        np.random.seed(123)
         idx = np.random.randint(encoder_dataset.count())
+        np.random.seed()
         x_list = encoder_dataset.get_example(idx, **params)
         y_list = decoder_dataset.get_example(idx, **params)
         for X, x in zip(X_list, x_list):
@@ -151,7 +153,6 @@ def demonstrate(models, datasets, **params):
     if enable_discriminator:
         hallucinate(models, datasets, **params)
 
-X_decoder = None
 def hallucinate(models, datasets, dist='gaussian', **params):
     global X_decoder
     batch_size = params['batch_size']
@@ -161,8 +162,9 @@ def hallucinate(models, datasets, dist='gaussian', **params):
 
     decoder_dataset = datasets['decoder']
 
-    if X_decoder is None:
-        X_decoder = np.random.normal(0, 1, size=(batch_size, thought_vector_size))
+    np.random.seed(123)
+    X_decoder = np.random.normal(0, 1, size=(batch_size, thought_vector_size))
+    np.random.seed()
     X_generated = decoder.predict(X_decoder)
     print("Hallucinated outputs:")
     for j in range(len(X_generated)):

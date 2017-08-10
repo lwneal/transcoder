@@ -27,9 +27,9 @@ def build_models(datasets, **params):
     classifier_dataset = datasets.get('classifier')
 
     metrics = ['accuracy']
-    disc_learning_rate = 10.0 * learning_rate
+    disc_learning_rate = learning_rate
     disc_optimizer = optimizers.Adam(lr=disc_learning_rate, decay=decay)
-    optimizer = optimizers.RMSprop(lr=learning_rate, decay=decay)
+    optimizer = optimizers.Adam(lr=learning_rate, decay=decay)
     classifier_loss = 'categorical_crossentropy'
 
     # HACK: Keras Bug https://github.com/fchollet/keras/issues/5221

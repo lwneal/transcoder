@@ -2,7 +2,6 @@ import sys
 import time
 import numpy as np
 
-
 def train_generator(encoder_dataset, decoder_dataset, **params):
     # Datasets return a list of arrays
     # Keras requires either a list of arrays or a single array
@@ -68,7 +67,6 @@ def train(models, datasets, **params):
     training_start_time = time.time()
     t_avg_loss = 0
     t_avg_accuracy = 0
-    r_avg_loss = 0
     d_avg_loss = 0
     g_avg_loss = 0
     c_avg_loss = 0
@@ -76,10 +74,9 @@ def train(models, datasets, **params):
 
     print("Training...")
     for i in range(0, batches_per_epoch, batches_per_iter):
-        sys.stderr.write("\r[K\r{}/{} bs {}, DG_loss {:.3f}, DR_loss {:.3f} G_loss {:.3f} T_loss {:.3f} T_acc {:.3f} C_loss {:.3f} C_acc {:.3f}".format(
+        sys.stderr.write("\r[K\r{}/{} bs {}, D_loss {:.3f}, G_loss {:.3f} T_loss {:.3f} T_acc {:.3f} C_loss {:.3f} C_acc {:.3f}".format(
             i + 1, batches_per_epoch, batch_size,
             d_avg_loss,
-            r_avg_loss,
             g_avg_loss,
             t_avg_loss,
             t_avg_accuracy,
@@ -114,14 +111,22 @@ def train(models, datasets, **params):
                 target = np.concatenate([Y_disc, -Y_disc], axis=0)
                 loss, accuracy = discriminator.train_on_batch(batch, target)
                 d_avg_loss = .95 * d_avg_loss + .05 * loss
+                print(loss)
+
+                if loss < -.5:
+                    break
 
                 # WGAN: Clip discriminator weights
                 start_time = time.time()
                 for layer in discriminator.layers:
                     weights = layer.get_weights()
-                    weights = [np.clip(w, -.01, .01) for w in weights]
+                    clip_param = .1
+                    weights = [np.clip(w, -clip_param, clip_param) for w in weights]
+                    # Hack: add noise
+                    weights = [w + np.random.normal(0, .0001, size=w.shape) for w in weights]
                     layer.set_weights(weights)
                 clipping_time += time.time() - start_time
+
 
         if enable_classifier:
             X, Y = next(classifier_gen)

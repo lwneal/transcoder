@@ -50,6 +50,8 @@ def build_models(datasets, **params):
         discriminator._make_train_function()
 
         cgan = models.Model(inputs=decoder.inputs, outputs=discriminator(decoder.output))
+        # The cgan model should train the generator, but not the discriminator
+        cgan.layers[-1].trainable = False
         cgan.compile(loss=wgan_loss, optimizer=optimizer, metrics=metrics)
         cgan._make_train_function()
     else:

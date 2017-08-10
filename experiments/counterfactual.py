@@ -29,9 +29,9 @@ from main import get_params
 from util import pushd
 
 
-def save_params(params, filename=None):
-    if not filename:
-        filename = os.path.expanduser('~/results/{}'.format(filename))
+def save_params(experiment_name, params):
+    filename = os.path.expanduser('~/results/{}/params.json'.format(experiment_name))
+    print("Saving {} parameters to {}".format(len(params), filename))
     with open(filename, 'w') as fp:
         fp.write(json.dumps(params, indent=2))
 
@@ -64,8 +64,6 @@ def counterfactual():
         classifier_model,
         experiment_timestamp,
     ])
-
-    save_params(arguments)
 
     timestamp = int(time.time())
 
@@ -109,6 +107,10 @@ def counterfactual():
     params['classifier_weights'] = 'classifier_{}.h5'.format(classifier_model)
     params['discriminator_weights'] = 'discriminator_{}.h5'.format(encoder_model)
     params['training_iters_per_gan'] = gan_weight
+
+    # TODO: security lol
+    os.system('mkdir ~/results/{}'.format(experiment_name))
+    save_params(experiment_name, params)
 
     # First train a manifold
     train_params = params.copy()

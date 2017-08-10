@@ -91,15 +91,7 @@ def train(models, datasets, **params):
         if enable_transcoder:
             for _ in range(batches_per_iter):
                 X, Y = next(training_gen)
-                if freeze_encoder:
-                    for layer in encoder.layers:
-                        layer.trainable = False
-                if freeze_decoder:
-                    for layer in decoder.layers:
-                        layer.trainable = False
                 loss, accuracy = transcoder.train_on_batch(X, Y)
-                for layer in encoder.layers + decoder.layers:
-                    layer.trainable = True
                 t_avg_loss = .95 * t_avg_loss + .05 * loss
                 t_avg_accuracy = .95 * t_avg_accuracy + .05 * accuracy
 
@@ -118,15 +110,10 @@ def train(models, datasets, **params):
                 X_real = Y_decoder
                 Y_disc = np.ones(batch_size)
 
-                for layer in decoder.layers:
-                    layer.trainable = False
-                loss, accuracy = discriminator.train_on_batch(X_real, -Y_disc)
-                r_avg_loss = .95 * r_avg_loss + .05 * loss
-
-                loss, accuracy = discriminator.train_on_batch(X_generated, Y_disc)
+                batch = np.concatenate([X_generated, X_real], axis=0)
+                target = np.concatenate([Y_disc, -Y_disc], axis=0)
+                loss, accuracy = discriminator.train_on_batch(batch, target)
                 d_avg_loss = .95 * d_avg_loss + .05 * loss
-                for layer in decoder.layers:
-                    layer.trainable = True
 
                 # WGAN: Clip discriminator weights
                 start_time = time.time()
@@ -138,27 +125,15 @@ def train(models, datasets, **params):
 
         if enable_classifier:
             X, Y = next(classifier_gen)
-            if freeze_encoder:
-                for layer in encoder.layers:
-                    layer.trainable = False
-            if freeze_decoder:
-                for layer in decoder.layers:
-                    layer.trainable = False
             loss, accuracy = transclassifier.train_on_batch(X, Y)
-            for layer in encoder.layers + decoder.layers:
-                layer.trainable = True
             c_avg_loss = .95 * c_avg_loss + .05 * loss
             c_avg_accuracy = .95 * c_avg_accuracy + .05 * accuracy
 
         if enable_discriminator:
             # Update generator based on a random thought vector
             X_encoder = np.random.uniform(-1, 1, size=(batch_size, thought_vector_size))
-            for layer in discriminator.layers:
-                layer.trainable = False
             loss, accuracy = cgan.train_on_batch(X_encoder, -Y_disc)
             g_avg_loss = .95 * g_avg_loss + .05 * loss
-            for layer in discriminator.layers:
-                layer.trainable = True
 
     sys.stderr.write('\n')
     print("Trained for {:.2f} s (spent {:.2f} s clipping)".format(time.time() - training_start_time, clipping_time))

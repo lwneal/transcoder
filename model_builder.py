@@ -27,6 +27,8 @@ def build_models(datasets, **params):
     classifier_dataset = datasets.get('classifier')
 
     metrics = ['accuracy']
+    disc_learning_rate = 10.0 * learning_rate
+    disc_optimizer = optimizers.Adam(lr=disc_learning_rate, decay=decay)
     optimizer = optimizers.RMSprop(lr=learning_rate, decay=decay)
     classifier_loss = 'categorical_crossentropy'
 
@@ -46,7 +48,7 @@ def build_models(datasets, **params):
     if enable_discriminator:
         build_discriminator = getattr(model_definitions, discriminator_model)
         discriminator = build_discriminator(is_discriminator=True, dataset=decoder_dataset, **params)
-        discriminator.compile(loss=wgan_loss, optimizer=optimizer, metrics=metrics)
+        discriminator.compile(loss=wgan_loss, optimizer=disc_optimizer, metrics=metrics)
         discriminator._make_train_function()
 
         cgan = models.Model(inputs=decoder.inputs, outputs=discriminator(decoder.output))

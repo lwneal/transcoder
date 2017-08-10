@@ -151,8 +151,9 @@ def demonstrate(models, datasets, **params):
     if enable_discriminator:
         hallucinate(models, datasets, **params)
 
-
+X_decoder = None
 def hallucinate(models, datasets, dist='gaussian', **params):
+    global X_decoder
     batch_size = params['batch_size']
     thought_vector_size = params['thought_vector_size']
 
@@ -160,7 +161,8 @@ def hallucinate(models, datasets, dist='gaussian', **params):
 
     decoder_dataset = datasets['decoder']
 
-    X_decoder = np.random.normal(0, 1, size=(batch_size, thought_vector_size))
+    if X_decoder is None:
+        X_decoder = np.random.normal(0, 1, size=(batch_size, thought_vector_size))
     X_generated = decoder.predict(X_decoder)
     print("Hallucinated outputs:")
     for j in range(len(X_generated)):

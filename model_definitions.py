@@ -123,14 +123,12 @@ def stridecnn_11a(is_discriminator=False, **params):
     input_img = layers.Input(shape=input_shape)
 
     x = layers.Conv2D(64, (3,3), padding='same')(input_img)
-    if not is_discriminator:
-        x = layers.BatchNormalization()(x)
+    x = layers.BatchNormalization()(x)
     x = layers.LeakyReLU()(x)
     x = layers.Conv2D(128, (3,3), strides=(2,2), padding='same')(x)
 
     x = layers.Conv2D(128, (3,3), padding='same')(x)
-    if not is_discriminator:
-        x = layers.BatchNormalization()(x)
+    x = layers.BatchNormalization()(x)
     x = layers.LeakyReLU()(x)
 
     x = layers.Conv2D(384, (3,3), padding='same')(x)
@@ -140,16 +138,14 @@ def stridecnn_11a(is_discriminator=False, **params):
     x = layers.LeakyReLU()(x)
 
     x = layers.Conv2D(256, (3,3), padding='same')(x)
-    if not is_discriminator:
-        x = layers.BatchNormalization()(x)
+    x = layers.BatchNormalization()(x)
     x = layers.LeakyReLU()(x)
 
     x = layers.Conv2D(256, (3,3), strides=(2,2), padding='same')(x)
     x = layers.LeakyReLU()(x)
 
     x = layers.Conv2D(384, (3,3), padding='same')(x)
-    if not is_discriminator:
-        x = layers.BatchNormalization()(x)
+    x = layers.BatchNormalization()(x)
     x = layers.LeakyReLU()(x)
 
     x = layers.Conv2D(384, (3,3), strides=(2,2), padding='same')(x)
@@ -157,8 +153,7 @@ def stridecnn_11a(is_discriminator=False, **params):
 
 
     x = layers.Conv2D(384, (3,3), padding='same')(x)
-    if not is_discriminator:
-        x = layers.BatchNormalization()(x)
+    x = layers.BatchNormalization()(x)
     x = layers.LeakyReLU()(x)
 
     x = layers.Conv2D(512, (3,3), strides=(2,2), padding='same')(x)

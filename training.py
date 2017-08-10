@@ -111,9 +111,8 @@ def train(models, datasets, **params):
                 target = np.concatenate([Y_disc, -Y_disc], axis=0)
                 loss, accuracy = discriminator.train_on_batch(batch, target)
                 d_avg_loss = .95 * d_avg_loss + .05 * loss
-                print(loss)
 
-                if loss < -.5:
+                if d_avg_loss < -.5:
                     break
 
                 # WGAN: Clip discriminator weights

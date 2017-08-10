@@ -129,16 +129,16 @@ def demonstrate(models, datasets, **params):
 
     X_list = encoder_dataset.empty_batch(**params)
     Y_list = decoder_dataset.empty_batch(**params)
+    np.random.seed(123)
     for i in range(batch_size):
-        np.random.seed(123)
         idx = np.random.randint(encoder_dataset.count())
-        np.random.seed()
         x_list = encoder_dataset.get_example(idx, **params)
         y_list = decoder_dataset.get_example(idx, **params)
         for X, x in zip(X_list, x_list):
             X[i] = x
         for Y, y in zip(Y_list, y_list):
             Y[i] = y
+    np.random.seed()
     X = zip(*X_list)
     Y_gen = transcoder.predict(X_list)
     Y_true = Y_list[0]

@@ -27,8 +27,8 @@ def build_models(datasets, **params):
     classifier_dataset = datasets.get('classifier')
 
     metrics = ['accuracy']
-    disc_learning_rate = learning_rate
-    disc_optimizer = optimizers.Adam(lr=disc_learning_rate, decay=decay)
+    disc_optimizer = optimizers.Adam(lr=learning_rate * 2, decay=decay)
+    gen_optimizer = optimizers.Adam(lr=learning_rate * 10, decay=decay)
     optimizer = optimizers.Adam(lr=learning_rate, decay=decay)
     classifier_loss = 'categorical_crossentropy'
 
@@ -54,7 +54,7 @@ def build_models(datasets, **params):
         cgan = models.Model(inputs=decoder.inputs, outputs=discriminator(decoder.output))
         # The cgan model should train the generator, but not the discriminator
         cgan.layers[-1].trainable = False
-        cgan.compile(loss=wgan_loss, optimizer=optimizer, metrics=metrics)
+        cgan.compile(loss=wgan_loss, optimizer=gen_optimizer, metrics=metrics)
         cgan._make_train_function()
     else:
         discriminator = models.Sequential()
@@ -72,10 +72,10 @@ def build_models(datasets, **params):
 
     if decoder_datatype == 'img':
         if enable_perceptual_loss:
-            P = applications.mobilenet.MobileNet(include_top=False)
+            P = applications.vgg16.VGG16(include_top=False)
             perceptual_outputs = []
             for layer in P.layers:
-                if layer.name.startswith('conv') and len(perceptual_outputs) < perceptual_layers:
+                if 'conv' in layer.name and len(perceptual_outputs) < perceptual_layers:
                     perceptual_outputs.append(layer.output)
             print("Perceptual Loss: Using {} convolutional layers".format(len(perceptual_outputs)))
 

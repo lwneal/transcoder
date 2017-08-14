@@ -29,7 +29,8 @@ def build_models(datasets, **params):
     metrics = ['accuracy']
     disc_optimizer = optimizers.Adam(lr=learning_rate * 2, decay=decay)
     gen_optimizer = optimizers.Adam(lr=learning_rate * 10, decay=decay)
-    optimizer = optimizers.Adam(lr=learning_rate, decay=decay)
+    classifier_optimizer = optimizers.Adam(lr=learning_rate, decay=decay)
+    autoenc_optimizer = optimizers.Adam(lr=learning_rate, decay=decay)
     classifier_loss = 'categorical_crossentropy'
 
     # HACK: Keras Bug https://github.com/fchollet/keras/issues/5221
@@ -65,7 +66,7 @@ def build_models(datasets, **params):
         classifier = build_classifier(dataset=classifier_dataset, **params)
 
         transclassifier = models.Model(inputs=encoder.inputs, outputs=classifier(encoder.output))
-        transclassifier.compile(loss=classifier_loss, optimizer=optimizer, metrics=metrics)
+        transclassifier.compile(loss=classifier_loss, optimizer=classifier_optimizer, metrics=metrics)
     else:
         classifier = models.Sequential()
         transclassifier = models.Sequential()
@@ -98,7 +99,7 @@ def build_models(datasets, **params):
         transcoder_loss = losses.categorical_crossentropy
 
     transcoder = models.Model(inputs=encoder.inputs, outputs=decoder(encoder.output))
-    transcoder.compile(loss=transcoder_loss, optimizer=optimizer, metrics=metrics)
+    transcoder.compile(loss=transcoder_loss, optimizer=autoenc_optimizer, metrics=metrics)
     transcoder._make_train_function()
 
     print("\nEncoder")

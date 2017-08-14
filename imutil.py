@@ -68,6 +68,7 @@ def show_figure(**kwargs):
 # Numpy arrays can consist of multiple images, which will be collated
 def show(
         data,
+        verbose=False,
         display=True,
         save=True,
         filename=None,
@@ -138,7 +139,7 @@ def show(
                 if tmux_hack:
                     print('\033[4B')
                 break
-    else:
+    elif verbose:
         print("Saved image size {} as {}".format(pixels.shape, filename))
 
     # Output JPG files can be collected into a video with ffmpeg -i *.jpg

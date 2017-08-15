@@ -72,6 +72,8 @@ def train(models, datasets, **params):
     c_avg_loss = 0
     c_avg_accuracy = 0
 
+    check_weights(models)
+
     print("Training...")
     for i in range(0, batches_per_epoch, batches_per_iter):
         sys.stderr.write("\r[K\r{}/{} bs {}, D_loss {:.3f}, G_loss {:.3f} T_loss {:.3f} T_acc {:.3f} C_loss {:.3f} C_acc {:.3f}".format(
@@ -133,3 +135,19 @@ def train(models, datasets, **params):
     sys.stderr.write('\n')
     print("Trained for {:.2f} s (spent {:.2f} s clipping)".format(time.time() - training_start_time, clipping_time))
     sys.stderr.write('\n')
+
+
+def check_weights(models):
+    print("Model Weights:")
+    danger_zone = 10.0
+    for name in ['encoder', 'decoder', 'discriminator', 'classifier']:
+        model = models[name]
+        weights = model.get_weights()
+        min_weight = min([w.min() for w in weights])
+        max_weight = max([w.max() for w in weights])
+        print("{:32} \tmin {:.04f} \tmax {:.04f}".format(name, min_weight, max_weight))
+        if max_weight > danger_zone:
+            print("Warning: Weight for model {} above limit {}".format(name, danger_zone))
+            for i, layer in enumerate(weights):
+                print("{:4}\t shape {:32} \tmin {:.04f} \tmax {:.04f}".format(
+                    i, layer.shape, layer.min(), layer.max()))

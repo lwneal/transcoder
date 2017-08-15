@@ -139,14 +139,14 @@ def train(models, datasets, **params):
 
 def check_weights(models):
     print("Model Weights:")
-    danger_zone = 10.0
+    danger_zone = 1000.0
     for name in ['encoder', 'decoder', 'discriminator', 'classifier']:
         model = models[name]
         weights = model.get_weights()
         min_weight = min([w.min() for w in weights])
         max_weight = max([w.max() for w in weights])
         print("{:32} \tmin {:.04f} \tmax {:.04f}".format(name, min_weight, max_weight))
-        if max_weight > danger_zone:
+        if max_weight > danger_zone or min_weight < -danger_zone:
             print("Warning: Weight for model {} above limit {}".format(name, danger_zone))
             for i, layer in enumerate(weights):
                 print("{:4}\t shape {:32} \tmin {:.04f} \tmax {:.04f}".format(

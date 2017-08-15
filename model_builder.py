@@ -53,8 +53,8 @@ def build_models(datasets, **params):
     # Discriminator beta from Gulrajani et al
     disc_optimizer = optimizers.Adam(beta_1=0.5, beta_2=0.9, lr=learning_rate, decay=decay)
     gen_optimizer = optimizers.Adam(beta_1=0.5, beta_2=0.9, lr=learning_rate, decay=decay)
-    classifier_optimizer = optimizers.Adam(lr=learning_rate, decay=decay)
-    autoenc_optimizer = optimizers.Adam(lr=learning_rate, decay=decay)
+    classifier_optimizer = optimizers.Adam(beta_1=.5, beta_2=.9, lr=learning_rate * .1, decay=decay)
+    autoenc_optimizer = optimizers.Adam(beta_1=.5, beta_2=.9, lr=learning_rate * .01, decay=decay)
     classifier_loss = 'categorical_crossentropy'
 
     # HACK: Keras Bug https://github.com/fchollet/keras/issues/5221

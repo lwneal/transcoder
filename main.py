@@ -52,7 +52,6 @@ Options:
       --video-filename=<fn>             Output video filename for dream mode [default: output.mjpeg]
       --dream-fps=<n>                   Integer, number of frames between dream examples [default: 90]
       --dream-examples=<n>              Integer, number of examples to interpolate [default: 10]
-      --vocabulary-filename=<n>         Filename to draw vocabulary from, to match label indices in test/train folds [default: None]
 """
 import sys
 import os

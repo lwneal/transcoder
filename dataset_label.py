@@ -5,8 +5,11 @@ import model_labels
 from keras.utils import to_categorical
 
 class LabelDataset(object):
-    def __init__(self, input_filename=None, **params):
-        vocab_filename = params['vocabulary_filename']
+    def __init__(self, input_filename=None, is_encoder=False, **params):
+        if is_encoder:
+            vocab_filename = params['load_encoder_vocab']
+        else:
+            vocab_filename = params['load_decoder_vocab']
 
         lines = open(input_filename).readlines()
         self.idx_to_name = {}

@@ -94,37 +94,27 @@ def train(models, datasets, **params):
 
         if enable_discriminator:
             for _ in range(discriminator_iters):
-                # Get some real decoding targets
-                _, Y_decoder = next(training_gen)
-
                 # Think some random thoughts
                 X_decoder = np.random.normal(0, 1, size=(batch_size, thought_vector_size))
 
                 # Decode those random thoughts into hallucinations
                 X_generated = decoder.predict(X_decoder)
 
-                # Start with a batch of real ground truth targets
-                X_real = Y_decoder
+                # Get some real examples to contrast with the generated ones
+                _, X_real = next(training_gen)
                 Y_disc = np.ones(batch_size)
+                Y_dummy = np.zeros(batch_size)
 
-                batch = np.concatenate([X_generated, X_real], axis=0)
-                target = np.concatenate([Y_disc, -Y_disc], axis=0)
-                loss, accuracy = discriminator.train_on_batch(batch, target)
+                # Discriminator optimizes three loss functions:
+                # Wasserstein loss for batch of real inputs
+                # Wasserstein loss for batch of generated inputs
+                # Gradient penalty loss for random interpolation of real and generated inputs
+                disc_inputs = [X_real,  X_generated]
+                disc_targets = [Y_disc, -Y_disc, Y_dummy]
+
+                outputs = discriminator.train_on_batch(disc_inputs, disc_targets)
+                loss = outputs[0]
                 d_avg_loss = .95 * d_avg_loss + .05 * loss
-
-                if d_avg_loss < -.5:
-                    break
-
-                # WGAN: Clip discriminator weights
-                start_time = time.time()
-                for layer in discriminator.layers:
-                    weights = layer.get_weights()
-                    clip_param = .1
-                    weights = [np.clip(w, -clip_param, clip_param) for w in weights]
-                    # Hack: add noise
-                    weights = [w + np.random.normal(0, .0001, size=w.shape) for w in weights]
-                    layer.set_weights(weights)
-                clipping_time += time.time() - start_time
 
 
         if enable_classifier:
@@ -136,7 +126,8 @@ def train(models, datasets, **params):
         if enable_discriminator:
             # Update generator based on a random thought vector
             X_encoder = np.random.normal(size=(batch_size, thought_vector_size))
-            loss, accuracy = cgan.train_on_batch(X_encoder, -Y_disc)
+            Y_disc = np.ones(batch_size)
+            loss, accuracy = cgan.train_on_batch(X_encoder, Y_disc)
             g_avg_loss = .95 * g_avg_loss + .05 * loss
 
     sys.stderr.write('\n')

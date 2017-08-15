@@ -20,7 +20,7 @@ Options:
       --discriminator-model=<m>         Model name for discriminator (see models.py) [default: None]
       --classifier-model=<m>            Model name for classifier (see models.py) [default: None]
       --epochs=<epochs>                 Number of epochs to train [default: 2000].
-      --learning-rate=<v>               Global learning rate [default: .001]
+      --learning-rate=<v>               Global learning rate [default: .0001]
       --decay=<v>                       Global training decay rate [default: .0001]
       --batches-per-epoch=<b>           Number of batches per epoch [default: 1000].
       --batch-size=<size>               Batch size for training [default: 16]

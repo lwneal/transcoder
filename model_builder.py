@@ -53,8 +53,8 @@ def build_models(datasets, **params):
     # Discriminator beta from Gulrajani et al
     disc_optimizer = optimizers.Adam(beta_1=0.5, beta_2=0.9, lr=learning_rate, decay=decay)
     gen_optimizer = optimizers.Adam(beta_1=0.5, beta_2=0.9, lr=learning_rate, decay=decay)
-    classifier_optimizer = optimizers.Adam(beta_1=.5, beta_2=.9, lr=learning_rate * .1, decay=decay)
-    autoenc_optimizer = optimizers.Adam(beta_1=.5, beta_2=.9, lr=learning_rate * .01, decay=decay)
+    classifier_optimizer = optimizers.Adam(beta_1=.5, beta_2=.9, lr=learning_rate, decay=decay)
+    autoenc_optimizer = optimizers.Adam(beta_1=.5, beta_2=.9, lr=learning_rate, decay=decay)
     classifier_loss = 'categorical_crossentropy'
 
     # HACK: Keras Bug https://github.com/fchollet/keras/issues/5221
@@ -123,7 +123,7 @@ def build_models(datasets, **params):
 
     if decoder_datatype == 'img':
         if enable_perceptual_loss:
-            P = applications.vgg16.VGG16(include_top=False)
+            P = applications.inception_v3.InceptionV3(include_top=False)
             perceptual_outputs = []
             for layer in P.layers:
                 if 'conv' in layer.name and len(perceptual_outputs) < perceptual_layers:

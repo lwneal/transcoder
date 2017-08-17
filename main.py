@@ -21,11 +21,13 @@ Options:
       --classifier-model=<m>            Model name for classifier (see models.py) [default: None]
       --epochs=<epochs>                 Number of epochs to train [default: 2000].
       --learning-rate=<v>               Global learning rate [default: .0001]
+      --learning-rate-disc=<n>          Learning rate multiplier for the discriminator [default: 1.0]
+      --learning-rate-generator=<n>     Learning rate multiplier for the generator [default: 1.0]
+      --learning-rate-classifier=<n>    Learning rate multiplier for the classifier [default: 1.0]
       --decay=<v>                       Global training decay rate [default: .0001]
       --batches-per-epoch=<b>           Number of batches per epoch [default: 1000].
       --batch-size=<size>               Batch size for training [default: 16]
-      --training-iters-per-gan=<iters>  Iterations of normal training per iteration of GAN [default: 3.0]
-      --discriminator-iters=<n>         Iterations of D updates per G update [default: 3]
+      --discriminator-iters=<n>         Iterations of D updates per G update [default: 5]
       --max-words-encoder=<ewords>      Number of words of context (the N in N-gram) [default: 12]
       --max-words-decoder=<dwords>      Number of words of context (the N in N-gram) [default: 12]
       --thought-vector-size=<size>      Size of encoder output (decoder input) vector [default: 2048]

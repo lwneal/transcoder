@@ -43,7 +43,6 @@ def train(models, datasets, **params):
     thought_vector_size = params['thought_vector_size']
     enable_discriminator = params['enable_discriminator']
     enable_classifier = params['enable_classifier']
-    batches_per_iter = int(params['training_iters_per_gan'])
     freeze_encoder = params['freeze_encoder']
     freeze_decoder = params['freeze_decoder']
     enable_transcoder = not (freeze_encoder and freeze_decoder)
@@ -75,7 +74,8 @@ def train(models, datasets, **params):
     check_weights(models)
 
     print("Training...")
-    for i in range(0, batches_per_epoch, batches_per_iter):
+    for i in range(0, batches_per_epoch):
+        sys.stderr.write('\n')
         sys.stderr.write("\r[K\r{}/{} bs {}, D_loss {:.3f}, G_loss {:.3f} T_loss {:.3f} T_acc {:.3f} C_loss {:.3f} C_acc {:.3f}".format(
             i + 1, batches_per_epoch, batch_size,
             d_avg_loss,
@@ -85,14 +85,16 @@ def train(models, datasets, **params):
             c_avg_loss,
             c_avg_accuracy
         ))
+        sys.stderr.write('\n')
 
         # Train encoder and decoder on labeled X -> Y pairs
         if enable_transcoder:
-            for _ in range(batches_per_iter):
-                X, Y = next(training_gen)
-                loss, accuracy = transcoder.train_on_batch(X, Y)
-                t_avg_loss = .95 * t_avg_loss + .05 * loss
-                t_avg_accuracy = .95 * t_avg_accuracy + .05 * accuracy
+            X, Y = next(training_gen)
+            t_weights = transcoder.get_weights()
+            loss, accuracy = transcoder.train_on_batch(X, Y)
+            check_gradient(t_weights, transcoder.get_weights(), name='Transcoder')
+            t_avg_loss = .95 * t_avg_loss + .05 * loss
+            t_avg_accuracy = .95 * t_avg_accuracy + .05 * accuracy
 
         if enable_discriminator:
             for _ in range(discriminator_iters):
@@ -114,14 +116,19 @@ def train(models, datasets, **params):
                 disc_inputs = [X_real,  X_generated]
                 disc_targets = [Y_disc, -Y_disc, Y_dummy]
 
+                disc_weights = discriminator.get_weights()
                 outputs = discriminator.train_on_batch(disc_inputs, disc_targets)
+                check_gradient(disc_weights, discriminator.get_weights(), name='Discriminator')
                 loss = outputs[0]
                 d_avg_loss = .95 * d_avg_loss + .05 * loss
 
 
         if enable_classifier:
+            # Update the encoder and classifier
             X, Y = next(classifier_gen)
+            c_weights = transclassifier.get_weights()
             loss, accuracy = transclassifier.train_on_batch(X, Y)
+            check_gradient(c_weights, transclassifier.get_weights(), name='Classifier')
             c_avg_loss = .95 * c_avg_loss + .05 * loss
             c_avg_accuracy = .95 * c_avg_accuracy + .05 * accuracy
 
@@ -129,12 +136,31 @@ def train(models, datasets, **params):
             # Update generator based on a random thought vector
             X_encoder = np.random.normal(size=(batch_size, thought_vector_size))
             Y_disc = np.ones(batch_size)
+
+            decoder_weights_before = decoder.get_weights()
             loss, accuracy = cgan.train_on_batch(X_encoder, Y_disc)
+            check_gradient(decoder_weights_before, decoder.get_weights(), name='Decoder')
             g_avg_loss = .95 * g_avg_loss + .05 * loss
 
     sys.stderr.write('\n')
     print("Trained for {:.2f} s (spent {:.2f} s clipping)".format(time.time() - training_start_time, clipping_time))
     sys.stderr.write('\n')
+
+
+def check_gradient(old_weights, new_weights, name):
+    #print("Weight Update for {}".format(name))
+    differences = [new - old for new, old in zip(new_weights, old_weights)]
+    minnest = 0
+    maxest = 0
+    for w, diff in zip(new_weights, differences):
+        d_min = diff.min()
+        d_max = diff.max()
+        minnest = min(minnest, d_min)
+        maxest = max(maxest, d_max)
+        #print("\t{} min {:.5f}  max {:.5f}  mean {:.5f}".format(w.shape, d_min, d_max, abs(diff).mean()))
+        if np.isnan(d_min):
+            raise ValueError("NaN in model {} layer {}".format(name, w.shape))
+    print("{} min {:.4f} max {:.4f}".format(name, minnest, maxest))
 
 
 def check_weights(models):

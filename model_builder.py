@@ -45,16 +45,20 @@ def build_models(datasets, **params):
     learning_rate = params['learning_rate']
     batch_size = params['batch_size']
 
+    learning_rate_discriminator = params['learning_rate_disc']
+    learning_rate_generator = params['learning_rate_generator']
+    learning_rate_classifier = params['learning_rate_classifier']
+
     encoder_dataset = datasets['encoder']
     decoder_dataset = datasets['decoder']
     classifier_dataset = datasets.get('classifier')
 
     metrics = ['accuracy']
     # Discriminator beta from Gulrajani et al
-    disc_optimizer = optimizers.Adam(beta_1=0.5, beta_2=0.9, lr=learning_rate, decay=decay)
-    gen_optimizer = optimizers.Adam(beta_1=0.5, beta_2=0.9, lr=learning_rate, decay=decay)
-    classifier_optimizer = optimizers.Adam(beta_1=.5, beta_2=.9, lr=learning_rate, decay=decay)
-    autoenc_optimizer = optimizers.Adam(beta_1=.5, beta_2=.9, lr=learning_rate, decay=decay)
+    disc_optimizer = optimizers.Adam(beta_1=0.5, beta_2=0.9, lr=learning_rate * learning_rate_discriminator, decay=decay, clipnorm=0.1)
+    gen_optimizer = optimizers.Adam(beta_1=0.5, beta_2=0.9, lr=learning_rate * learning_rate_generator, decay=decay, clipnorm=.1)
+    classifier_optimizer = optimizers.Adam(beta_1=.5, beta_2=.9, lr=learning_rate * learning_rate_classifier, decay=decay, clipnorm=.1)
+    autoenc_optimizer = optimizers.Adam(beta_1=.5, beta_2=.9, lr=learning_rate, decay=decay, clipnorm=.1)
     classifier_loss = 'categorical_crossentropy'
 
     # HACK: Keras Bug https://github.com/fchollet/keras/issues/5221
@@ -83,13 +87,14 @@ def build_models(datasets, **params):
         disc_output_interpolated = discriminator(interpolated)
 
         def gradient_penalty_loss(y_true, y_pred):
-            return 10.0 * gradient_penalty(y_true, y_pred, wrt=interpolated)
+            return gradient_penalty(y_true, y_pred, wrt=interpolated)
 
         # The discriminator_wrapper uses the discriminator three times: real, fake, interpolated
         for layer in discriminator.layers:
             layer.trainable = True
         for layer in decoder.layers:
             layer.trainable = False
+        decoder.trainable = False
         discriminator_wrapper = models.Model(
                 inputs=[disc_input_real, disc_input_fake],
                 outputs=[disc_output_real, disc_output_fake, disc_output_interpolated])
@@ -100,8 +105,10 @@ def build_models(datasets, **params):
         # The generator_updater runs the decoder and discriminator (but only updates the decoder)
         for layer in discriminator.layers:
             layer.trainable = False
+        discriminator.trainable = False
         for layer in decoder.layers:
             layer.trainable = True
+        decoder.trainable = True
         generator_updater = models.Model(inputs=decoder.inputs, outputs=discriminator(decoder.output))
         generator_updater.compile(loss=wasserstein_loss, optimizer=gen_optimizer, metrics=metrics)
         generator_updater._make_train_function()

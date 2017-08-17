@@ -98,7 +98,7 @@ def counterfactual():
     params['learning_rate'] = learning_rate
     params['decay'] = decay
     params['perceptual_loss_layers'] = perceptual_layers
-    params['batches_per_epoch'] = 20
+    params['batches_per_epoch'] = 100
     params['enable_classifier'] = True
     params['enable_discriminator'] = True
     params['enable_perceptual_loss'] = True

@@ -122,7 +122,7 @@ def build_models(datasets, **params):
         transclassifier = models.Sequential()
 
     if decoder_datatype == 'img':
-        if enable_perceptual_loss:
+        if enable_perceptual_loss and perceptual_layers > 0:
             P = applications.inception_v3.InceptionV3(include_top=False)
             perceptual_outputs = []
             for layer in P.layers:

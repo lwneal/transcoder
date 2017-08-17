@@ -83,7 +83,7 @@ def show(
     elif type(data) == Image.Image:
         pixels = np.array(data)
     else:
-        pixels = decode_jpg(data)
+        pixels = decode_jpg(data, resize_to=resize_to)
 
     # Reduce lists of images to a single image; expand monochrome to RGB
     if pixels.shape[-1] > 3:

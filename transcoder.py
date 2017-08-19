@@ -119,8 +119,8 @@ def demonstrate(models, datasets, **params):
     if enable_discriminator:
         hallucinate(models, datasets, **params)
 
+
 def hallucinate(models, datasets, dist='gaussian', **params):
-    global X_decoder
     batch_size = params['batch_size']
     thought_vector_size = params['thought_vector_size']
 
@@ -157,8 +157,6 @@ def dream(models, datasets, **params):
     for _ in range(dream_examples):
         input_start = encoder_dataset.get_example(start_idx, **params)
         input_end = encoder_dataset.get_example(end_idx, **params)
-        #encoder_dataset.unformat_input(input_start)
-        #encoder_dataset.unformat_input(input_end)
 
         # Use the encoder to get the latent vector for each example
         X_list = encoder_dataset.empty_batch(**params)
@@ -177,7 +175,8 @@ def dream(models, datasets, **params):
             c = float(i) / dream_frames_per_example
             v = c * latent_end + (1 - c) * latent_start
             img = decoder.predict(np.expand_dims(v, axis=0))[0]
-            #decoder_dataset.unformat_output(img)
+            # Uncomment for slow/verbose logging
+            # decoder_dataset.unformat_output(img)
             caption = '{} {}'.format(start_idx, i)
             imutil.show(img, video_filename=video_filename, resize_to=(512,512), display=(i % 100 == 0), caption=caption)
         print("Done")

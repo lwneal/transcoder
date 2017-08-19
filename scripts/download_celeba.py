@@ -106,6 +106,7 @@ def save_image_dataset(images, attributes, fold_name=None):
     for filename, attrs in zip(images, attributes):
         line = attrs
         line['filename'] = filename
+        line['label'] = attrs['Male']  # Default classification: male/female
         fp.write(json.dumps(line) + '\n')
     fp.close()
 

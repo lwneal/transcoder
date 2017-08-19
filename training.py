@@ -37,7 +37,20 @@ def get_batch(encoder_dataset, decoder_dataset, base_idx=None, **params):
     return X_list, Y_list
 
 
+t_avg_loss = 0
+t_avg_accuracy = 0
+d_avg_loss = 0
+g_avg_loss = 0
+c_avg_loss = 0
+c_avg_accuracy = 0
 def train(models, datasets, **params):
+    global t_avg_loss
+    global t_avg_accuracy
+    global d_avg_loss
+    global g_avg_loss
+    global c_avg_loss
+    global c_avg_accuracy
+
     batch_size = params['batch_size']
     batches_per_epoch = params['batches_per_epoch']
     thought_vector_size = params['thought_vector_size']
@@ -64,18 +77,11 @@ def train(models, datasets, **params):
         classifier_gen = train_generator(encoder_dataset, classifier_dataset, **params)
     clipping_time = 0
     training_start_time = time.time()
-    t_avg_loss = 0
-    t_avg_accuracy = 0
-    d_avg_loss = 0
-    g_avg_loss = 0
-    c_avg_loss = 0
-    c_avg_accuracy = 0
 
     check_weights(models)
 
     print("Training...")
     for i in range(0, batches_per_epoch):
-        sys.stderr.write('\n')
         sys.stderr.write("\r[K\r{}/{} bs {}, D_loss {:.3f}, G_loss {:.3f} T_loss {:.3f} T_acc {:.3f} C_loss {:.3f} C_acc {:.3f}".format(
             i + 1, batches_per_epoch, batch_size,
             d_avg_loss,
@@ -85,14 +91,11 @@ def train(models, datasets, **params):
             c_avg_loss,
             c_avg_accuracy
         ))
-        sys.stderr.write('\n')
 
         # Train encoder and decoder on labeled X -> Y pairs
         if enable_transcoder:
             X, Y = next(training_gen)
-            t_weights = transcoder.get_weights()
             loss, accuracy = transcoder.train_on_batch(X, Y)
-            check_gradient(t_weights, transcoder.get_weights(), name='Transcoder')
             t_avg_loss = .95 * t_avg_loss + .05 * loss
             t_avg_accuracy = .95 * t_avg_accuracy + .05 * accuracy
 
@@ -116,9 +119,7 @@ def train(models, datasets, **params):
                 disc_inputs = [X_real,  X_generated]
                 disc_targets = [Y_disc, -Y_disc, Y_dummy]
 
-                disc_weights = discriminator.get_weights()
                 outputs = discriminator.train_on_batch(disc_inputs, disc_targets)
-                check_gradient(disc_weights, discriminator.get_weights(), name='Discriminator')
                 loss = outputs[0]
                 d_avg_loss = .95 * d_avg_loss + .05 * loss
 
@@ -126,9 +127,7 @@ def train(models, datasets, **params):
         if enable_classifier:
             # Update the encoder and classifier
             X, Y = next(classifier_gen)
-            c_weights = transclassifier.get_weights()
             loss, accuracy = transclassifier.train_on_batch(X, Y)
-            check_gradient(c_weights, transclassifier.get_weights(), name='Classifier')
             c_avg_loss = .95 * c_avg_loss + .05 * loss
             c_avg_accuracy = .95 * c_avg_accuracy + .05 * accuracy
 
@@ -137,9 +136,7 @@ def train(models, datasets, **params):
             X_encoder = np.random.normal(size=(batch_size, thought_vector_size))
             Y_disc = np.ones(batch_size)
 
-            decoder_weights_before = decoder.get_weights()
             loss, accuracy = cgan.train_on_batch(X_encoder, Y_disc)
-            check_gradient(decoder_weights_before, decoder.get_weights(), name='Decoder')
             g_avg_loss = .95 * g_avg_loss + .05 * loss
 
     sys.stderr.write('\n')

@@ -177,3 +177,22 @@ def check_weights(models):
             for i, layer in enumerate(weights):
                 print("{:4}\t shape {:32} \tmin {:.04f} \tmax {:.04f}".format(
                     i, layer.shape, layer.min(), layer.max()))
+
+
+def check_latent_distribution(encoder, X_real):
+    # Aside: What is the distribution of E(X)? Is it Gaussian?
+    latent = encoder.predict(X_real)
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    plt.figsize = (30,30)
+    from imutil import show
+
+    import scipy
+    for i in range(10):
+        c = scipy.stats.pearsonr(latent[:,0], latent[:,i])
+        print("Correlation between axes {} and {} is {}".format(0, i, c))
+        plt.scatter(latent[:,0], latent[:,i])
+    plt.savefig('/tmp/foobar.png')
+    show('/tmp/foobar.png', resize_to=None)
+    import pdb; pdb.set_trace()

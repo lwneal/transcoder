@@ -84,17 +84,13 @@ def build_models(datasets, **params):
 
         disc_output_real = discriminator(disc_input_real)
         disc_output_fake = discriminator(disc_input_fake)
+        # TODO: Should we try interpolating in latent space?
         disc_output_interpolated = discriminator(interpolated)
 
         def gradient_penalty_loss(y_true, y_pred):
             return gradient_penalty(y_true, y_pred, wrt=interpolated)
 
         # The discriminator_wrapper uses the discriminator three times: real, fake, interpolated
-        for layer in discriminator.layers:
-            layer.trainable = True
-        for layer in decoder.layers:
-            layer.trainable = False
-        decoder.trainable = False
         discriminator_wrapper = models.Model(
                 inputs=[disc_input_real, disc_input_fake],
                 outputs=[disc_output_real, disc_output_fake, disc_output_interpolated])
@@ -103,13 +99,9 @@ def build_models(datasets, **params):
         discriminator_wrapper._make_train_function()
 
         # The generator_updater runs the decoder and discriminator (but only updates the decoder)
-        for layer in discriminator.layers:
-            layer.trainable = False
-        discriminator.trainable = False
-        for layer in decoder.layers:
-            layer.trainable = True
-        decoder.trainable = True
         generator_updater = models.Model(inputs=decoder.inputs, outputs=discriminator(decoder.output))
+        # TODO: Make sure that layer -1 is always the discriminator
+        generator_updater.layers[-1].trainable = False
         generator_updater.compile(loss=wasserstein_loss, optimizer=gen_optimizer, metrics=metrics)
         generator_updater._make_train_function()
     else:

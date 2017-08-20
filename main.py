@@ -27,7 +27,7 @@ Options:
       --decay=<v>                       Global training decay rate [default: .0001]
       --batches-per-epoch=<b>           Number of batches per epoch [default: 1000].
       --batch-size=<size>               Batch size for training [default: 16]
-      --discriminator-iters=<n>         Iterations of D updates per G update [default: 5]
+      --discriminator-iters=<n>         Iterations of D updates per G update [default: 8]
       --max-words-encoder=<ewords>      Number of words of context (the N in N-gram) [default: 12]
       --max-words-decoder=<dwords>      Number of words of context (the N in N-gram) [default: 12]
       --thought-vector-size=<size>      Size of encoder output (decoder input) vector [default: 2048]

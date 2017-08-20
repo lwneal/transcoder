@@ -139,17 +139,43 @@ def build_models(datasets, **params):
 
             texture = models.Model(inputs=P.inputs, outputs=perceptual_outputs)
 
+            # Weigh loss function based on pixel location, to emphasize more important pixels
+            # Penalizes pixel error near the center of the image, ignores the edges and corners
+            def center_weighted_mean(x):
+                import tensorflow as tf
+                # Input dims are: batch x height x width x channels
+                # Reduce the batch and the channels
+                x = K.mean(x, axis=-1)
+                x = K.mean(x, axis=0)
+
+                # Construct a 1D function that peaks in the middle
+                height = tf.shape(x)[1]
+                scale = tf.cast(height, tf.float32) / 2.
+                triangle = tf.minimum(tf.range(0, height), tf.range(height, 0, -1))
+                linear_weight = tf.cast(triangle, tf.float32) / scale
+
+                # Outer product of the function with itself to form a 2D mask
+                weight_vertical = tf.expand_dims(linear_weight, axis=0)
+                weight_horiz = tf.expand_dims(linear_weight, axis=1)
+                mask = tf.matmul(weight_horiz, weight_vertical)
+
+                # Reduce depth to 2D and pointwise multiply by the mask
+                masked = tf.multiply(mask, x)
+
+                # Reduce width/height for the final score
+                return K.mean(K.mean(masked))
+
             # A scalar value that measures the perceptual difference between two images wrt. a pretrained convnet
             def perceptual_loss(y_true, y_pred):
+                # Input dims are: batch x height x width x channels
+                p_loss = (1 - alpha) * center_weighted_mean(K.square(y_true - y_pred))
                 T_a, T_b = texture(y_true), texture(y_pred)
-                p_loss = K.mean(K.abs(T_a[0] - T_b[0]))
-                for a, b in zip(T_a, T_b)[1:]:
-                    G_a = K.mean(K.mean(a, axis=1), axis=1)
-                    G_b = K.mean(K.mean(b, axis=1), axis=1)
-                    p_loss += K.mean(K.abs(G_a - G_b))
+                for a, b in zip(T_a, T_b):
+                    layer_weight = alpha / len(T_a)
+                    p_loss += layer_weight * center_weighted_mean(K.square(a - b))
                 return p_loss
 
-            transcoder_loss = lambda x, y: alpha * losses.mean_absolute_error(x, y) + (1 - alpha) * perceptual_loss(x, y)
+            transcoder_loss = perceptual_loss
         else:
             transcoder_loss = losses.mean_absolute_error
     else:

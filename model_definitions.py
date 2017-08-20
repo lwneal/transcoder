@@ -245,6 +245,33 @@ def simpledeconv_a(**params):
     return models.Model(inputs=[x_input], outputs=x)
 
 
+def simpledeconv_b(**params):
+    thought_vector_size = params['thought_vector_size']
+    img_width = params['img_width_decoder']
+
+    x_input = layers.Input(shape=(thought_vector_size,))
+
+    # Expand vector from 1x1 to 4x4
+    N = 4
+    depth = 1024
+    x = layers.Reshape((1, 1, -1))(x_input)
+    x = layers.Conv2DTranspose(depth, (N, N), strides=(N, N), padding='same')(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.LeakyReLU()(x)
+
+    # Upsample to the desired width (powers of 2 only)
+    while N < img_width:
+        depth /= 2
+        N *= 2
+        x = layers.Conv2DTranspose(depth, (5,5), strides=(2,2), padding='same')(x)
+        x = layers.BatchNormalization()(x)
+        x = layers.LeakyReLU()(x)
+
+    x = layers.Conv2D(3, (3,3), padding='same')(x)
+    x = layers.Activation('sigmoid')(x)
+    return models.Model(inputs=[x_input], outputs=x)
+
+
 def csrnn_deconv_a(**params):
     thought_vector_size = params['thought_vector_size']
     img_width = params['img_width_decoder']

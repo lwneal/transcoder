@@ -72,7 +72,8 @@ def build_models(datasets, **params):
     decoder = build_decoder(dataset=decoder_dataset, **params)
 
     if enable_discriminator:
-        discriminator, generator_discriminator = construct_iwgan(decoder, decoder_dataset, **params)
+        discriminator, generator_discriminator = construct_iwgan(
+                disc_optimizer, gen_optimizer, decoder, decoder_dataset, **params)
     else:
         # Placeholder models for summary()
         discriminator = models.Sequential()
@@ -166,7 +167,8 @@ def build_models(datasets, **params):
     }
 
 
-def construct_iwgan(decoder, decoder_dataset, **params):
+def construct_iwgan(disc_optimizer, gen_optimizer, decoder, decoder_dataset, **params):
+    batch_size = params['batch_size']
     discriminator_model = params['discriminator_model']
 
     build_discriminator = getattr(model_definitions, discriminator_model)
@@ -191,7 +193,7 @@ def construct_iwgan(decoder, decoder_dataset, **params):
     discriminator = models.Model(
             inputs=[disc_input_real, disc_input_fake],
             outputs=[disc_output_real, disc_output_fake, disc_output_interpolated])
-    discriminator.compile(optimizer=disc_optimizer, metrics=metrics,
+    discriminator.compile(optimizer=disc_optimizer, metrics=['accuracy'],
             loss=[wasserstein_loss, wasserstein_loss, gradient_penalty_loss])
     discriminator._make_train_function()
 
@@ -199,7 +201,7 @@ def construct_iwgan(decoder, decoder_dataset, **params):
     generator_discriminator = models.Model(inputs=decoder.inputs, outputs=discriminator_inner(decoder.output))
     # TODO: Make sure that layer -1 is always the discriminator
     generator_discriminator.layers[-1].trainable = False
-    generator_discriminator.compile(loss=wasserstein_loss, optimizer=gen_optimizer, metrics=metrics)
+    generator_discriminator.compile(loss=wasserstein_loss, optimizer=gen_optimizer, metrics=['accuracy'])
     generator_discriminator._make_train_function()
     return discriminator, generator_discriminator
 

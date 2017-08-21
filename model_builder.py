@@ -75,39 +75,39 @@ def build_models(datasets, **params):
         build_discriminator = getattr(model_definitions, discriminator_model)
 
         # This is the inner discriminator; we apply it to real, fake, and interpolated items
-        discriminator = build_discriminator(is_discriminator=True, dataset=decoder_dataset, **params)
+        discriminator_inner = build_discriminator(is_discriminator=True, dataset=decoder_dataset, **params)
         rand_interpolater = iwgan_interpolation_layer(batch_size)
 
-        disc_input_real = layers.Input(batch_shape=discriminator.input.shape)
-        disc_input_fake = layers.Input(batch_shape=discriminator.input.shape)
+        disc_input_real = layers.Input(batch_shape=discriminator_inner.input.shape)
+        disc_input_fake = layers.Input(batch_shape=discriminator_inner.input.shape)
         interpolated = rand_interpolater([disc_input_real, disc_input_fake])
 
-        disc_output_real = discriminator(disc_input_real)
-        disc_output_fake = discriminator(disc_input_fake)
+        disc_output_real = discriminator_inner(disc_input_real)
+        disc_output_fake = discriminator_inner(disc_input_fake)
         # TODO: Should we try interpolating in latent space?
-        disc_output_interpolated = discriminator(interpolated)
+        disc_output_interpolated = discriminator_inner(interpolated)
 
         def gradient_penalty_loss(y_true, y_pred):
             return gradient_penalty(y_true, y_pred, wrt=interpolated)
 
-        # The discriminator_wrapper uses the discriminator three times: real, fake, interpolated
-        discriminator_wrapper = models.Model(
+        # The discriminator uses the inner_discriminator three times: real, fake, interpolated
+        discriminator = models.Model(
                 inputs=[disc_input_real, disc_input_fake],
                 outputs=[disc_output_real, disc_output_fake, disc_output_interpolated])
-        discriminator_wrapper.compile(optimizer=disc_optimizer, metrics=metrics,
+        discriminator.compile(optimizer=disc_optimizer, metrics=metrics,
                 loss=[wasserstein_loss, wasserstein_loss, gradient_penalty_loss])
-        discriminator_wrapper._make_train_function()
+        discriminator._make_train_function()
 
         # The generator_updater runs the decoder and discriminator (but only updates the decoder)
-        generator_updater = models.Model(inputs=decoder.inputs, outputs=discriminator(decoder.output))
+        generator_updater = models.Model(inputs=decoder.inputs, outputs=discriminator_inner(decoder.output))
         # TODO: Make sure that layer -1 is always the discriminator
         generator_updater.layers[-1].trainable = False
         generator_updater.compile(loss=wasserstein_loss, optimizer=gen_optimizer, metrics=metrics)
         generator_updater._make_train_function()
     else:
         # Placeholder models for summary()
+        discriminator_inner = models.Sequential()
         discriminator = models.Sequential()
-        discriminator_wrapper = models.Sequential()
         generator_updater = models.Sequential()
 
     if enable_classifier:
@@ -191,7 +191,7 @@ def build_models(datasets, **params):
         'encoder': encoder,
         'decoder': decoder,
         'transcoder': transcoder,
-        'discriminator': discriminator_wrapper,
+        'discriminator': discriminator,
         'cgan': generator_updater, 
         'classifier': classifier,
         'transclassifier': transclassifier,

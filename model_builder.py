@@ -143,7 +143,8 @@ def build_models(datasets, **params):
                 # Construct a 1D function that peaks in the middle
                 height = tf.shape(x)[1]
                 scale = tf.cast(height, tf.float32) / 2.
-                triangle = tf.minimum(tf.range(0, height), tf.range(height, 0, -1))
+                # HACK: add 1
+                triangle = tf.minimum(tf.range(0, height), tf.range(height, 0, -1)) + 1
                 linear_weight = tf.cast(triangle, tf.float32) / scale
 
                 # Outer product of the function with itself to form a 2D mask

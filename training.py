@@ -65,7 +65,7 @@ def train(models, datasets, **params):
     decoder = models['decoder']
     discriminator = models['discriminator']
     transcoder = models['transcoder']
-    cgan = models['cgan']
+    generator_discriminator = models['generator_discriminator']
     transclassifier = models['transclassifier']
 
     encoder_dataset = datasets['encoder']
@@ -136,7 +136,7 @@ def train(models, datasets, **params):
             X_encoder = np.random.normal(size=(batch_size, thought_vector_size))
             Y_disc = np.ones(batch_size)
 
-            loss, accuracy = cgan.train_on_batch(X_encoder, Y_disc)
+            loss, accuracy = generator_discriminator.train_on_batch(X_encoder, Y_disc)
             g_avg_loss = .95 * g_avg_loss + .05 * loss
 
     sys.stderr.write('\n')

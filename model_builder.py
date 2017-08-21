@@ -72,43 +72,11 @@ def build_models(datasets, **params):
     decoder = build_decoder(dataset=decoder_dataset, **params)
 
     if enable_discriminator:
-        build_discriminator = getattr(model_definitions, discriminator_model)
-
-        # This is the inner discriminator; we apply it to real, fake, and interpolated items
-        discriminator_inner = build_discriminator(is_discriminator=True, dataset=decoder_dataset, **params)
-        rand_interpolater = iwgan_interpolation_layer(batch_size)
-
-        disc_input_real = layers.Input(batch_shape=discriminator_inner.input.shape)
-        disc_input_fake = layers.Input(batch_shape=discriminator_inner.input.shape)
-        interpolated = rand_interpolater([disc_input_real, disc_input_fake])
-
-        disc_output_real = discriminator_inner(disc_input_real)
-        disc_output_fake = discriminator_inner(disc_input_fake)
-        # TODO: Should we try interpolating in latent space?
-        disc_output_interpolated = discriminator_inner(interpolated)
-
-        def gradient_penalty_loss(y_true, y_pred):
-            return gradient_penalty(y_true, y_pred, wrt=interpolated)
-
-        # The discriminator uses the inner_discriminator three times: real, fake, interpolated
-        discriminator = models.Model(
-                inputs=[disc_input_real, disc_input_fake],
-                outputs=[disc_output_real, disc_output_fake, disc_output_interpolated])
-        discriminator.compile(optimizer=disc_optimizer, metrics=metrics,
-                loss=[wasserstein_loss, wasserstein_loss, gradient_penalty_loss])
-        discriminator._make_train_function()
-
-        # The generator_updater runs the decoder and discriminator (but only updates the decoder)
-        generator_updater = models.Model(inputs=decoder.inputs, outputs=discriminator_inner(decoder.output))
-        # TODO: Make sure that layer -1 is always the discriminator
-        generator_updater.layers[-1].trainable = False
-        generator_updater.compile(loss=wasserstein_loss, optimizer=gen_optimizer, metrics=metrics)
-        generator_updater._make_train_function()
+        discriminator, generator_discriminator = construct_iwgan(decoder, decoder_dataset, **params)
     else:
         # Placeholder models for summary()
-        discriminator_inner = models.Sequential()
         discriminator = models.Sequential()
-        generator_updater = models.Sequential()
+        generator_discriminator = models.Sequential()
 
     if enable_classifier:
         build_classifier = getattr(model_definitions, classifier_model)
@@ -192,10 +160,48 @@ def build_models(datasets, **params):
         'decoder': decoder,
         'transcoder': transcoder,
         'discriminator': discriminator,
-        'cgan': generator_updater, 
+        'generator_discriminator': generator_discriminator,
         'classifier': classifier,
         'transclassifier': transclassifier,
     }
+
+
+def construct_iwgan(decoder, decoder_dataset, **params):
+    discriminator_model = params['discriminator_model']
+
+    build_discriminator = getattr(model_definitions, discriminator_model)
+
+    # This is the inner discriminator; we apply it to real, fake, and interpolated items
+    discriminator_inner = build_discriminator(is_discriminator=True, dataset=decoder_dataset, **params)
+    rand_interpolater = iwgan_interpolation_layer(batch_size)
+
+    disc_input_real = layers.Input(batch_shape=discriminator_inner.input.shape)
+    disc_input_fake = layers.Input(batch_shape=discriminator_inner.input.shape)
+    interpolated = rand_interpolater([disc_input_real, disc_input_fake])
+
+    disc_output_real = discriminator_inner(disc_input_real)
+    disc_output_fake = discriminator_inner(disc_input_fake)
+    # TODO: Should we try interpolating in latent space?
+    disc_output_interpolated = discriminator_inner(interpolated)
+
+    def gradient_penalty_loss(y_true, y_pred):
+        return gradient_penalty(y_true, y_pred, wrt=interpolated)
+
+    # The discriminator optimizes D(real), D(fake), and the gradient of D(interpolated)
+    discriminator = models.Model(
+            inputs=[disc_input_real, disc_input_fake],
+            outputs=[disc_output_real, disc_output_fake, disc_output_interpolated])
+    discriminator.compile(optimizer=disc_optimizer, metrics=metrics,
+            loss=[wasserstein_loss, wasserstein_loss, gradient_penalty_loss])
+    discriminator._make_train_function()
+
+    # The generator_discriminator optimizes D(G(x; A); B) updating A and keeping B fixed
+    generator_discriminator = models.Model(inputs=decoder.inputs, outputs=discriminator_inner(decoder.output))
+    # TODO: Make sure that layer -1 is always the discriminator
+    generator_discriminator.layers[-1].trainable = False
+    generator_discriminator.compile(loss=wasserstein_loss, optimizer=gen_optimizer, metrics=metrics)
+    generator_discriminator._make_train_function()
+    return discriminator, generator_discriminator
 
 
 def load_weights(models, **params):

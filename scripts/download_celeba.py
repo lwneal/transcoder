@@ -62,6 +62,7 @@ def mkdir(path):
 
 def listdir(path):
     filenames = os.listdir(path)
+    filenames = sorted(filenames)
     return [os.path.join(path, fn) for fn in filenames]
 
 

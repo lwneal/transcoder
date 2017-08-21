@@ -150,7 +150,9 @@ def train(models, datasets, **params):
                 g_avg_loss = .95 * g_avg_loss + .05 * loss
             elif gan_type == 'began':
                 X_encoder = np.random.normal(size=(batch_size, thought_vector_size))
-                loss, accuracy = generator_discriminator.train_on_batch(X_encoder, X_encoder)
+                Y_hallucinated = decoder.predict(X_encoder)
+                loss, accuracy = generator_discriminator.train_on_batch(X_encoder, Y_hallucinated)
+                g_avg_loss = .95 * g_avg_loss + .05 * loss
 
     sys.stderr.write('\n')
     print("Trained for {:.2f} s (spent {:.2f} s clipping)".format(time.time() - training_start_time, clipping_time))

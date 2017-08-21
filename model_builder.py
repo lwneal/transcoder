@@ -151,7 +151,10 @@ def build_models(datasets, **params):
 # but maximizes reconstruction loss on fake examples
 # https://arxiv.org/pdf/1703.10717.pdf
 def construct_began(decoder, datasets, **params):
+    decoder_model = params['decoder_model']
+    encoder_model = params['encoder_model']
     batch_size = params['batch_size']
+    latent_size = params['thought_vector_size']
     learning_rate = params['learning_rate']
     decay = params['decay']
 
@@ -180,19 +183,17 @@ def construct_began(decoder, datasets, **params):
 
     discriminator = models.Model(
             inputs=[disc_input_real, disc_input_fake],
-            output=[disc_output_real, disc_output_fake])
+            outputs=[disc_output_real, disc_output_fake])
     discriminator.compile(optimizer=began_optimizer, metrics=['accuracy'],
             loss=[real_loss, fake_loss])
     discriminator._make_train_function()
 
     # The generator_discriminator optimizes D(G(x; A); B) updating A and keeping B fixed
-    gen_disc_input = layers.Input(batch_shape=decoder.input.shape)
-    gen_disc_generated = decoder(gen_disc_input)
-    gen_disc_output = disc_decoder(disc_encoder(gen_disc_generated))
-    generator_discriminator = models.Model(inputs=gen_disc_input, outputs=gen_disc_output)
+    latent_input = layers.Input(batch_shape=(batch_size, latent_size))
+    gen_disc_output = disc_decoder(disc_encoder(decoder(latent_input)))
+    generator_discriminator = models.Model(inputs=[latent_input], outputs=[gen_disc_output])
     generator_discriminator.layers[-1].trainable = False
-    import pdb; pdb.set_trace()
-    generator_discriminator.compile(loss=real_loss, optimizer=gen_optimizer, metrics=['accuracy'])
+    generator_discriminator.compile(loss=real_loss, optimizer=began_optimizer, metrics=['accuracy'])
     generator_discriminator._make_train_function()
 
     return discriminator, generator_discriminator

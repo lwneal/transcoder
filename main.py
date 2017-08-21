@@ -36,6 +36,7 @@ Options:
       --enable-perceptual-loss=<n>      Enable VGG16 3-layer perceptual loss [default: True]
       --perceptual-loss-layers=<n>      Number of conv layers to use for P-loss [default: 6]
       --perceptual-loss-alpha=<n>       Value [0,1] modulating perceptual loss [default: .25]
+      --gan-type=<n>                    One of: wgan-gp, began [default: wgan-gp]
       --wordvec-size=<size>             Number of units in word embedding [default: 1024]
       --rnn-type=<type>                 One of LSTM, GRU [default: GRU]
       --rnn-size=<size>                 Number of output units in RNN [default: 1024]

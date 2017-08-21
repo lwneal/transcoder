@@ -12,7 +12,7 @@ Options:
     --epochs=<n>             Number of epochs [default: 100]
     --decay=<n>              Training rate decay [default: .0001]
     --learning-rate=<n>      Initial training rate [default: .0001]
-    --gan-weight=<n>         GAN training per autoencoder training [default: 3.0]
+    --gan-type=<n>           One of wgan-gp, began [default: wgan-gp]
     --perceptual-layers=<n>  Perceptual loss depth [default: 3]
     --img-width=<n>          Width of images through transcoder [default: 32]
     --timestamp=<n>          Timestamp of previously-trained network (new ts if left default) [default: None]
@@ -48,7 +48,7 @@ def counterfactual():
     epochs = int(arguments['--epochs'])
     decay = float(arguments['--decay'])
     learning_rate = float(arguments['--learning-rate'])
-    gan_weight = float(arguments['--gan-weight'])
+    gan_type = arguments['--gan-type']
     perceptual_layers = int(arguments['--perceptual-layers'])
     img_width = int(arguments['--img-width'])
     try:
@@ -79,6 +79,10 @@ def counterfactual():
     defaults = {opt.long: opt.value for opt in docopt.parse_defaults(main.__doc__)}
     params = {main.argname(k): main.argval(defaults[k]) for k in defaults}
 
+    # TODO: Merge main.py params with these params in some nice elegant way
+    # Like, imagine if each experiment could inherit all the main.py params
+    # But it would also have its own params which override the inherited ones
+    # This is beginning to sound dangerously object-oriented
     params['experiment_name'] = experiment_name
     params['encoder_input_filename'] = test_dataset
     params['decoder_input_filename'] = test_dataset
@@ -106,7 +110,7 @@ def counterfactual():
     params['decoder_weights'] = 'decoder_{}.h5'.format(decoder_model)
     params['classifier_weights'] = 'classifier_{}.h5'.format(classifier_model)
     params['discriminator_weights'] = 'discriminator_{}.h5'.format(encoder_model)
-    params['training_iters_per_gan'] = gan_weight
+    params['gan_type'] = gan_type
 
     # TODO: security lol
     os.system('mkdir ~/results/{}'.format(experiment_name))

@@ -9,27 +9,6 @@ from keras import backend as K
 import model_definitions
 
 
-def wasserstein_loss(y_true, y_pred):
-    return K.mean(y_true * y_pred)
-
-
-def gradient_penalty(y_true, y_pred, wrt):
-    # Hack: Ignores y_true, just computes a gradient magnitude
-    gradients = K.gradients(K.sum(y_pred), wrt)
-    gradient_l2_norm = K.sqrt(K.sum(K.square(gradients)))
-    return K.square(1 - gradient_l2_norm)
-
-
-# Hack: Define a Keras layer that interpolates between two tensors
-def iwgan_interpolation_layer(batch_size):
-    from keras.layers.merge import _Merge
-    class RandomWeightedAverage(_Merge):
-        def _merge_function(self, inputs):
-            weights = K.random_uniform((batch_size, 1, 1, 1))
-            return (weights * inputs[0]) + ((1 - weights) * inputs[1])
-    return RandomWeightedAverage()
-
-
 def build_models(datasets, **params):
     encoder_model = params['encoder_model']
     decoder_model = params['decoder_model']
@@ -42,11 +21,10 @@ def build_models(datasets, **params):
     perceptual_layers = params['perceptual_loss_layers']
     decay = params['decay']
     decoder_datatype = params['decoder_datatype']
-    learning_rate = params['learning_rate']
     batch_size = params['batch_size']
+    gan_type = params['gan_type']
 
-    learning_rate_discriminator = params['learning_rate_disc']
-    learning_rate_generator = params['learning_rate_generator']
+    learning_rate = params['learning_rate']
     learning_rate_classifier = params['learning_rate_classifier']
 
     encoder_dataset = datasets['encoder']
@@ -54,9 +32,6 @@ def build_models(datasets, **params):
     classifier_dataset = datasets.get('classifier')
 
     metrics = ['accuracy']
-    # Discriminator beta from Gulrajani et al
-    disc_optimizer = optimizers.Adam(beta_1=0.5, beta_2=0.9, lr=learning_rate * learning_rate_discriminator, decay=decay, clipnorm=0.1)
-    gen_optimizer = optimizers.Adam(beta_1=0.5, beta_2=0.9, lr=learning_rate * learning_rate_generator, decay=decay, clipnorm=.1)
     classifier_optimizer = optimizers.Adam(beta_1=.5, beta_2=.9, lr=learning_rate * learning_rate_classifier, decay=decay, clipnorm=.1)
     autoenc_optimizer = optimizers.Adam(beta_1=.5, beta_2=.9, lr=learning_rate, decay=decay, clipnorm=.1)
     classifier_loss = 'categorical_crossentropy'
@@ -72,8 +47,11 @@ def build_models(datasets, **params):
     decoder = build_decoder(dataset=decoder_dataset, **params)
 
     if enable_discriminator:
-        discriminator, generator_discriminator = construct_iwgan(
-                disc_optimizer, gen_optimizer, decoder, decoder_dataset, **params)
+        if gan_type == 'wgan-gp':
+            build_discriminator = construct_wgan_gp
+        elif gan_type == 'began':
+            build_discriminator = construct_began
+        discriminator, generator_discriminator = build_discriminator(decoder, datasets, **params)
     else:
         # Placeholder models for summary()
         discriminator = models.Sequential()
@@ -167,11 +145,87 @@ def build_models(datasets, **params):
     }
 
 
-def construct_iwgan(disc_optimizer, gen_optimizer, decoder, decoder_dataset, **params):
+# Boundary Equilibrium GAN
+# The discriminator is, itself, another autoencoder
+# It minimizes reconstruction loss on real examples,
+# but maximizes reconstruction loss on fake examples
+# https://arxiv.org/pdf/1703.10717.pdf
+def construct_began(decoder, datasets, **params):
+    batch_size = params['batch_size']
+    learning_rate = params['learning_rate']
+    decay = params['decay']
+
+    encoder_dataset = datasets['encoder']
+    decoder_dataset = datasets['decoder']
+
+    began_optimizer = optimizers.Adam(lr=learning_rate, decay=decay)
+
+    build_encoder = getattr(model_definitions, encoder_model)
+    disc_encoder = build_encoder(dataset=encoder_dataset, **params)
+
+    build_decoder = getattr(model_definitions, decoder_model)
+    disc_decoder = build_decoder(dataset=decoder_dataset, **params)
+    
+    disc_input_real = layers.Input(batch_shape=disc_encoder.input.shape)
+    disc_input_fake = layers.Input(batch_shape=disc_encoder.input.shape)
+
+    disc_output_real = disc_decoder(disc_encoder(disc_input_real))
+    disc_output_fake = disc_decoder(disc_encoder(disc_input_fake))
+
+    def real_loss(y_true, y_pred):
+        return K.mean(K.abs(y_pred - y_true))
+
+    def fake_loss(y_true, y_pred):
+        return 1 - K.mean(K.abs(y_pred - y_true))
+
+    discriminator = models.Model(
+            inputs=[disc_input_real, disc_input_fake],
+            output=[disc_output_real, disc_output_fake])
+    discriminator.compile(optimizer=began_optimizer, metrics=['accuracy'],
+            loss=[real_loss, fake_loss])
+    discriminator._make_train_function()
+
+    # The generator_discriminator optimizes D(G(x; A); B) updating A and keeping B fixed
+    gen_disc_input = layers.Input(batch_shape=decoder.input.shape)
+    gen_disc_generated = decoder(gen_disc_input)
+    gen_disc_output = disc_decoder(disc_encoder(gen_disc_generated))
+    generator_discriminator = models.Model(inputs=gen_disc_input, outputs=gen_disc_output)
+    generator_discriminator.layers[-1].trainable = False
+    import pdb; pdb.set_trace()
+    generator_discriminator.compile(loss=real_loss, optimizer=gen_optimizer, metrics=['accuracy'])
+    generator_discriminator._make_train_function()
+
+    return discriminator, generator_discriminator
+
+
+def l1_loss(y_true, y_pred):
+    return K.mean(K.abs(y_true - y_pred))
+
+
+def negative_l1_loss(y_true, y_pred):
+    return 1 - K.mean(K.abs(y_true - y_pred))
+
+
+# Wasserstein GAN with Gradient Penalty
+# A WGAN discriminator is "an art critic, not a counterfitting expert"
+# Discriminator is a CNN that outputs a scalar from -1 (fake) to 1 (realistic)
+# The GP loss enforces Lipschitz continuity (prevents D from being too spiky or non-linear)
+# In practice, GP loss has an effect similar to weight regularization
+# https://arxiv.org/pdf/1704.00028.pdf
+def construct_wgan_gp(decoder, datasets, **params):
     batch_size = params['batch_size']
     discriminator_model = params['discriminator_model']
+    learning_rate = params['learning_rate']
+    decay = params['decay']
+    learning_rate_discriminator = params['learning_rate_disc']
+    learning_rate_generator = params['learning_rate_generator']
 
+    decoder_dataset = datasets['decoder']
     build_discriminator = getattr(model_definitions, discriminator_model)
+
+    # Discriminator beta from Gulrajani et al
+    disc_optimizer = optimizers.Adam(beta_1=0.5, beta_2=0.9, lr=learning_rate * learning_rate_discriminator, decay=decay, clipnorm=0.1)
+    gen_optimizer = optimizers.Adam(beta_1=0.5, beta_2=0.9, lr=learning_rate * learning_rate_generator, decay=decay, clipnorm=.1)
 
     # This is the inner discriminator; we apply it to real, fake, and interpolated items
     discriminator_inner = build_discriminator(is_discriminator=True, dataset=decoder_dataset, **params)
@@ -204,6 +258,28 @@ def construct_iwgan(disc_optimizer, gen_optimizer, decoder, decoder_dataset, **p
     generator_discriminator.compile(loss=wasserstein_loss, optimizer=gen_optimizer, metrics=['accuracy'])
     generator_discriminator._make_train_function()
     return discriminator, generator_discriminator
+
+
+def wasserstein_loss(y_true, y_pred):
+    return K.mean(y_true * y_pred)
+
+
+def gradient_penalty(y_true, y_pred, wrt):
+    # Hack: Ignores y_true, just computes a gradient magnitude
+    gradients = K.gradients(K.sum(y_pred), wrt)
+    gradient_l2_norm = K.sqrt(K.sum(K.square(gradients)))
+    return K.square(1 - gradient_l2_norm)
+
+
+# A Keras layer that outputs a uniform random linear interpolation of two inputs
+def iwgan_interpolation_layer(batch_size):
+    from keras.layers.merge import _Merge
+    class RandomWeightedAverage(_Merge):
+        def _merge_function(self, inputs):
+            weights = K.random_uniform((batch_size, 1, 1, 1))
+            return (weights * inputs[0]) + ((1 - weights) * inputs[1])
+    return RandomWeightedAverage()
+
 
 
 def load_weights(models, **params):

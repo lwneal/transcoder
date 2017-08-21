@@ -2,6 +2,7 @@ import sys
 import time
 import numpy as np
 
+
 def train_generator(encoder_dataset, decoder_dataset, **params):
     # Datasets return a list of arrays
     # Keras requires either a list of arrays or a single array
@@ -60,6 +61,7 @@ def train(models, datasets, **params):
     freeze_decoder = params['freeze_decoder']
     enable_transcoder = not (freeze_encoder and freeze_decoder)
     discriminator_iters = params['discriminator_iters']
+    gan_type = params['gan_type']
 
     encoder = models['encoder']
     decoder = models['decoder']
@@ -109,19 +111,27 @@ def train(models, datasets, **params):
 
                 # Get some real examples to contrast with the generated ones
                 _, X_real = next(training_gen)
-                Y_disc = np.ones(batch_size)
-                Y_dummy = np.zeros(batch_size)
 
-                # Discriminator optimizes three loss functions:
-                # Wasserstein loss for batch of real inputs
-                # Wasserstein loss for batch of generated inputs
-                # Gradient penalty loss for random interpolation of real and generated inputs
-                disc_inputs = [X_real,  X_generated]
-                disc_targets = [Y_disc, -Y_disc, Y_dummy]
+                if gan_type == 'wgan-gp':
+                    # Discriminator optimizes three loss functions:
+                    # Wasserstein loss for batch of real inputs
+                    # Wasserstein loss for batch of generated inputs
+                    # Gradient penalty loss for random interpolation of real and generated inputs
+                    Y_disc = np.ones(batch_size)
+                    Y_dummy = np.zeros(batch_size)
+                    disc_inputs = [X_real,  X_generated]
+                    disc_targets = [Y_disc, -Y_disc, Y_dummy]
+                elif gan_type == 'began':
+                    # Discriminator optimizes two loss functions:
+                    # L1 reconstruction error for real examples
+                    # Negative L1 reconstruction error for fake examples
+                    disc_inputs = [X_real, X_generated]
+                    disc_targets = [X_real, X_generated]
 
                 outputs = discriminator.train_on_batch(disc_inputs, disc_targets)
                 loss = outputs[0]
                 d_avg_loss = .95 * d_avg_loss + .05 * loss
+                    
 
 
         if enable_classifier:
@@ -133,11 +143,14 @@ def train(models, datasets, **params):
 
         if enable_discriminator:
             # Update generator based on a random thought vector
-            X_encoder = np.random.normal(size=(batch_size, thought_vector_size))
-            Y_disc = np.ones(batch_size)
-
-            loss, accuracy = generator_discriminator.train_on_batch(X_encoder, Y_disc)
-            g_avg_loss = .95 * g_avg_loss + .05 * loss
+            if gan_type == 'wgan-gp':
+                X_encoder = np.random.normal(size=(batch_size, thought_vector_size))
+                Y_disc = np.ones(batch_size)
+                loss, accuracy = generator_discriminator.train_on_batch(X_encoder, Y_disc)
+                g_avg_loss = .95 * g_avg_loss + .05 * loss
+            elif gan_type == 'began':
+                X_encoder = np.random.normal(size=(batch_size, thought_vector_size))
+                loss, accuracy = generator_discriminator.train_on_batch(X_encoder, X_encoder)
 
     sys.stderr.write('\n')
     print("Trained for {:.2f} s (spent {:.2f} s clipping)".format(time.time() - training_start_time, clipping_time))

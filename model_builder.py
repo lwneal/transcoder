@@ -32,8 +32,9 @@ def build_models(datasets, **params):
     classifier_dataset = datasets.get('classifier')
 
     metrics = ['accuracy']
-    classifier_optimizer = optimizers.Adam(beta_1=.5, beta_2=.9, lr=learning_rate * learning_rate_classifier, decay=decay, clipnorm=.1)
-    autoenc_optimizer = optimizers.Adam(beta_1=.5, beta_2=.9, lr=learning_rate, decay=decay, clipnorm=.1)
+    classifier_optimizer = optimizers.Adam(lr=learning_rate * learning_rate_classifier, decay=decay, clipnorm=.1)
+    autoenc_decay = decay * 2
+    autoenc_optimizer = optimizers.Adam(lr=learning_rate, decay=autoenc_decay, clipnorm=.1)
     classifier_loss = 'categorical_crossentropy'
 
     # HACK: Keras Bug https://github.com/fchollet/keras/issues/5221

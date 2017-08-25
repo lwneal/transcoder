@@ -194,6 +194,8 @@ def construct_began(decoder, datasets, **params):
     latent_input = layers.Input(batch_shape=(batch_size, latent_size))
     gen_disc_output = disc_decoder(disc_encoder(decoder(latent_input)))
     generator_discriminator = models.Model(inputs=[latent_input], outputs=[gen_disc_output])
+    # TODO: The way Keras handles .trainable is bad. Switch to pytorch
+    generator_discriminator.layers[-2].trainable = False
     generator_discriminator.layers[-1].trainable = False
     generator_discriminator.compile(loss=real_loss, optimizer=began_optimizer, metrics=['accuracy'])
     generator_discriminator._make_train_function()

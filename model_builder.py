@@ -178,10 +178,10 @@ def construct_began(decoder, datasets, **params):
     disc_output_fake = disc_decoder(disc_encoder(disc_input_fake))
 
     def real_loss(y_true, y_pred):
-        return K.mean(K.square(y_pred - y_true))
+        return K.mean(K.abs(y_pred - y_true))
 
     def fake_loss(y_true, y_pred):
-        return (1 - K.mean(K.square(y_pred - y_true))) * .1
+        return (1 - K.mean(K.abs(y_pred - y_true))) * .1
 
     discriminator = models.Model(
             inputs=[disc_input_real, disc_input_fake],
@@ -197,7 +197,7 @@ def construct_began(decoder, datasets, **params):
     gen_disc_output = disc_decoder(disc_encoder(gen_output))
     def generator_loss(y_true, y_pred):
         # Generator loss function ignores the targets
-        return K.mean(K.square(gen_output - gen_disc_output))
+        return K.mean(K.abs(gen_output - gen_disc_output))
     generator_discriminator = models.Model(inputs=[latent_input], outputs=[gen_disc_output])
 
     # TODO: The way Keras handles .trainable is bad. Switch to pytorch

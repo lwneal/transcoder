@@ -85,9 +85,9 @@ def train(models, datasets, **params):
     check_weights(models)
 
     # HACK: Test just the GAN
-    enable_transcoder = False
-    enable_classifier = False
-    discriminator_iters = 1
+    #enable_transcoder = False
+    #enable_classifier = False
+    #discriminator_iters = 1
     GAMMA = 2.0
 
     print("Training...")
@@ -137,14 +137,14 @@ def train(models, datasets, **params):
                     disc_inputs = [X_real, X_generated]
                     disc_targets = [X_real, X_generated]
 
-                g_before = decoder.get_weights()
+                #g_before = decoder.get_weights()
 
                 outputs = discriminator.train_on_batch(disc_inputs, disc_targets)
                 d_avg_loss = .95 * d_avg_loss + .05 * outputs[0]
                 d2_avg_loss = .95 * d2_avg_loss + .05 * outputs[2]
 
                 # Undo updates to generator weights
-                decoder.set_weights(g_before)
+                #decoder.set_weights(g_before)
                 if d_avg_loss < g_avg_loss * GAMMA:
                     #print("discriminator trained, switching to generator...")
                     break
@@ -170,12 +170,12 @@ def train(models, datasets, **params):
                     Y_dummy = np.zeros(X_generated.shape)
 
                     #g_before = decoder.get_weights()
-                    d_before = discriminator.get_weights()
+                    #d_before = discriminator.get_weights()
                     loss, accuracy = generator_discriminator.train_on_batch(X_encoder, Y_dummy)
                     #g_after = decoder.get_weights()
                     #d_after = discriminator.get_weights()
                     # HACK: Keras will update the discriminator, even when .trainable=False; undo this update
-                    discriminator.set_weights(d_before)
+                    #discriminator.set_weights(d_before)
                     g_avg_loss = .95 * g_avg_loss + .05 * loss
                     if d_avg_loss > g_avg_loss * GAMMA:
                         #print("generator trained, switching to discriminator...")

@@ -14,7 +14,8 @@ import latent_space
 def main(**params):
     mode = params['mode']
     util.chdir_to_experiment(params['experiment_name'])
-    util.redirect_stdout_stderr(params['stdout_filename'])
+    # TODO: tee stdout without breaking interactive tools like pdb
+    #util.redirect_stdout_stderr(params['stdout_filename'])
 
     datasets = dataset_builder.build_datasets(**params)
     models = model_builder.build_models(datasets, **params)

@@ -84,12 +84,6 @@ def train(models, datasets, **params):
 
     check_weights(models)
 
-    # HACK: Test just the GAN
-    #enable_transcoder = False
-    #enable_classifier = False
-    #discriminator_iters = 1
-    GAMMA = 2.0
-
     print("Training...")
     for i in range(0, batches_per_epoch):
         sys.stderr.write("\r[K\r{}/{} bs {}, D_loss {:.3f}/{:.3f}, G_loss {:.3f} T_loss {:.3f} T_acc {:.3f} C_loss {:.3f} C_acc {:.3f}".format(
@@ -111,7 +105,7 @@ def train(models, datasets, **params):
             t_avg_accuracy = .95 * t_avg_accuracy + .05 * accuracy
 
         if enable_discriminator:
-            for _ in range(5):
+            for _ in range(discriminator_iters):
                 # Think some random thoughts
                 X_decoder = np.random.normal(0, 1, size=(batch_size, thought_vector_size))
 
@@ -134,20 +128,19 @@ def train(models, datasets, **params):
                     # Discriminator optimizes two loss functions:
                     # L1 reconstruction error for real examples
                     # Negative L1 reconstruction error for fake examples
-                    disc_inputs = [X_real, X_generated]
+                    # Training rate tradeoff k_t balances D and G
+                    k_t = np.zeros([16,1])
+                    k_t[:] = np.clip(d_avg_loss - g_avg_loss, 0, 1)
+                    disc_inputs = [X_real, X_generated, k_t]
                     disc_targets = [X_real, X_generated]
 
-                #g_before = decoder.get_weights()
-
+                g_before = decoder.get_weights()
                 outputs = discriminator.train_on_batch(disc_inputs, disc_targets)
                 d_avg_loss = .95 * d_avg_loss + .05 * outputs[0]
                 d2_avg_loss = .95 * d2_avg_loss + .05 * outputs[2]
 
                 # Undo updates to generator weights
-                #decoder.set_weights(g_before)
-                if d_avg_loss < g_avg_loss * GAMMA:
-                    #print("discriminator trained, switching to generator...")
-                    break
+                decoder.set_weights(g_before)
 
         if enable_classifier:
             # Update the encoder and classifier
@@ -164,30 +157,10 @@ def train(models, datasets, **params):
                 loss, accuracy = generator_discriminator.train_on_batch(X_encoder, Y_disc)
                 g_avg_loss = .95 * g_avg_loss + .05 * loss
             elif gan_type == 'began':
-                for _ in range(5):
-                    X_encoder = np.random.normal(size=(batch_size, thought_vector_size))
-                    #Y_hallucinated = decoder.predict(X_encoder)  # This is wrong, this is not the target
-                    Y_dummy = np.zeros(X_generated.shape)
-
-                    #g_before = decoder.get_weights()
-                    #d_before = discriminator.get_weights()
-                    loss, accuracy = generator_discriminator.train_on_batch(X_encoder, Y_dummy)
-                    #g_after = decoder.get_weights()
-                    #d_after = discriminator.get_weights()
-                    # HACK: Keras will update the discriminator, even when .trainable=False; undo this update
-                    #discriminator.set_weights(d_before)
-                    g_avg_loss = .95 * g_avg_loss + .05 * loss
-                    if d_avg_loss > g_avg_loss * GAMMA:
-                        #print("generator trained, switching to discriminator...")
-                        break
-
-    #from imutil import show
-    #real_err, fake_err = discriminator.predict(disc_inputs)
-    #show(real_err)
-    #show(fake_err)
-    #show(X_generated)
-    #time.sleep(1.5)
-    #show(generator_discriminator.predict(X_encoder))
+                X_encoder = np.random.normal(size=(batch_size, thought_vector_size))
+                Y_dummy = np.zeros(X_generated.shape)
+                loss, accuracy = generator_discriminator.train_on_batch(X_encoder, Y_dummy)
+                g_avg_loss = .95 * g_avg_loss + .05 * loss
 
     sys.stderr.write('\n')
     print("Trained for {:.2f} s (spent {:.2f} s clipping)".format(time.time() - training_start_time, clipping_time))

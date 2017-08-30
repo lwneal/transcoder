@@ -180,11 +180,12 @@ def construct_began(decoder, datasets, **params):
     def real_loss(y_true, y_pred):
         return K.mean(K.abs(y_pred - y_true))
 
+    k_t = layers.Input(shape=(1,))  # hack around Keras to have a scalar input
     def fake_loss(y_true, y_pred):
-        return (1 - K.mean(K.abs(y_pred - y_true))) * .1
+        return -k_t * K.mean(K.abs(y_pred - y_true))
 
     discriminator = models.Model(
-            inputs=[disc_input_real, disc_input_fake],
+            inputs=[disc_input_real, disc_input_fake, k_t],
             outputs=[disc_output_real, disc_output_fake])
     discriminator.compile(optimizer=began_optimizer, metrics=['accuracy'],
             loss=[real_loss, fake_loss])
@@ -203,7 +204,8 @@ def construct_began(decoder, datasets, **params):
     # TODO: The way Keras handles .trainable is bad. Switch to pytorch
     generator_discriminator.layers[-2].trainable = False
     generator_discriminator.layers[-1].trainable = False
-    generator_discriminator.compile(loss=generator_loss, optimizer=began_optimizer, metrics=['accuracy'])
+    gen_opt = optimizers.Adam(lr=learning_rate, decay=decay)
+    generator_discriminator.compile(loss=generator_loss, optimizer=gen_opt, metrics=['accuracy'])
     generator_discriminator._make_train_function()
 
     return discriminator, generator_discriminator

@@ -41,15 +41,54 @@ def train(models, datasets, **params):
     discriminator = models['discriminator']
     classifier = models['classifier']
 
-    for epoch in range(epochs):
-        training.train(models, datasets, **params)
-        encoder.save_weights(encoder_weights)
-        decoder.save_weights(decoder_weights)
-        if enable_discriminator:
-            discriminator.save_weights(discriminator_weights)
-        if enable_classifier:
-            classifier.save_weights(classifier_weights)
-        demonstrate(models, datasets, **params)
+    try:
+        for epoch in range(epochs):
+            training.train(models, datasets, **params)
+            encoder.save_weights(encoder_weights)
+            decoder.save_weights(decoder_weights)
+            if enable_discriminator:
+                discriminator.save_weights(discriminator_weights)
+            if enable_classifier:
+                classifier.save_weights(classifier_weights)
+            demonstrate(models, datasets, **params)
+    except KeyboardInterrupt:
+        print("\n\nQuitting at epoch {} due to ctrl+C".format(epoch))
+
+
+def visualize_trajectory(models, datasets, **params):
+    from tqdm import tqdm
+    thought_vector_size = params['thought_vector_size']
+    encoder = models['encoder']
+    decoder = models['decoder']
+    classifier = models['classifier']
+
+    print("Encoding training data into latent space...")
+    encoder_dataset = datasets['encoder']
+    latent_vectors = []
+    for i in tqdm(range(encoder_dataset.count())):
+        img = encoder_dataset.get_example(i)
+        img = np.array(img)
+        z = encoder.predict(img)
+        latent_vectors.append(z)
+    latent_vectors = np.array(latent_vectors).reshape((-1, thought_vector_size))
+
+    for j in range(10):
+        trajectory = latent_space.random_trajectory(z, length=100)
+
+        def closest_example(z, candidates):
+            from scipy.spatial.distance import cdist
+            idx = np.argmin(cdist(z, candidates))
+            return encoder_dataset.get_example(idx)[0]
+
+        from imutil import show
+        timestamp = str(int(time.time()))
+        filename = 'trajectory_examples_{}_{:02d}.mjpeg'.format(timestamp, j)
+        for z_val in trajectory:
+            closest_real_img = closest_example(z_val, latent_vectors)
+            hallucinated_img = decoder.predict(np.array(z_val))[0]
+            combined_img = np.array([closest_real_img, hallucinated_img])
+            show(combined_img, video_filename=filename, resize_to=None)
+        os.system('ffmpeg -i {0} {1} && rm {0}'.format(filename, filename.replace('mjpeg', 'mp4')))
 
 
 def evaluate(models, datasets, **params):
@@ -205,7 +244,7 @@ def counterfactual(models, datasets, **params):
     trajectory_path = []
 
     for _ in range(3):
-        trajectory = latent_space.compute_trajectory(
+        trajectory = latent_space.counterfactual_trajectory(
                 encoder, decoder, classifier,
                 Z, classifier_dataset,
                 **params)

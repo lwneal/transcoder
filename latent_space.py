@@ -3,7 +3,7 @@ import numpy as np
 from keras import backend as K
 import imutil
 
-def compute_trajectory(
+def counterfactual_trajectory(
         encoder, decoder, classifier,
         Z, classifier_dataset,
         **params):
@@ -87,3 +87,17 @@ def compute_trajectory(
     imutil.show_figure(filename='{}_counterfactual.jpg'.format(int(time.time())), resize_to=None)
 
     return trajectory
+
+
+def random_trajectory(z, length=30):
+    # Choose two examples at random
+    print("Generating a random trajectory...")
+    start_point = np.random.normal(0, 1, z.shape)
+    end_point = np.random.normal(0, 1, z.shape)
+    def interp(a, b):
+        x = np.zeros((length, z.shape[0], z.shape[1]))
+        for i in range(length):
+            alpha = float(i) / length
+            x[i] = alpha * a + (1 - alpha) * b
+        return x
+    return interp(start_point, end_point)

@@ -82,7 +82,7 @@ def train(models, datasets, **params):
     clipping_time = 0
     training_start_time = time.time()
 
-    check_weights(models)
+    #check_weights(models)
 
     print("Training...")
     for i in range(0, batches_per_epoch):

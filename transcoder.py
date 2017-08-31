@@ -56,39 +56,43 @@ def train(models, datasets, **params):
 
 
 def visualize_trajectory(models, datasets, **params):
-    from tqdm import tqdm
     thought_vector_size = params['thought_vector_size']
     encoder = models['encoder']
     decoder = models['decoder']
     classifier = models['classifier']
 
-    print("Encoding training data into latent space...")
     encoder_dataset = datasets['encoder']
+
+    latent_vectors = get_latent_vectors(encoder, encoder_dataset, thought_vector_size)
+
+    for j in range(10):
+        trajectory = latent_space.random_trajectory(thought_vector_size, length=100)
+        timestamp = str(int(time.time()))
+        filename = 'trajectory_examples_{}_{:02d}.mjpeg'.format(timestamp, j)
+        for z_val in trajectory:
+            closest_real_img = closest_example(z_val, latent_vectors, encoder_dataset)
+            hallucinated_img = decoder.predict(np.array(z_val))[0]
+            combined_img = np.array([closest_real_img, hallucinated_img])
+            imutil.show(combined_img, video_filename=filename, resize_to=None)
+        movie(filename)
+
+
+def get_latent_vectors(encoder, encoder_dataset, thought_vector_size):
+    print("Encoding training data into latent space...")
     latent_vectors = []
+    from tqdm import tqdm
     for i in tqdm(range(encoder_dataset.count())):
         img = encoder_dataset.get_example(i)
         img = np.array(img)
         z = encoder.predict(img)
         latent_vectors.append(z)
-    latent_vectors = np.array(latent_vectors).reshape((-1, thought_vector_size))
+    return np.array(latent_vectors).reshape((-1, thought_vector_size))
 
-    for j in range(10):
-        trajectory = latent_space.random_trajectory(z, length=100)
 
-        def closest_example(z, candidates):
-            from scipy.spatial.distance import cdist
-            idx = np.argmin(cdist(z, candidates))
-            return encoder_dataset.get_example(idx)[0]
-
-        from imutil import show
-        timestamp = str(int(time.time()))
-        filename = 'trajectory_examples_{}_{:02d}.mjpeg'.format(timestamp, j)
-        for z_val in trajectory:
-            closest_real_img = closest_example(z_val, latent_vectors)
-            hallucinated_img = decoder.predict(np.array(z_val))[0]
-            combined_img = np.array([closest_real_img, hallucinated_img])
-            show(combined_img, video_filename=filename, resize_to=None)
-        os.system('ffmpeg -i {0} {1} && rm {0}'.format(filename, filename.replace('mjpeg', 'mp4')))
+def closest_example(z, candidates, encoder_dataset):
+    from scipy.spatial.distance import cdist
+    idx = np.argmin(cdist(z, candidates))
+    return encoder_dataset.get_example(idx)[0]
 
 
 def evaluate(models, datasets, **params):
@@ -226,6 +230,7 @@ def dream(models, datasets, **params):
 
 def counterfactual(models, datasets, **params):
     video_filename = params['video_filename']
+    thought_vector_size = params['thought_vector_size']
 
     encoder = models['encoder']
     decoder = models['decoder']
@@ -234,6 +239,12 @@ def counterfactual(models, datasets, **params):
     encoder_dataset = datasets['encoder']
     decoder_dataset = datasets['decoder']
     classifier_dataset = datasets.get('classifier')
+
+    include_closest_example = True
+
+    # Alternative display: Show the closest real example as we move along
+    if include_closest_example:
+        latent_vectors = get_latent_vectors(encoder, encoder_dataset, thought_vector_size)
 
     training_gen = training.train_generator(encoder_dataset, decoder_dataset, **params)
     X, _ = next(training_gen)
@@ -254,21 +265,33 @@ def counterfactual(models, datasets, **params):
         trajectory_path.extend(reversed(trajectory))
         trajectory_path.extend([trajectory[0]] * 12)
 
-    def output_frame(z, display=False):
+    def output_frame(z, display=False, include_closest_example=False):
         classification = classifier.predict(z)[0]
-        caption = '{:.02f} {}'.format(
-                classification.max(),
-                classifier_dataset.unformat_output(classification))
-        imutil.show(decoder.predict(z), resize_to=(512, 512), video_filename=video_filename,
-                caption=caption, font_size=20, display=display)
+        caption = '{} ({:.02f} confidence)'.format(
+                classifier_dataset.unformat_output(classification),
+                classification.max())
+        if include_closest_example:
+            closest_real_img = closest_example(z, latent_vectors, encoder_dataset)
+            hallucinated_img = decoder.predict(z)[0]
+            combined_img = np.array([closest_real_img, hallucinated_img])
+            imutil.show(combined_img, resize_to=(256, 512), video_filename=video_filename,
+                    caption=caption, font_size=20, display=display)
+        else:
+            imutil.show(decoder.predict(z), resize_to=(512, 512), video_filename=video_filename,
+                    caption=caption, font_size=20, display=display)
         print("Classification: {}".format(classifier_dataset.unformat_output(classification)))
 
-    # First show the original image for reference
-    for _ in range(24):
-        imutil.show(X, resize_to=(512, 512), video_filename=video_filename, display=False)
+    if not include_closest_example:
+        # First show the original image for reference
+        for _ in range(24):
+            imutil.show(X, resize_to=(512, 512), video_filename=video_filename, display=False)
 
     # Then the GAN trajectory
     for z in trajectory_path:
-        output_frame(z, display=False)
+        output_frame(z, display=False, include_closest_example=include_closest_example)
+    movie(video_filename)
 
+
+def movie(video_filename):
+    os.system('ffmpeg -i {0} {1} && rm {0}'.format(video_filename, video_filename.replace('mjpeg', 'mp4')))
 

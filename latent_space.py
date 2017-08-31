@@ -89,13 +89,12 @@ def counterfactual_trajectory(
     return trajectory
 
 
-def random_trajectory(z, length=30):
-    # Choose two examples at random
+def random_trajectory(thought_vector_size, length=30):
     print("Generating a random trajectory...")
-    start_point = np.random.normal(0, 1, z.shape)
-    end_point = np.random.normal(0, 1, z.shape)
+    start_point = np.random.normal(0, 1, size=(1, thought_vector_size))
+    end_point = np.random.normal(0, 1, size=(1, thought_vector_size))
     def interp(a, b):
-        x = np.zeros((length, z.shape[0], z.shape[1]))
+        x = np.zeros((length, 1, thought_vector_size))
         for i in range(length):
             alpha = float(i) / length
             x[i] = alpha * a + (1 - alpha) * b

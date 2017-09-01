@@ -5,3 +5,4 @@ tensorflow-gpu>=1.2.1
 docopt
 nltk
 h5py
+tqdm

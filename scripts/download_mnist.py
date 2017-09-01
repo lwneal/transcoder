@@ -16,7 +16,13 @@ def save_set(fold, x, y, suffix='png'):
         label = y[i]
         img_filename = 'mnist/{}/{:05d}_{:d}.{}'.format(fold, i, label, suffix)
         Image.fromarray(x[i]).save(img_filename)
-        entry = {'filename': img_filename, 'label': str(label)}
+        entry = {
+                'filename': img_filename,
+                'label': str(label),
+                'is_odd': not not label % 2,
+                'is_holy': label in [0, 6, 8, 9],  # numbers with holes in them
+                'is_pointy': label in [1, 4, 7],  # numbers with no curves
+        }
         examples.append(entry)
         fp.write(json.dumps(entry))
         fp.write('\n')
@@ -32,7 +38,6 @@ if __name__ == '__main__':
         os.mkdir('mnist/test')
     except OSError:
         print("MNIST dataset exists at {}/mnist".format(DATA_DIR))
-        exit()
     (train_x, train_y), (test_x, test_y) = datasets.mnist.load_data()
     train = save_set('train', train_x, train_y)
     test = save_set('test', test_x, test_y)

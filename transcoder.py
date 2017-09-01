@@ -293,5 +293,6 @@ def counterfactual(models, datasets, **params):
 
 
 def movie(video_filename):
-    os.system('ffmpeg -i {0} {1} && rm {0}'.format(video_filename, video_filename.replace('mjpeg', 'mp4')))
+    os.system('ffmpeg -nostdin -y -i {0} {1} && rm {0}'.format(
+        video_filename, video_filename.replace('mjpeg', 'mp4')))
 

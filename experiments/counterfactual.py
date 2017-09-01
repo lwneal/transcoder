@@ -25,7 +25,6 @@ import docopt
 import os
 import time
 import json
-from main import get_params
 from util import pushd
 
 
@@ -37,7 +36,6 @@ def save_params(experiment_name, params):
 
 
 def counterfactual():
-    import transcoder
     arguments = docopt.docopt(__doc__)
 
     dataset = arguments['--dataset']
@@ -115,6 +113,8 @@ def counterfactual():
     # TODO: security lol
     os.system('mkdir ~/results/{}'.format(experiment_name))
     save_params(experiment_name, params)
+
+    import transcoder
 
     # First train a manifold
     train_params = params.copy()

@@ -15,9 +15,11 @@ def counterfactual_trajectory(
     # Randomly choose a class to mutate toward
     selected_class = np.random.randint(0, len(classifier_dataset.idx_to_name))
 
-    classification = classifier.predict(Z)[0]
-    print("Starting class: {}  Counterfactual target class: {}".format(
-        np.argmax(classification), selected_class))
+    original_preds = classifier.predict(Z)
+    classification = original_preds[0]
+    attributes = original_preds[1]
+    print("Starting class: {}  Counterfactual target class: {}  Starting Attributes: {}".format(
+        np.argmax(classification), selected_class, attributes))
     original_class = np.copy(classification)
 
     # This will contain our latent vector
@@ -34,7 +36,6 @@ def counterfactual_trajectory(
     # Save each point in the latent space trajectory
     Z = np.copy(Z)  # Hack to avoid unexpected surprise
     step_size = .01
-    classification = classifier.predict(Z)[0]
     momentum = None
     NUM_FRAMES = 240
 
@@ -59,7 +60,7 @@ def counterfactual_trajectory(
         # https://arxiv.org/pdf/1703.00887.pdf
         Z += np.random.normal(scale=.001, size=Z.shape)
 
-        classification = classifier.predict(Z)[0]
+        Z_preds = classifier.predict(Z)
 
         if i % 10 == 0:
             trajectory.append(np.copy(Z))
@@ -77,13 +78,14 @@ def counterfactual_trajectory(
     img = decoder.predict(Z)[0]
     imutil.show(img, filename='{}_counterfactual_orig.jpg'.format(int(time.time())))
     imutil.add_to_figure(img)
-    print("Original Classification: {}".format(classifier_dataset.unformat_output(original_class)))
+    print("Original Classification: {}".format(
+        classifier_dataset.unformat_output(original_preds)))
 
     print("Counterfactual Image:")
     img = decoder.predict(Z)[0]
     imutil.show(img, filename='{}_counterfactual_{}.jpg'.format(int(time.time()), selected_class))
     imutil.add_to_figure(img)
-    print("Counterfactual Classification: {}".format(classifier_dataset.unformat_output(classification)))
+    print("Counterfactual Classification: {}".format(classifier_dataset.unformat_output(Z_preds)))
     imutil.show_figure(filename='{}_counterfactual.jpg'.format(int(time.time())), resize_to=None)
 
     return trajectory

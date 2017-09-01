@@ -3,6 +3,7 @@ from dataset_label import LabelDataset
 from dataset_img import ImageDataset
 from dataset_img_region import ImageRegionDataset
 from dataset_visual_question import VisualQuestionDataset
+from dataset_attribute import AttributeDataset
 
 
 def build_datasets(**params):
@@ -30,6 +31,7 @@ def find_dataset(input_filename, dataset_type=None):
         'vq': VisualQuestionDataset,
         'txt': WordDataset,
         'lab': LabelDataset,
+        'att': AttributeDataset,
     }
     if dataset_type:
         return types[dataset_type]

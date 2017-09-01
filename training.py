@@ -130,6 +130,7 @@ def train(models, datasets, **params):
                     # Negative L1 reconstruction error for fake examples
                     # Training rate tradeoff k_t balances D and G
                     k_t = np.zeros([16,1])
+                    # TODO: Fix this, it doesn't quite match the BEGAN paper
                     k_t[:] = np.clip(d_avg_loss - g_avg_loss, 0, 1)
                     disc_inputs = [X_real, X_generated, k_t]
                     disc_targets = [X_real, X_generated]
@@ -145,19 +146,20 @@ def train(models, datasets, **params):
         if enable_classifier:
             # Update the encoder and classifier
             X, Y = next(classifier_gen)
-            loss, accuracy = transclassifier.train_on_batch(X, Y)
+            results = transclassifier.train_on_batch(X, Y)
+            loss = results[0]
+            accuracy = results[1]
             c_avg_loss = .95 * c_avg_loss + .05 * loss
             c_avg_accuracy = .95 * c_avg_accuracy + .05 * accuracy
 
         if enable_discriminator:
             # Update generator based on a random thought vector
+            X_encoder = np.random.uniform(-1, 1, size=(batch_size, thought_vector_size))
             if gan_type == 'wgan-gp':
-                X_encoder = np.random.normal(size=(batch_size, thought_vector_size))
                 Y_disc = np.ones(batch_size)
                 loss, accuracy = generator_discriminator.train_on_batch(X_encoder, Y_disc)
                 g_avg_loss = .95 * g_avg_loss + .05 * loss
             elif gan_type == 'began':
-                X_encoder = np.random.normal(size=(batch_size, thought_vector_size))
                 Y_dummy = np.zeros(X_generated.shape)
                 loss, accuracy = generator_discriminator.train_on_batch(X_encoder, Y_dummy)
                 g_avg_loss = .95 * g_avg_loss + .05 * loss

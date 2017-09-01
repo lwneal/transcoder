@@ -240,7 +240,8 @@ def counterfactual(models, datasets, **params):
     decoder_dataset = datasets['decoder']
     classifier_dataset = datasets.get('classifier')
 
-    include_closest_example = True
+    # TODO: Give this a name and make it a flag, or make it a separate mode?
+    include_closest_example = False
 
     # Alternative display: Show the closest real example as we move along
     if include_closest_example:
@@ -266,20 +267,28 @@ def counterfactual(models, datasets, **params):
         trajectory_path.extend([trajectory[0]] * 12)
 
     def output_frame(z, display=False, include_closest_example=False):
-        classification = classifier.predict(z)[0]
-        caption = '{} ({:.02f} confidence)'.format(
-                classifier_dataset.unformat_output(classification),
-                classification.max())
+        preds = classifier.predict(z)
+        if len(preds) > 1:
+            class_name, attributes = classifier_dataset.unformat_output(preds)
+            attrs = "\n".join("{}: {}".format(k, v) for k,v in attributes.items())
+            confidence = np.max(preds[0])
+            font_size = 12
+        else:
+            class_name = classifier_dataset.unformat_output(preds)
+            attrs = ""
+            confidence = np.max(preds[0])
+            font_size = 20
+        caption = '{} ({:.02f})\n{}'.format(class_name, confidence, attrs)
         if include_closest_example:
             closest_real_img = closest_example(z, latent_vectors, encoder_dataset)
             hallucinated_img = decoder.predict(z)[0]
             combined_img = np.array([closest_real_img, hallucinated_img])
             imutil.show(combined_img, resize_to=(256, 512), video_filename=video_filename,
-                    caption=caption, font_size=20, display=display)
+                    caption=caption, font_size=font_size, display=display)
         else:
             imutil.show(decoder.predict(z), resize_to=(512, 512), video_filename=video_filename,
                     caption=caption, font_size=20, display=display)
-        print("Classification: {}".format(classifier_dataset.unformat_output(classification)))
+        print("Classification: {}".format(classifier_dataset.unformat_output(preds)))
 
     if not include_closest_example:
         # First show the original image for reference
@@ -289,7 +298,6 @@ def counterfactual(models, datasets, **params):
     # Then the GAN trajectory
     for z in trajectory_path:
         output_frame(z, display=False, include_closest_example=include_closest_example)
-    movie(video_filename)
 
 
 def movie(video_filename):

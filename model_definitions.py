@@ -333,3 +333,24 @@ def mlp_2a(dataset, **params):
     x = layers.Dense(label_count)(x)
     x = layers.Activation('softmax')(x)
     return models.Model(inputs=x_in, outputs=x, name='label_decoder')
+
+
+def mlp_attr_2a(dataset, **params):
+    thought_vector_size = params['thought_vector_size']
+    label_count = len(dataset.name_to_idx)
+    attr_count = len(dataset.attribute_names)
+
+    # MLP with single hidden layer
+    x_in = layers.Input(shape=(thought_vector_size,))
+
+    hidden_units = (attr_count + label_count + thought_vector_size)
+    x = layers.Dense(hidden_units)(x_in)
+    x = layers.LeakyReLU()(x)
+
+    x_labels = layers.Dense(label_count)(x)
+    x_labels = layers.Activation('softmax')(x_labels)
+
+    x_attrs = layers.Dense(attr_count)(x)
+    x_attrs = layers.Activation('sigmoid')(x_attrs)
+
+    return models.Model(inputs=x_in, outputs=[x_labels, x_attrs], name='label_attribute_classifier')

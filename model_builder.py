@@ -23,6 +23,7 @@ def build_models(datasets, **params):
     decoder_datatype = params['decoder_datatype']
     batch_size = params['batch_size']
     gan_type = params['gan_type']
+    classifier_type = params['classifier_datatype']
 
     learning_rate = params['learning_rate']
     learning_rate_classifier = params['learning_rate_classifier']
@@ -35,7 +36,13 @@ def build_models(datasets, **params):
     classifier_optimizer = optimizers.Adam(lr=learning_rate * learning_rate_classifier, decay=decay, clipnorm=.1)
     autoenc_decay = decay * 2
     autoenc_optimizer = optimizers.Adam(lr=learning_rate, decay=autoenc_decay, clipnorm=.1)
-    classifier_loss = 'categorical_crossentropy'
+
+    if classifier_type == 'lab':
+        classifier_loss = 'categorical_crossentropy'
+    elif classifier_type == 'att':
+        classifier_loss = ['categorical_crossentropy', 'binary_crossentropy']
+    else:
+        print("Unknown classifier type {}".format(classifier_type))
 
     # HACK: Keras Bug https://github.com/fchollet/keras/issues/5221
     # Sharing a BatchNormalization layer corrupts the graph

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import sys
 import tqdm
 import os
 import json
@@ -38,6 +39,8 @@ if __name__ == '__main__':
         os.mkdir('mnist/test')
     except OSError:
         print("MNIST dataset exists at {}/mnist".format(DATA_DIR))
+        if '--force' not in sys.argv:
+            exit()
     (train_x, train_y), (test_x, test_y) = datasets.mnist.load_data()
     train = save_set('train', train_x, train_y)
     test = save_set('test', test_x, test_y)

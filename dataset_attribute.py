@@ -39,6 +39,7 @@ class AttributeDataset(object):
             for attr_name in item:
                 if attr_name.startswith('is'):
                     self.attribute_names.add(attr_name)
+        self.attribute_names = sorted(list(self.attribute_names))
 
         # Load labels and attributes
         for line in lines:
@@ -84,7 +85,7 @@ class AttributeDataset(object):
         class_idx = np.argmax(class_preds, axis=-1)
         attrs = {}
         for i, name in enumerate(sorted(self.attribute_names)):
-            attrs[name] = '{:.3f}'.format(attr_preds[i])
+            attrs[name] = attr_preds[i]
         return [self.idx_to_name[class_idx], attrs]
 
     def empty_batch(self, **params):

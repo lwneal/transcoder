@@ -288,7 +288,7 @@ def counterfactual(models, datasets, **params):
         else:
             imutil.show(decoder.predict(z), resize_to=(512, 512), video_filename=video_filename,
                     caption=caption, font_size=20, display=display)
-        print("Classification: {}".format(classifier_dataset.unformat_output(preds)))
+            #print("Classification: {}".format(classifier_dataset.unformat_output(preds)))
 
     if not include_closest_example:
         # First show the original image for reference

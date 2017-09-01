@@ -6,6 +6,7 @@ import imutil
 def counterfactual_trajectory(
         encoder, decoder, classifier,
         Z, classifier_dataset,
+        selected_class=None,
         **params):
     thought_vector_size = params['thought_vector_size']
     video_filename = params['video_filename']
@@ -13,7 +14,8 @@ def counterfactual_trajectory(
     trajectory = []
 
     # Randomly choose a class to mutate toward
-    selected_class = np.random.randint(0, len(classifier_dataset.idx_to_name))
+    if selected_class is None:
+        selected_class = np.random.randint(0, len(classifier_dataset.idx_to_name))
 
     original_preds = classifier.predict(Z)
     classification = original_preds[0]
@@ -34,16 +36,20 @@ def counterfactual_trajectory(
 
     # Perform gradient descent on the classification loss
     # Save each point in the latent space trajectory
-    Z = np.copy(Z)  # Hack to avoid unexpected surprise
+    original_Z = np.copy(Z)
     step_size = .01
     momentum = None
     NUM_FRAMES = 240
 
+    # Loiter for a few frames at the start
     for _ in range(10):
         trajectory.append(np.copy(Z))
-    for i in range(10 * NUM_FRAMES):
+
+    Z_RESOLUTION = 10
+
+    for i in range(Z_RESOLUTION * NUM_FRAMES):
         # Hack: take 10x steps until gradient gets large enough
-        for _ in range(10):
+        for _ in range(Z_RESOLUTION):
             gradient = compute_gradient([Z])[0]
             if momentum is None:
                 momentum = gradient
@@ -62,7 +68,7 @@ def counterfactual_trajectory(
 
         Z_preds = classifier.predict(Z)
 
-        if i % 10 == 0:
+        if i % Z_RESOLUTION == 0:
             trajectory.append(np.copy(Z))
 
         # Early stop if we've completed the transition
@@ -70,22 +76,32 @@ def counterfactual_trajectory(
             print("Counterfactual optimization ending after {} iterations".format(i))
             break
 
+    # Loiter for a few frames at the end
     for _ in range(5):
         trajectory.append(np.copy(Z))
 
+    original_class, original_attrs = classifier_dataset.unformat_output(original_preds)
+    counter_class, counter_attrs = classifier_dataset.unformat_output(Z_preds)
+
     print('\n')
+    print("The input example is a {}".format(original_class))
+    print("If it were a: {}, then:".format(counter_class))
+    for attr_name in original_attrs:
+        before_val = original_attrs[attr_name]
+        after_val = counter_attrs[attr_name]
+        print("Attribute {}: {:+.2f}".format(attr_name, after_val - before_val))
+
     print("Original Image:")
-    img = decoder.predict(Z)[0]
+    img = decoder.predict(original_Z)[0]
     imutil.show(img, filename='{}_counterfactual_orig.jpg'.format(int(time.time())))
     imutil.add_to_figure(img)
-    print("Original Classification: {}".format(
-        classifier_dataset.unformat_output(original_preds)))
+    print("Original Classification: {}".format(original_class))
 
     print("Counterfactual Image:")
     img = decoder.predict(Z)[0]
     imutil.show(img, filename='{}_counterfactual_{}.jpg'.format(int(time.time()), selected_class))
     imutil.add_to_figure(img)
-    print("Counterfactual Classification: {}".format(classifier_dataset.unformat_output(Z_preds)))
+    print("Counterfactual Classification: {}".format(counter_class))
     imutil.show_figure(filename='{}_counterfactual.jpg'.format(int(time.time())), resize_to=None)
 
     return trajectory

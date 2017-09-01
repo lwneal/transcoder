@@ -107,7 +107,7 @@ def train(models, datasets, **params):
         if enable_discriminator:
             for _ in range(discriminator_iters):
                 # Think some random thoughts
-                X_decoder = np.random.normal(0, 1, size=(batch_size, thought_vector_size))
+                X_decoder = np.random.uniform(-1, 1, size=(batch_size, thought_vector_size))
 
                 # Decode those random thoughts into hallucinations
                 X_generated = decoder.predict(X_decoder)

@@ -36,16 +36,16 @@ class AttributeDataset(object):
         # Load vocabulary of possible attributes
         for line in open(vocab_filename).readlines():
             item = json.loads(line)
-            for attr_name in item:
-                if attr_name.startswith('is'):
-                    self.attribute_names.add(attr_name)
+            for name in item:
+                if is_attr_name(name):
+                    self.attribute_names.add(name)
         self.attribute_names = sorted(list(self.attribute_names))
 
         # Load labels and attributes
         for line in lines:
             item = json.loads(line)
             self.labels.append(item['label'])
-            attrs = {k: item[k] for k in item if k.startswith('is')}
+            attrs = {k: item[k] for k in item if is_attr_name(k)}
             self.attributes.append(attrs)
 
         print("Input file {} with {} examples\n\tLabels out of {} classes\n\t {} binary attributes ".format(
@@ -69,8 +69,13 @@ class AttributeDataset(object):
         onehot = to_categorical(self.name_to_idx[label], num_classes)
         binary = np.zeros(len(self.attribute_names))
         for i, name in enumerate(sorted(self.attribute_names)):
-            value = float(attrs[name])
             # TODO: What if an attribute is not specified? Set to 0.5?
+            if name in attrs:
+                value = float(attrs[name])
+            else:
+                #print("Example does not have attribute {}, setting to 0".format(name))
+                import pdb; pdb.set_trace()
+                value = 0
             binary[i] = value
         return [onehot, binary]
 
@@ -93,3 +98,7 @@ class AttributeDataset(object):
         num_classes = len(self.name_to_idx)
         num_attributes = len(self.attribute_names)
         return [np.zeros((batch_size, num_classes)), np.zeros((batch_size, num_attributes))]
+
+def is_attr_name(name):
+    # TODO: Something better than this maybe?
+    return name.startswith('is') or name.startswith('has')

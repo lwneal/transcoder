@@ -41,10 +41,6 @@ def counterfactual_trajectory(
     momentum = None
     NUM_FRAMES = 240
 
-    # Loiter for a few frames at the start
-    for _ in range(10):
-        trajectory.append(np.copy(Z))
-
     Z_RESOLUTION = 10
 
     for i in range(Z_RESOLUTION * NUM_FRAMES):
@@ -76,10 +72,6 @@ def counterfactual_trajectory(
             print("Counterfactual optimization ending after {} iterations".format(i))
             break
 
-    # Loiter for a few frames at the end
-    for _ in range(5):
-        trajectory.append(np.copy(Z))
-
     original_class, original_attrs = classifier_dataset.unformat_output(original_preds)
     counter_class, counter_attrs = classifier_dataset.unformat_output(Z_preds)
 
@@ -93,16 +85,6 @@ def counterfactual_trajectory(
 
     for diff in top_diffs:
         print("Attribute {}: {:+.2f}".format(diff[1], diff[0]))
-
-    print("Original Image:")
-    img = decoder.predict(original_Z)[0]
-    imutil.show(img, filename='{}_counterfactual_orig.jpg'.format(int(time.time())))
-    print("Original Classification: {}".format(original_class))
-
-    print("Counterfactual Image:")
-    img = decoder.predict(Z)[0]
-    imutil.show(img, filename='{}_counterfactual_{}.jpg'.format(int(time.time()), selected_class))
-    print("Counterfactual Classification: {}".format(counter_class))
 
     return trajectory, top_diffs
 

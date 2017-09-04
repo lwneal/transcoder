@@ -228,6 +228,12 @@ def dream(models, datasets, **params):
         end_idx = np.random.randint(encoder_dataset.count())
 
 
+def top_k(preds, k=5):
+    indices = sorted(np.argpartition(preds, -k)[-k:])
+    values = [preds[i] for i in indices]
+    return sorted(zip(values, indices), reverse=True)
+
+
 def counterfactual(models, datasets, **params):
     video_filename = params['video_filename']
     thought_vector_size = params['thought_vector_size']
@@ -247,57 +253,88 @@ def counterfactual(models, datasets, **params):
     if include_closest_example:
         latent_vectors = get_latent_vectors(encoder, encoder_dataset, thought_vector_size)
 
-    training_gen = training.train_generator(encoder_dataset, decoder_dataset, **params)
-    X, _ = next(training_gen)
+    training_gen = training.train_generator(encoder_dataset, classifier_dataset, **params)
+    X, Y = next(training_gen)
     X = X[:1]
     imutil.show(X)
     Z = encoder.predict(X)
 
-    trajectory_path = []
+    classification = classifier.predict(Z)[0][0]
+    top5 = top_k(classification)
+    true_label = np.argmax(Y[0][0])
 
-    trajectory, top_diffs = latent_space.counterfactual_trajectory(
-            encoder, decoder, classifier,
-            Z, classifier_dataset,
-            **params)
-    # There and back again, holding for 12 frames at the start and end
-    trajectory_path.extend(trajectory)
-    trajectory_path.extend([trajectory[-1]] * 12)
-    trajectory_path.extend(reversed(trajectory))
-    trajectory_path.extend([trajectory[0]] * 12)
+    print("Image:")
+    imutil.show(X)
+    print("Predicted Class Labels:")
+    for value, idx in top5:
+        print("{} {:.3f}".format(classifier_dataset.idx_to_name[idx], value))
+    print("True Class Label: {}".format(classifier_dataset.idx_to_name[true_label]))
 
-    def output_frame(z, display=False, include_closest_example=False):
-        preds = classifier.predict(z)
-        if len(preds) > 1:
-            class_name, attributes = classifier_dataset.unformat_output(preds)
-            top_attrs = [d[1] for d in top_diffs[:3]]
-            attrs = "\n".join("{}: {:.2f}".format(attr_name, attributes[attr_name]) for attr_name in top_attrs)
-            confidence = np.max(preds[0])
-            font_size = 12
-        else:
-            class_name = classifier_dataset.unformat_output(preds)
-            attrs = ""
-            confidence = np.max(preds[0])
-            font_size = 20
-        caption = '{} ({:.02f})\n{}'.format(class_name, confidence, attrs)
-        if include_closest_example:
-            closest_real_img = closest_example(z, latent_vectors, encoder_dataset)
-            hallucinated_img = decoder.predict(z)[0]
-            combined_img = np.array([closest_real_img, hallucinated_img])
-            imutil.show(combined_img, resize_to=(256, 512), video_filename=video_filename,
-                    caption=caption, font_size=font_size, display=display)
-        else:
-            imutil.show(decoder.predict(z), resize_to=(512, 512), video_filename=video_filename,
-                    caption=caption, font_size=20, display=display)
-            #print("Classification: {}".format(classifier_dataset.unformat_output(preds)))
+    for confidence, alternate_class in top5[1:]:
+        trajectory_path = []
+        trajectory, top_diffs = latent_space.counterfactual_trajectory(
+                encoder, decoder, classifier,
+                Z.copy(), classifier_dataset,
+                selected_class=alternate_class,
+                **params)
 
-    if not include_closest_example:
-        # First show the original image for reference
-        for _ in range(24):
-            imutil.show(X, resize_to=(512, 512), video_filename=video_filename, display=False)
+        print("Counterfactual Image:")
+        #imutil.add_to_figure(X)
+        imutil.add_to_figure(decoder.predict(trajectory[0])[0])
+        imutil.add_to_figure(decoder.predict(trajectory[-1])[0])
+        imutil.show_figure(resize_to=(512, 256))
 
-    # Then the GAN trajectory
-    for z in trajectory_path:
-        output_frame(z, display=False, include_closest_example=include_closest_example)
+        print("This is an image of a {}".format(classifier_dataset.idx_to_name[true_label]))
+        print("The classifier thinks it is a {}".format(classifier_dataset.idx_to_name[top5[0][1]]))
+
+        print("IF this were instead a {}, THEN:".format(classifier_dataset.idx_to_name[alternate_class]))
+        preds = classifier.predict(trajectory[-1])
+        class_name, attributes = classifier_dataset.unformat_output(preds)
+        for diff_value, attr_name in top_diffs:
+            print("The attribute {} would change by {:+.2f}".format(attr_name, diff_value))
+
+        # Now generate a counterfactual video
+        # There and back again, loitering for 12 frames at the start and end
+        trajectory_path.extend(trajectory)
+        trajectory_path.extend([trajectory[-1]] * 12)
+        trajectory_path.extend(reversed(trajectory))
+        trajectory_path.extend([trajectory[0]] * 12)
+
+        def output_frame(z, display=False, include_closest_example=False):
+            preds = classifier.predict(z)
+            if len(preds) > 1:
+                class_name, attributes = classifier_dataset.unformat_output(preds)
+                top_attrs = [d[1] for d in top_diffs[:3]]
+                attrs = "\n".join("{}: {:.2f}".format(attr_name, attributes[attr_name]) for attr_name in top_attrs)
+                confidence = np.max(preds[0])
+                font_size = 12
+            else:
+                class_name = classifier_dataset.unformat_output(preds)
+                attrs = ""
+                confidence = np.max(preds[0])
+                font_size = 20
+            caption = '{} ({:.02f})\n{}'.format(class_name, confidence, attrs)
+            if include_closest_example:
+                closest_real_img = closest_example(z, latent_vectors, encoder_dataset)
+                hallucinated_img = decoder.predict(z)[0]
+                combined_img = np.array([closest_real_img, hallucinated_img])
+                imutil.show(combined_img, resize_to=(256, 512), video_filename=video_filename,
+                        caption=caption, font_size=font_size, display=display)
+            else:
+                imutil.show(decoder.predict(z), resize_to=(512, 512), video_filename=video_filename,
+                        caption=caption, font_size=font_size, display=display)
+                #print("Classification: {}".format(classifier_dataset.unformat_output(preds)))
+
+        if not include_closest_example:
+            # First show the original image for reference
+            for _ in range(24):
+                imutil.show(X, resize_to=(512, 512), video_filename=video_filename, display=False)
+
+        # Then the GAN trajectory
+        for z in trajectory_path:
+            output_frame(z, display=False, include_closest_example=include_closest_example)
+
+    movie(video_filename)
 
 
 def movie(video_filename):

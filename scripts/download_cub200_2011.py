@@ -130,7 +130,8 @@ if __name__ == '__main__':
     download('annotations', 'https://lwneal.com/cub200_2011_txt_annotations.tar.gz')
     # TODO: download attributes?
 
-    os.system('mv CUB_200_2011/* . && rmdir CUB_200_2011')
+    if os.path.exists('CUB_200_2011'):
+        os.system('mv CUB_200_2011/* . && rmdir CUB_200_2011')
 
     # Generate CSV file for the full dataset
     lines = open('images.txt').readlines()

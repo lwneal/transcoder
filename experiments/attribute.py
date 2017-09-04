@@ -152,7 +152,7 @@ def counterfactual():
     transcoder.main(**counter_params)
 
     # Re-encode the video to mp4 for storage
-    encode_video(experiment_name, counter_params['video_filename'])
+    #encode_video(experiment_name, counter_params['video_filename'])
 
     # Touch a file to mark the experiment as finished
     filename = os.path.expanduser('~/results/{}/finished'.format(experiment_name))

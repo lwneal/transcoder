@@ -255,22 +255,22 @@ def counterfactual(models, datasets, **params):
 
     trajectory_path = []
 
-    for _ in range(3):
-        trajectory = latent_space.counterfactual_trajectory(
-                encoder, decoder, classifier,
-                Z, classifier_dataset,
-                **params)
-        # There and back again
-        trajectory_path.extend(trajectory)
-        trajectory_path.extend([trajectory[-1]] * 12)
-        trajectory_path.extend(reversed(trajectory))
-        trajectory_path.extend([trajectory[0]] * 12)
+    trajectory, top_diffs = latent_space.counterfactual_trajectory(
+            encoder, decoder, classifier,
+            Z, classifier_dataset,
+            **params)
+    # There and back again, holding for 12 frames at the start and end
+    trajectory_path.extend(trajectory)
+    trajectory_path.extend([trajectory[-1]] * 12)
+    trajectory_path.extend(reversed(trajectory))
+    trajectory_path.extend([trajectory[0]] * 12)
 
     def output_frame(z, display=False, include_closest_example=False):
         preds = classifier.predict(z)
         if len(preds) > 1:
             class_name, attributes = classifier_dataset.unformat_output(preds)
-            attrs = "\n".join("{}: {}".format(k, v) for k,v in attributes.items())
+            top_attrs = [d[1] for d in top_diffs[:3]]
+            attrs = "\n".join("{}: {:.2f}".format(attr_name, attributes[attr_name]) for attr_name in top_attrs)
             confidence = np.max(preds[0])
             font_size = 12
         else:

@@ -20,8 +20,8 @@ def counterfactual_trajectory(
     original_preds = classifier.predict(Z)
     classification = original_preds[0]
     attributes = original_preds[1]
-    print("Starting class: {}  Counterfactual target class: {}  Starting Attributes: {}".format(
-        np.argmax(classification), selected_class, attributes))
+    print("Starting class: {}  Counterfactual target class: {}".format(
+        np.argmax(classification), selected_class))
     original_class = np.copy(classification)
 
     # This will contain our latent vector
@@ -86,25 +86,25 @@ def counterfactual_trajectory(
     print('\n')
     print("The input example is a {}".format(original_class))
     print("If it were a: {}, then:".format(counter_class))
-    for attr_name in original_attrs:
-        before_val = original_attrs[attr_name]
-        after_val = counter_attrs[attr_name]
-        print("Attribute {}: {:+.2f}".format(attr_name, after_val - before_val))
+    differences_names = [(counter_attrs[attr_name] - original_attrs[attr_name], attr_name) for attr_name in original_attrs]
+
+    diffs = sorted(differences_names, key=lambda x: abs(x[0]), reverse=True)
+    top_diffs = diffs[:5]
+
+    for diff in top_diffs:
+        print("Attribute {}: {:+.2f}".format(diff[1], diff[0]))
 
     print("Original Image:")
     img = decoder.predict(original_Z)[0]
     imutil.show(img, filename='{}_counterfactual_orig.jpg'.format(int(time.time())))
-    imutil.add_to_figure(img)
     print("Original Classification: {}".format(original_class))
 
     print("Counterfactual Image:")
     img = decoder.predict(Z)[0]
     imutil.show(img, filename='{}_counterfactual_{}.jpg'.format(int(time.time()), selected_class))
-    imutil.add_to_figure(img)
     print("Counterfactual Classification: {}".format(counter_class))
-    imutil.show_figure(filename='{}_counterfactual.jpg'.format(int(time.time())), resize_to=None)
 
-    return trajectory
+    return trajectory, top_diffs
 
 
 def random_trajectory(thought_vector_size, length=30):

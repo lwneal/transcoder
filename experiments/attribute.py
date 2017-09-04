@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 """
 Usage:
-    counterfactual [options]
+    attributes [options]
 
 Options:
     --dataset=<n>            Dataset with images and labels eg. mnist, cub200 [default: mnist]
     --thought-vector=<n>     Size of the latent space [default: 16]
     --encoder=<n>            Name of the encoder model [default: stridecnn_10a]
     --decoder=<n>            Name of the decoder model [default: simpledeconv_a]
-    --classifier=<n>         Name of the classifier model [default: mlp_2a]
+    --classifier=<n>         Name of the classifier model [default: mlp_attr_2a]
     --epochs=<n>             Number of epochs [default: 100]
     --decay=<n>              Training rate decay [default: .0001]
     --learning-rate=<n>      Initial training rate [default: .0001]
@@ -25,6 +25,7 @@ import docopt
 import os
 import time
 import json
+from main import get_params
 from util import pushd
 
 
@@ -63,6 +64,8 @@ def counterfactual():
         experiment_timestamp,
     ])
 
+    import transcoder
+
     timestamp = int(time.time())
 
     #Download the dataset if it doesn't already exist
@@ -88,7 +91,7 @@ def counterfactual():
     params['vocabulary_filename'] = train_dataset
     params['encoder_datatype'] = 'img'
     params['decoder_datatype'] = 'img'
-    params['classifier_datatype'] = 'lab'
+    params['classifier_datatype'] = 'att'
     params['encoder_model'] = encoder_model
     params['decoder_model'] = decoder_model
     params['discriminator_model'] = encoder_model
@@ -109,14 +112,10 @@ def counterfactual():
     params['classifier_weights'] = 'classifier_{}.h5'.format(classifier_model)
     params['discriminator_weights'] = 'discriminator_{}.h5'.format(encoder_model)
     params['gan_type'] = gan_type
-    params['learning_rate_disc'] = learning_rate * .1
-    params['learning_rate_generator'] = learning_rate * .1
 
     # TODO: security lol
     os.system('mkdir ~/results/{}'.format(experiment_name))
     save_params(experiment_name, params)
-
-    import transcoder
 
     # First train a manifold
     train_params = params.copy()
@@ -128,6 +127,7 @@ def counterfactual():
     if train_params['epochs'] > 0:
         transcoder.main(**train_params)
 
+    """
     # Evaluate the classifier
     eval_params = params.copy()
     eval_params['decoder_model'] = params['classifier_model']
@@ -139,16 +139,9 @@ def counterfactual():
     eval_params['mode'] = 'evaluate'
     transcoder.main(**eval_params)
 
-    # Generate a "dream" video
-    dream_params = params.copy()
-    dream_params['video_filename'] = 'dream_output_{}.mjpeg'.format(timestamp)
-    dream_params['stdout_filename'] = 'stdout_dream_{}.txt'.format(timestamp)
-    dream_params['enable_discriminator'] = False
-    dream_params['mode'] = 'dream'
-    transcoder.main(**dream_params)
-
     # Re-encode the video to mp4 for storage
     encode_video(experiment_name, dream_params['video_filename'])
+    """
 
     # Add counterfactuals
     counter_params = params.copy()
@@ -156,8 +149,7 @@ def counterfactual():
     counter_params['stdout_filename'] = 'stdout_counterfactual_{}.txt'.format(timestamp)
     counter_params['enable_discriminator'] = False
     counter_params['mode'] = 'counterfactual'
-    for _ in range(3):
-        transcoder.main(**counter_params)
+    transcoder.main(**counter_params)
 
     # Re-encode the video to mp4 for storage
     encode_video(experiment_name, counter_params['video_filename'])

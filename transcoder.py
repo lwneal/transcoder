@@ -284,7 +284,8 @@ def counterfactual(models, datasets, **params):
         imutil.add_to_figure(decoder.predict(trajectory[-1])[0])
         imutil.show_figure(resize_to=(512, 256))
 
-        print("This is an image of a {}".format(classifier_dataset.idx_to_name[true_label]))
+        true_class_name = classifier_dataset.idx_to_name[true_label]
+        print("This is an image of a {}".format(true_class_name))
         print("The classifier thinks it is a {}".format(classifier_dataset.idx_to_name[top5[0][1]]))
 
         print("IF this were instead a {}, THEN:".format(classifier_dataset.idx_to_name[alternate_class]))
@@ -313,7 +314,7 @@ def counterfactual(models, datasets, **params):
                 attrs = ""
                 confidence = np.max(preds[0])
                 font_size = 20
-            caption = '{} ({:.02f})\n{}'.format(class_name, confidence, attrs)
+            caption = 'True Class: {}\nC: {} ({:.02f})\n{}'.format(true_class_name, class_name, confidence, attrs)
             if include_closest_example:
                 closest_real_img = closest_example(z, latent_vectors, encoder_dataset)
                 hallucinated_img = decoder.predict(z)[0]

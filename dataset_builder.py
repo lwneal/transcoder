@@ -17,14 +17,18 @@ def build_datasets(**params):
 
     print("Loading datasets...")
     datasets = {}
-    datasets['encoder'] = find_dataset(encoder_input_filename, encoder_datatype)(encoder_input_filename, is_encoder=True, **params)
-    datasets['decoder'] = find_dataset(decoder_input_filename, decoder_datatype)(decoder_input_filename, is_encoder=False, **params)
+    # TODO: Replace hard coded train/test filenames with one-file dataset format
+    datasets['encoder'] = dataset_by_type(encoder_datatype)(encoder_input_filename, is_encoder=True, **params)
+    datasets['encoder_evaluate'] = dataset_by_type(encoder_datatype)(encoder_input_filename.replace('train', 'test'), is_encoder=True, **params)
+    datasets['decoder'] = dataset_by_type(decoder_datatype)(decoder_input_filename, is_encoder=False, **params)
+    datasets['decoder_evaluate'] = dataset_by_type(decoder_datatype)(decoder_input_filename.replace('train', 'test'), is_encoder=False, **params)
     if enable_classifier:
-        datasets['classifier'] = find_dataset(classifier_input_filename, classifier_datatype)(decoder_input_filename, is_encoder=False, **params)
+        datasets['classifier'] = dataset_by_type(classifier_datatype)(decoder_input_filename, is_encoder=False, **params)
+        datasets['classifier_evaluate'] = dataset_by_type(classifier_datatype)(decoder_input_filename.replace('train', 'test'), is_encoder=False, **params)
     return datasets
 
 
-def find_dataset(input_filename, dataset_type=None):
+def dataset_by_type(dataset_type):
     types = {
         'img': ImageDataset,
         'bbox': ImageRegionDataset,
@@ -33,8 +37,4 @@ def find_dataset(input_filename, dataset_type=None):
         'lab': LabelDataset,
         'att': AttributeDataset,
     }
-    if dataset_type:
-        return types[dataset_type]
-    # If no dataset type is specified, infer based on file extension
-    ext = input_filename.split('.')[-1]
-    return types.get(ext, WordDataset)
+    return types[dataset_type]

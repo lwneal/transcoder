@@ -51,6 +51,7 @@ def train(models, datasets, **params):
             if enable_classifier:
                 classifier.save_weights(classifier_weights)
             demonstrate(models, datasets, **params)
+            evaluate(models, datasets, **params)
     except KeyboardInterrupt:
         print("\n\nQuitting at epoch {} due to ctrl+C".format(epoch))
 
@@ -98,33 +99,33 @@ def closest_example(z, candidates, encoder_dataset):
 def evaluate(models, datasets, **params):
     batch_size = params['batch_size']
 
-    transcoder = models['transcoder']
+    transclassifier = models['transclassifier']
 
-    encoder_dataset = datasets['encoder']
-    decoder_dataset = datasets['decoder']
+    encoder_dataset = datasets['encoder_evaluate']
+    classifier_dataset = datasets['classifier_evaluate']
 
-    input_count, output_count = encoder_dataset.count(), decoder_dataset.count()
+    input_count, output_count = encoder_dataset.count(), classifier_dataset.count()
     assert input_count == output_count
 
     def eval_generator():
         for i in range(0, input_count, batch_size):
             sys.stderr.write("\r[K{} / {}".format(i, input_count))
-            yield training.get_batch(encoder_dataset, decoder_dataset, base_idx=i, **params)
+            yield training.get_batch(encoder_dataset, classifier_dataset, base_idx=i, **params)
         sys.stderr.write("\n")
         # HACK: Keras is dumb and asynchronously queues up batches beyond the last one
         # Could be solved if evaluate_generator() workers used an atomic counter
         while True:
-            yield training.get_batch(encoder_dataset, decoder_dataset, base_idx=i, **params)
+            yield training.get_batch(encoder_dataset, classifier_dataset, base_idx=i, **params)
 
     batch_count = input_count / batch_size
-    scores = transcoder.evaluate_generator(eval_generator(), steps=batch_count)
+    scores = transclassifier.evaluate_generator(eval_generator(), steps=batch_count)
     print("")
     print("Completed evaluation on {} input items ({} batches)".format(input_count, batch_count))
     print("input: {}".format(params['encoder_input_filename']))
-    print("output: {}".format(params['decoder_input_filename']))
+    print("output: {}".format(params['classifier_input_filename']))
     print("encoder: {}".format(params['encoder_weights']))
-    print("decoder: {}".format(params['decoder_weights']))
-    for name, val in zip(['loss'] + transcoder.metrics, scores):
+    print("classifier: {}".format(params['classifier_weights']))
+    for name, val in zip(['loss'] + transclassifier.metrics, scores):
         print("{}: {:.5f}".format(name, val))
 
 

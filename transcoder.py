@@ -157,7 +157,7 @@ def demonstrate(models, datasets, **params):
         x_input = encoder_dataset.unformat_input(x)
         y_generated = decoder_dataset.unformat_output(y_gen)
         y_truth = decoder_dataset.unformat_output(y_true)
-        print('{} --> {} ({})'.format(x_input, y_generated, y_truth))
+        #print('{} --> {} ({})'.format(x_input, y_generated, y_truth))
     fig_filename = '{}_demo.jpg'.format(int(time.time()))
     imutil.show_figure(filename=fig_filename, resize_to=None)
 
@@ -179,7 +179,7 @@ def hallucinate(models, datasets, dist='gaussian', **params):
     X_generated = decoder.predict(X_decoder)
     print("Hallucinated outputs:")
     for j in range(len(X_generated)):
-        print(' ' + decoder_dataset.unformat_output(X_generated[j]))
+        decoder_dataset.unformat_output(X_generated[j])
     fig_filename = '{}_halluc_{}.jpg'.format(int(time.time()), dist)
     imutil.show_figure(filename=fig_filename, resize_to=None)
 

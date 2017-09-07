@@ -23,7 +23,8 @@ Options:
       --learning-rate=<v>               Global learning rate [default: .0001]
       --learning-rate-disc=<n>          Learning rate multiplier for the discriminator [default: 1.0]
       --learning-rate-generator=<n>     Learning rate multiplier for the generator [default: 1.0]
-      --learning-rate-classifier=<n>    Learning rate multiplier for the classifier [default: 1.0]
+      --learning-rate-classifier=<n>    Learning rate multiplier for the classifier [default: 2.0]
+      --learning-rate-autoencoder=<n>   Learning rate multiplier for the autoencoder [default: .1]
       --decay=<v>                       Global training decay rate [default: .0001]
       --batches-per-epoch=<b>           Number of batches per epoch [default: 1000].
       --batch-size=<size>               Batch size for training [default: 16]

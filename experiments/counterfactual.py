@@ -129,6 +129,7 @@ def counterfactual():
         transcoder.main(**train_params)
 
     # Evaluate the classifier
+    """
     eval_params = params.copy()
     eval_params['decoder_model'] = params['classifier_model']
     eval_params['decoder_datatype'] = params['classifier_datatype']
@@ -138,6 +139,7 @@ def counterfactual():
     eval_params['stdout_filename'] = 'stdout_eval_{}.txt'.format(timestamp)
     eval_params['mode'] = 'evaluate'
     transcoder.main(**eval_params)
+    """
 
     # Generate a "dream" video
     dream_params = params.copy()

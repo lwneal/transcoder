@@ -27,6 +27,7 @@ def build_models(datasets, **params):
 
     learning_rate = params['learning_rate']
     learning_rate_classifier = params['learning_rate_classifier']
+    learning_rate_autoencoder = params['learning_rate_autoencoder']
 
     encoder_dataset = datasets['encoder']
     decoder_dataset = datasets['decoder']
@@ -34,8 +35,7 @@ def build_models(datasets, **params):
 
     metrics = ['accuracy']
     classifier_optimizer = optimizers.Adam(lr=learning_rate * learning_rate_classifier, decay=decay, clipnorm=.1)
-    autoenc_decay = decay * 2
-    autoenc_optimizer = optimizers.Adam(lr=learning_rate, decay=autoenc_decay, clipnorm=.1)
+    autoenc_optimizer = optimizers.Adam(lr=learning_rate * learning_rate_autoencoder, decay=decay, clipnorm=.1)
 
     if classifier_type == 'lab':
         classifier_loss = 'categorical_crossentropy'

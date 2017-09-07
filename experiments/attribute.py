@@ -106,7 +106,7 @@ def counterfactual():
     params['batches_per_epoch'] = 50
     params['enable_classifier'] = True
     params['enable_discriminator'] = True
-    params['enable_perceptual_loss'] = True
+    params['enable_perceptual_loss'] = False
     params['encoder_weights'] = 'encoder_{}.h5'.format(encoder_model)
     params['decoder_weights'] = 'decoder_{}.h5'.format(decoder_model)
     params['classifier_weights'] = 'classifier_{}.h5'.format(classifier_model)

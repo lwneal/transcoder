@@ -46,13 +46,13 @@ input[type=range]::-webkit-slider-runnable-track {
   <form action="/submit" method=post>
     <input id="slider" name=frame type="range" />
     <input id="submit" type=submit />
-    <input name="maxframes" hidden=true />
+    <input id="max_frames_input" name="maxframes" hidden=true />
   </form>
 </center>
 </body>
 
 <script>
-FPS = 24;
+FPS = 25;
 vid = document.getElementById('vid'); 
 slider = document.getElementById('slider');
 
@@ -63,7 +63,8 @@ vid.addEventListener('loadedmetadata', function() {
   slider.max = duration_frames;
   slider.value = 0;
 
-  var maxframes = document.getElementByName('maxframes')
+  var maxframes = document.getElementById('max_frames_input')
+  maxframes.value = duration_frames;
 });
 
 // Use requestAnimationFrame for smooth playback
